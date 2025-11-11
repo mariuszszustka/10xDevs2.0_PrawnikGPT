@@ -1,8 +1,10 @@
-# PrawnikGPT - Asystent Prawnika AI
+# PrawnikGPT
 
 PrawnikGPT to aplikacja typu MVP (Minimum Viable Product) mająca na celu wsparcie prawników i aplikantów w ich codziennej pracy poprzez dostarczenie inteligentnego asystenta do analizy aktów prawnych.
 
 Projekt realizowany w ramach kursu [10xDevs](https://www.10xdevs.pl/).
+
+**Dokumentacja projektu:** [PRD.md](docs/PRD.md)
 
 ## Problem
 
