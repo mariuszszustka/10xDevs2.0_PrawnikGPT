@@ -4,7 +4,19 @@ PrawnikGPT to aplikacja typu MVP (Minimum Viable Product) mająca na celu wsparc
 
 Projekt realizowany w ramach kursu [10xDevs](https://www.10xdevs.pl/).
 
-**Dokumentacja projektu:** [PRD.md](docs/PRD.md)
+**Dokumentacja projektu:**
+- 📋 [Product Requirements](.ai/prd.md)
+- 🏗️ [Tech Stack](.ai/tech-stack.md)
+- 🔧 [API Plan](.ai/api-plan.md)
+- 💾 [Database Plan](.ai/db-plan.md)
+- 🎨 [UI Plan](.ai/ui-plan.md)
+- 🤖 [RAG Implementation](.ai/rag-implementation-plan.md)
+
+**Instrukcje dla AI agentów:**
+- 🤖 [Claude Code](.claude/CLAUDE.md)
+- 🤖 [Gemini](.gemini/GEMINI.md)
+- 🤖 [Cursor](.cursor/rules/)
+- 🤖 [GitHub Copilot](.github/copilot-instructions.md)
 
 ## Problem
 
@@ -20,8 +32,8 @@ Prawnicy i aplikanci spędzają znaczną ilość czasu na manualnym przeszukiwan
 
 ## Stack Technologiczny
 
-*   **Frontend:** [Next.js](https://nextjs.org/), [React](https://react.dev/), [Tailwind CSS](https://tailwindcss.com/)
-*   **Backend:** [Python](https://www.python.org/), [FastAPI](https://fastapi.tiangolo.com/)
+*   **Frontend:** [Astro 5](https://astro.build/), [React 19](https://react.dev/) (islands), [Tailwind CSS](https://tailwindcss.com/), [Shadcn/ui](https://ui.shadcn.com/)
+*   **Backend:** [Python](https://www.python.org/) 3.11+, [FastAPI](https://fastapi.tiangolo.com/)
 *   **Baza Danych:** [Supabase](https://supabase.com/) (PostgreSQL + pgvector)
 *   **AI:**
     *   Hostowanie modeli: [OLLAMA](https://ollama.ai/)
@@ -47,7 +59,15 @@ cd 10xDevs2.0_PrawnikGPT
 
 ### 2. Konfiguracja Zmiennych Środowiskowych
 
-Stwórz plik `.env` w głównym katalogu projektu i uzupełnij go na podstawie pliku `.env.example`. Będzie on zawierał klucze do Supabase i adres serwera OLLAMA.
+Stwórz plik `.env` w głównym katalogu projektu i uzupełnij go na podstawie pliku `.env.example`.
+
+**Aplikacja obsługuje wiele scenariuszy deployment:**
+- 🏠 All-in-one (wszystko na localhost)
+- 🔀 Distributed (frontend/backend osobno od serwisów)
+- ☁️ Cloud/Production (komponenty w chmurze)
+- 🔄 Hybrid (dowolna kombinacja)
+
+Zobacz `.env.example` dla szczegółowych przykładów konfiguracji.
 
 ### 3. Uruchomienie Bazy Danych (Supabase)
 
@@ -78,8 +98,8 @@ Serwer backendu będzie dostępny pod adresem `http://localhost:8000`.
 # Wróć do głównego katalogu i zainstaluj zależności
 npm install
 
-# Uruchom serwer deweloperski
+# Uruchom serwer deweloperski (Astro)
 npm run dev
 ```
 
-Aplikacja będzie dostępna pod adresem `http://localhost:3000`.
+Aplikacja będzie dostępna pod adresem `http://localhost:4321`.

@@ -40,9 +40,14 @@ PrawnikGPT is an MVP legal assistant application for Polish lawyers and legal tr
 - `./supabase/config.toml` - Local Supabase settings
 
 **Documentation:**
-- `./.ai/` - Planning docs (PRD, tech stack, API/DB/UI/RAG plans)
-- `./docs/` - Additional documentation
-- `./CLAUDE.md` - Instructions for Claude Code
+- `./.ai/` - Planning docs (PRD, tech stack, API/DB/UI/RAG plans, ISAP relations)
+- `./docs/archive/` - Historical documentation (archived)
+
+**AI Agent Instructions:**
+- `./.claude/CLAUDE.md` - Instructions for Claude Code
+- `./.gemini/GEMINI.md` - Instructions for Gemini
+- `./.cursor/rules/` - Instructions for Cursor AI
+- `./.github/copilot-instructions.md` - Instructions for GitHub Copilot (this file)
 
 ---
 

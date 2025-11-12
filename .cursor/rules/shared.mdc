@@ -58,10 +58,15 @@ When introducing changes to the project, always follow the directory structure b
 - `./supabase/config.toml` - Local Supabase settings
 
 **Documentation:**
-- `./.ai/` - Planning documents (PRD, tech stack, API/DB/UI/RAG plans)
-- `./docs/` - Additional documentation (architecture, ISAP API notes)
-- `./CLAUDE.md` - Instructions for Claude Code assistant
+- `./.ai/` - Planning documents (PRD, tech stack, API/DB/UI/RAG plans, ISAP relations)
+- `./docs/archive/` - Historical documentation (archived)
 - `./README.md` - Project overview and setup instructions
+
+**AI Agent Instructions:**
+- `./.claude/CLAUDE.md` - Instructions for Claude Code
+- `./.gemini/GEMINI.md` - Instructions for Gemini
+- `./.cursor/rules/` - Instructions for Cursor AI
+- `./.github/copilot-instructions.md` - Instructions for GitHub Copilot
 
 When modifying the directory structure, always update this section.
 
@@ -341,7 +346,8 @@ When creating new features:
 2. Add JSDoc comments for complex functions (TypeScript)
 3. Add docstrings for public functions (Python)
 4. Update README.md if setup instructions change
-5. Update CLAUDE.md if project structure changes
+5. Update `.claude/CLAUDE.md` if project structure changes
+6. Update `.cursor/rules/` if coding practices change
 
 ---
 

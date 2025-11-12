@@ -17,6 +17,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - See [.ai/rag-implementation-plan.md](.ai/rag-implementation-plan.md) for RAG pipeline
 
 **AI Assistant Rules**:
+- See [.claude/CLAUDE.md](.claude/CLAUDE.md) for Claude Code (this file)
+- See [.gemini/GEMINI.md](.gemini/GEMINI.md) for Gemini
 - See [.cursor/rules/](.cursor/rules/) for Cursor AI rules
 - See [.github/copilot-instructions.md](.github/copilot-instructions.md) for GitHub Copilot
 
@@ -260,10 +262,14 @@ prawnik_v01/
 │   ├── config.toml           # Local Supabase settings
 │   ├── migrations/           # Database migration files (*.sql)
 │   └── seed.sql              # Seed data (optional)
-├── docs/                      # Additional documentation
+├── docs/                      # Historical documentation
+│   └── archive/              # Archived documentation files
+├── .claude/                   # Claude Code instructions
+│   └── CLAUDE.md             # This file - guidance for Claude Code
+├── .gemini/                   # Gemini instructions
+│   └── GEMINI.md             # Guidance for Gemini
 ├── public/                    # Public assets (favicon, robots.txt)
 ├── .env.example               # Environment variable template
-├── CLAUDE.md                  # This file - guidance for Claude Code
 └── README.md                  # Project overview and setup
 ```
 
