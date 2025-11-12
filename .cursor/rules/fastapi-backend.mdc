@@ -46,7 +46,15 @@ backend/
 
 ---
 
-## FastAPI Best Practices
+## FastAPI Best Practices (Enhanced with 10x-rules)
+
+### Best Practices from 10x-rules
+- **Use Pydantic models** for request and response validation with strict type checking and custom validators
+- **Implement dependency injection** for services and database sessions to improve testability and resource management
+- **Use async endpoints** for I/O-bound operations to improve throughput for high-load endpoints
+- **Leverage FastAPI's background tasks** for non-critical operations that don't need to block the response
+- **Implement proper exception handling** with HTTPException and custom exception handlers for error scenarios
+- **Use path operation decorators consistently** with appropriate HTTP methods (GET for retrieval, POST for creation, etc.)
 
 ### 1. App Structure (main.py)
 ```python
@@ -390,7 +398,12 @@ async def generate_fast_response(question: str, user_id: str) -> Dict:
 
 ---
 
-## Database Queries (Supabase)
+## Database Queries (Supabase + PostgreSQL Best Practices from 10x-rules)
+
+### Best Practices from 10x-rules
+- **Use connection pooling** to manage database connections efficiently
+- **Implement JSONB columns** for semi-structured data instead of creating many tables for flexible data
+- **Use materialized views** for complex, frequently accessed read-only data
 
 ### db/queries.py
 ```python

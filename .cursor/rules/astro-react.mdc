@@ -23,6 +23,17 @@ alwaysApply: false
 - Headers, footers, navigation (no interactivity)
 - Content-heavy sections (welcome message, example questions)
 
+### Best Practices from 10x-rules
+- **Use Astro components (.astro) for static content and layout** - Minimize JavaScript by default
+- **Leverage View Transitions API** for smooth page transitions
+- **Use content collections with type safety** for blog posts, documentation, etc.
+- **Implement middleware** for request/response modification
+- **Use image optimization** with the Astro Image integration
+- **Leverage Server Endpoints** for API routes
+- **Implement hybrid rendering** with server-side rendering where needed
+- **Use Astro.cookies** for server-side cookie management
+- **Leverage import.meta.env** for environment variables (with type safety via env.d.ts)
+
 ### Component Props
 ```astro
 ---
@@ -71,11 +82,17 @@ import { ViewTransitions } from 'astro:transitions';
 - State management (chat messages, user menu)
 - Real-time updates (loading states, optimistic UI)
 
-### Hydration Directives
-- `client:load` - Hydrate immediately on page load (use sparingly)
+### Hydration Directives (Best Practices from 10x-rules)
+- `client:visible` - **Hydrate when visible in viewport** (use for below-fold components)
 - `client:idle` - Hydrate when main thread is idle (default for most islands)
-- `client:visible` - Hydrate when element enters viewport (use for below-fold components)
+- `client:load` - Hydrate immediately on page load (use sparingly for critical components)
 - `client:only="react"` - No SSR, client-only render (avoid if possible)
+- `client:media` - Hydrate only at specific breakpoints (responsive hydration)
+- **Use shared state with nanostores** instead of prop drilling between islands
+- **Use content collections** for type-safe content management of structured content
+- **Implement partial hydration strategies** to minimize JavaScript sent to the client
+- **Use Astro's transition:* directives** for view transitions between pages
+- **Leverage props** for passing data from Astro to framework components
 
 **Example:**
 ```astro
@@ -140,17 +157,17 @@ function UserMenu() {
 }
 ```
 
-#### 4. Performance Optimizations
+#### 4. Performance Optimizations (Best Practices from 10x-rules)
 ```tsx
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, lazy, Suspense } from 'react';
 
-// Memoize expensive components
+// Use React.memo() for expensive components that render often with the same props
 export const ResponseCard = memo(({ response }: { response: Response }) => {
   // Component only re-renders if `response` changes
   return <div>{response.content}</div>;
 });
 
-// Memoize callbacks passed to children
+// Use useCallback for event handlers passed to child components
 function ChatContainer() {
   const handleRate = useCallback((responseId: number, rating: string) => {
     // This function won't be recreated on every render
@@ -159,13 +176,37 @@ function ChatContainer() {
   return <RatingButtons onRate={handleRate} />;
 }
 
-// Memoize expensive calculations
+// Prefer useMemo for expensive calculations to avoid recomputation on every render
 function QueryCard({ query }: { query: Query }) {
   const formattedDate = useMemo(() => {
     return new Intl.DateTimeFormat('pl-PL').format(new Date(query.created_at));
   }, [query.created_at]);
 
   return <time>{formattedDate}</time>;
+}
+
+// Utilize React.lazy() and Suspense for code-splitting and performance optimization
+const HistoryList = lazy(() => import('./HistoryList'));
+
+function HistoryView() {
+  return (
+    <Suspense fallback={<div>Ładowanie...</div>}>
+      <HistoryList />
+    </Suspense>
+  );
+}
+
+// Use useTransition for non-urgent state updates to keep the UI responsive
+import { useTransition } from 'react';
+
+function SearchComponent() {
+  const [isPending, startTransition] = useTransition();
+  
+  const handleSearch = (query: string) => {
+    startTransition(() => {
+      setSearchResults(filterResults(query));
+    });
+  };
 }
 ```
 
@@ -229,7 +270,7 @@ export function RatingButtons({ responseId, initialRating }: Props) {
 
 ---
 
-## Styling with Tailwind CSS
+## Styling with Tailwind CSS (Best Practices from 10x-rules)
 
 ### Use Utility Classes
 ```tsx
@@ -239,6 +280,18 @@ export function RatingButtons({ responseId, initialRating }: Props) {
   </h2>
 </div>
 ```
+
+### Best Practices
+- **Use the @layer directive** to organize styles into components, utilities, and base layers
+- **Implement Just-in-Time (JIT) mode** for development efficiency and smaller CSS bundles
+- **Use arbitrary values** with square brackets (e.g., `w-[123px]`) for precise one-off designs
+- **Leverage the @apply directive** in component classes to reuse utility combinations
+- **Implement the Tailwind configuration file** for customizing theme, plugins, and variants
+- **Use component extraction** for repeated UI patterns instead of copying utility classes
+- **Leverage the theme() function** in CSS for accessing Tailwind theme values
+- **Implement dark mode** with the `dark:` variant
+- **Use responsive variants** (sm:, md:, lg:, etc.) for adaptive designs
+- **Leverage state variants** (hover:, focus:, active:, etc.) for interactive elements
 
 ### Conditional Classes with `cn()` Utility
 ```tsx

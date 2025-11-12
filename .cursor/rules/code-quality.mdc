@@ -1,0 +1,143 @@
+---
+description: Code quality tools and best practices (ESLint, Prettier) for PrawnikGPT
+globs: *.ts,*.tsx,*.js,*.jsx,*.astro,*.py
+alwaysApply: false
+---
+
+# Code Quality Tools (ESLint, Prettier)
+
+## ESLint Best Practices (from 10x-rules)
+
+- **Configure project-specific rules** in `eslint.config.js` to enforce consistent coding standards
+- **Use shareable configs** like `eslint-config-airbnb` or `eslint-config-standard` as a foundation
+- **Implement custom rules** for project-specific patterns to maintain codebase consistency
+- **Configure integration with Prettier** to avoid rule conflicts for code formatting
+- **Use the --fix flag** in CI/CD pipelines to automatically correct fixable issues
+- **Implement staged linting** with husky and lint-staged to prevent committing non-compliant code
+
+### Current Configuration
+
+Our project uses:
+- `eslint.config.js` with flat config format
+- Integration with Prettier via `eslint-config-prettier`
+- React Compiler plugin for React 19
+- JSX A11y plugin for accessibility
+- TypeScript ESLint for type checking
+
+### Usage
+
+```bash
+# Lint all files
+npm run lint
+
+# Auto-fix issues
+npm run lint:fix
+```
+
+## Prettier Best Practices (from 10x-rules)
+
+- **Define a consistent .prettierrc configuration** across all project repositories
+- **Configure editor integration** to format on save for immediate feedback
+- **Use .prettierignore** to exclude generated files, build artifacts, and specific excluded patterns
+- **Set printWidth** based on team preferences (80-120 characters) to improve code readability
+- **Configure consistent quote style** and semicolon usage to match team conventions
+- **Implement CI checks** to ensure all committed code adheres to the defined style
+
+### Current Configuration
+
+Our `.prettierrc.json`:
+- `printWidth: 120` - matches team preference
+- `semi: true` - consistent semicolon usage
+- `singleQuote: false` - double quotes for consistency
+- `prettier-plugin-astro` - Astro file support
+
+### Usage
+
+```bash
+# Format all files
+npm run format
+```
+
+### Editor Integration
+
+**VS Code / Cursor:**
+1. Install Prettier extension
+2. Enable "Format on Save" in settings
+3. Set Prettier as default formatter
+
+**Settings.json:**
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[astro]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
+```
+
+## Pre-commit Hooks (Recommended)
+
+### Setup with husky and lint-staged
+
+```bash
+# Install husky
+npm install --save-dev husky lint-staged
+
+# Initialize husky
+npx husky init
+
+# Add pre-commit hook
+echo "npx lint-staged" > .husky/pre-commit
+```
+
+### lint-staged Configuration
+
+Add to `package.json`:
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx,astro}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  }
+}
+```
+
+This ensures:
+- ESLint fixes are applied before commit
+- Code is formatted with Prettier
+- Only staged files are processed (fast)
+
+## CI/CD Integration
+
+### GitHub Actions Example
+
+```yaml
+name: Lint and Format Check
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format -- --check
+```
+
+## Best Practices Summary
+
+1. **Always run lint before committing** - Use `npm run lint:fix`
+2. **Format code before committing** - Use `npm run format`
+3. **Set up pre-commit hooks** - Prevent bad code from being committed
+4. **Check formatting in CI** - Ensure all code follows standards
+5. **Keep configs consistent** - Same rules across all files
+6. **Document exceptions** - If you need to disable a rule, document why

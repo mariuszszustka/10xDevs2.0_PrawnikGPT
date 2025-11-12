@@ -253,7 +253,7 @@ curl ${OLLAMA_HOST}/api/version  # OLLAMA
 
 ---
 
-## Git Workflow
+## Git Workflow (Conventional Commits - Best Practices from 10x-rules)
 
 ### Commit Message Format
 ```
@@ -271,12 +271,21 @@ curl ${OLLAMA_HOST}/api/version  # OLLAMA
 - `test`: Adding or updating tests
 - `chore`: Build process, dependency updates
 
+**Best Practices from 10x-rules:**
+- **Follow the format:** `type(scope): description` for all commit messages
+- **Use consistent types** (feat, fix, docs, style, refactor, test, chore) across the project
+- **Define clear scopes** based on project modules (frontend, backend, chat, rag, etc.) to indicate affected areas
+- **Include issue references** in commit messages to link changes to requirements
+- **Use breaking change footer** (`!:` or `BREAKING CHANGE:`) to clearly mark incompatible changes
+- **Configure commitlint** to automatically enforce conventional commit format (optional but recommended)
+
 **Examples:**
 ```
 feat(chat): add detailed answer button
 fix(rag): handle empty similarity search results
 docs(readme): update setup instructions
 refactor(backend): extract RAG logic into service
+feat(api)!: change response format (#123)
 ```
 
 ### Branch Naming
