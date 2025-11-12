@@ -2,6 +2,17 @@
  * Utility functions for PrawnikGPT
  */
 
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+/**
+ * Merge Tailwind CSS classes with clsx and tailwind-merge
+ * Essential for shadcn/ui components and conditional styling
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 /**
  * Get API base URL from environment variables
  * Falls back to localhost:8000 if not set
