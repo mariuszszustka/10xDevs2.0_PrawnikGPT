@@ -1,0 +1,408 @@
+---
+description: Shared rules for all files in PrawnikGPT project
+globs:
+alwaysApply: true
+---
+
+# AI Rules for PrawnikGPT
+
+PrawnikGPT to aplikacja MVP dla prawników i aplikantów, umożliwiająca zadawanie pytań w języku naturalnym o polskie akty prawne. System wykorzystuje RAG (Retrieval-Augmented Generation) z dwupoziomowym mechanizmem odpowiedzi: szybką (<15s) z mniejszego modelu i dokładną (do 240s) z większego modelu 120B.
+
+## Tech Stack
+
+- **Frontend:** Astro 5, React 19, TypeScript, Tailwind CSS, Shadcn/ui
+- **Backend:** Python FastAPI
+- **Database:** Supabase (PostgreSQL + pgvector)
+- **LLM:** OLLAMA (local hosting)
+  - Fast model: 7B-13B (mistral:7b)
+  - Detailed model: gpt-oss:120b
+  - Embeddings: nomic-embed-text (768-dim)
+- **RAG:** LangChain/LlamaIndex
+
+## Project Structure
+
+When introducing changes to the project, always follow the directory structure below:
+
+**Frontend (Astro):**
+- `./src/layouts` - Astro layouts (BaseLayout, AppLayout)
+- `./src/pages` - Astro pages and routes
+  - `./src/pages/index.astro` - Landing page (public)
+  - `./src/pages/login.astro` - Login page (public)
+  - `./src/pages/register.astro` - Register page (public)
+  - `./src/pages/app/` - Protected app pages (chat, history, settings)
+- `./src/components` - Components (Astro static + React islands)
+  - `./src/components/layout/` - Header, Footer, navigation
+  - `./src/components/auth/` - Login/Register forms (React islands)
+  - `./src/components/chat/` - Chat interface (React islands)
+  - `./src/components/history/` - Query history (React islands)
+  - `./src/components/ui/` - Shadcn/ui components (React)
+- `./src/lib` - Utilities and helpers (API client, Supabase setup)
+- `./src/middleware` - Astro middleware (auth check)
+- `./src/assets` - Static internal assets (images, icons)
+- `./public` - Public assets (favicon, robots.txt)
+
+**Backend (FastAPI):**
+- `./backend/` - FastAPI application root
+- `./backend/main.py` - FastAPI app entry point
+- `./backend/routers/` - API route handlers (queries, auth, ratings)
+- `./backend/services/` - Business logic (RAG pipeline, LLM generation)
+- `./backend/models/` - Pydantic models (request/response schemas)
+- `./backend/db/` - Database utilities (Supabase client, queries)
+- `./backend/tests/` - Unit and integration tests (pytest)
+- `./backend/requirements.txt` - Python dependencies
+
+**Database (Supabase):**
+- `./supabase/` - Supabase configuration
+- `./supabase/migrations/` - Database migration files
+- `./supabase/seed.sql` - Seed data (optional)
+- `./supabase/config.toml` - Local Supabase settings
+
+**Documentation:**
+- `./.ai/` - Planning documents (PRD, tech stack, API/DB/UI/RAG plans)
+- `./docs/` - Additional documentation (architecture, ISAP API notes)
+- `./CLAUDE.md` - Instructions for Claude Code assistant
+- `./README.md` - Project overview and setup instructions
+
+When modifying the directory structure, always update this section.
+
+---
+
+## Coding Practices
+
+### Guidelines for Clean Code
+
+- **Error handling first:** Handle errors and edge cases at the beginning of functions
+- **Early returns:** Use early returns for error conditions to avoid deeply nested if statements
+- **Happy path last:** Place the happy path last in the function for improved readability
+- **No unnecessary else:** Avoid unnecessary else statements; use if-return pattern instead
+- **Guard clauses:** Use guard clauses to handle preconditions and invalid states early
+- **Proper error logging:** Implement proper error logging and user-friendly error messages
+- **Custom error types:** Consider using custom error types or error factories for consistent error handling
+- **Linter feedback:** Use feedback from linters (ESLint, Ruff) to improve the code when making changes
+- **Type safety:** Prioritize type safety with TypeScript (frontend) and type hints (backend)
+
+### Example (TypeScript):
+```typescript
+async function fetchQuery(queryId: number): Promise<Query> {
+  // Guard clause for invalid input
+  if (!queryId || queryId <= 0) {
+    throw new Error('Invalid query ID');
+  }
+
+  // Early return for error case
+  const query = await db.queries.findUnique({ where: { id: queryId } });
+  if (!query) {
+    throw new Error('Query not found');
+  }
+
+  // Happy path at the end
+  return query;
+}
+```
+
+### Example (Python):
+```python
+def generate_embedding(text: str) -> list[float]:
+    # Guard clause for empty input
+    if not text or len(text.strip()) == 0:
+        raise ValueError("Text cannot be empty")
+
+    # Early return for error case
+    response = requests.post(OLLAMA_URL, json={"prompt": text}, timeout=60)
+    if not response.ok:
+        logger.error(f"Embedding generation failed: {response.status_code}")
+        raise RuntimeError("Failed to generate embedding")
+
+    # Happy path
+    return response.json()["embedding"]
+```
+
+---
+
+## Language Context
+
+- **UI language:** Polish (wszystkie teksty w interfejsie użytkownika)
+- **Code/comments:** English preferred (dla lepszej czytelności kodu)
+- **Documentation:** Bilingual (Polish/English mix acceptable)
+- **Legal queries:** Polish (użytkownicy zadają pytania po polsku)
+- **Commit messages:** English (standard convention)
+
+---
+
+## Project Naming Conventions
+
+### Frontend (TypeScript/React)
+- **Components:** PascalCase (`ChatInput.tsx`, `ResponseCard.tsx`)
+- **Files:** camelCase for utilities (`apiClient.ts`, `formatDate.ts`)
+- **Functions/variables:** camelCase (`getUserId`, `isLoggedIn`)
+- **Constants:** UPPER_SNAKE_CASE (`API_BASE_URL`, `MAX_QUERY_LENGTH`)
+- **CSS classes:** kebab-case with Tailwind (`btn-primary`, `chat-message`)
+
+### Backend (Python)
+- **Files:** snake_case (`rag_pipeline.py`, `query_service.py`)
+- **Functions/variables:** snake_case (`generate_embedding`, `query_id`)
+- **Classes:** PascalCase (`QueryService`, `RAGPipeline`)
+- **Constants:** UPPER_SNAKE_CASE (`OLLAMA_HOST`, `EMBEDDING_DIM`)
+- **Private methods:** Leading underscore (`_validate_input`, `_fetch_chunks`)
+
+### Database (SQL)
+- **Tables:** snake_case (`legal_acts`, `legal_act_chunks`, `queries`)
+- **Columns:** snake_case (`user_id`, `created_at`, `response_type`)
+- **Indexes:** `idx_<table>_<column>` (`idx_queries_user_id`)
+- **Constraints:** `<table>_<column>_<type>` (`queries_user_id_fkey`)
+
+---
+
+## Environment Variables
+
+Always use environment variables for configuration. Never commit secrets to git.
+
+**IMPORTANT:** This project is **deployment-agnostic** and can run in multiple configurations:
+- 🏠 **All-in-one:** Everything on localhost
+- 🔀 **Distributed:** Frontend/Backend on one machine, services on another
+- ☁️ **Cloud:** All components in cloud providers
+- 🔄 **Hybrid:** Any combination of local and cloud
+
+All URLs are configured via `.env` file. See `.env.example` for detailed deployment scenarios.
+
+### Frontend (.env)
+
+**Example for all-in-one deployment:**
+```bash
+PUBLIC_API_BASE_URL=http://localhost:8000
+PUBLIC_SUPABASE_URL=http://localhost:8444
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+**Example for distributed deployment:**
+```bash
+PUBLIC_API_BASE_URL=http://localhost:8000
+PUBLIC_SUPABASE_URL=http://192.168.0.11:8444  # Replace with your server IP
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+**Example for cloud deployment:**
+```bash
+PUBLIC_API_BASE_URL=https://api.your-domain.com
+PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+### Backend (.env)
+
+**Example for all-in-one deployment:**
+```bash
+SUPABASE_URL=http://localhost:8444
+SUPABASE_SERVICE_KEY=your-service-role-key-here
+SUPABASE_JWT_SECRET=your-jwt-secret-here
+
+OLLAMA_HOST=http://localhost:11434
+
+REDIS_URL=redis://localhost:6379/0
+
+LOG_LEVEL=INFO
+DEBUG=true
+```
+
+**Example for distributed deployment:**
+```bash
+SUPABASE_URL=http://192.168.0.11:8444  # Replace with your server IP
+SUPABASE_SERVICE_KEY=your-service-role-key-here
+SUPABASE_JWT_SECRET=your-jwt-secret-here
+
+OLLAMA_HOST=http://192.168.0.11:11434  # Replace with your server IP
+
+REDIS_URL=redis://localhost:6379/0
+
+LOG_LEVEL=INFO
+DEBUG=true
+```
+
+**Example for cloud deployment:**
+```bash
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your-service-role-key-here
+SUPABASE_JWT_SECRET=your-jwt-secret-here
+
+OLLAMA_HOST=https://ollama.your-domain.com:11434
+
+REDIS_URL=redis://your-redis-provider.com:6379/0
+
+LOG_LEVEL=INFO
+DEBUG=false
+```
+
+Use `.env.example` files to document required variables (without actual values).
+
+**Network Verification (Universal):**
+```bash
+# Test connectivity to services (replace URLs with your actual configuration)
+curl ${SUPABASE_URL}/health      # Supabase
+curl ${OLLAMA_HOST}/api/version  # OLLAMA
+
+# Examples:
+# curl http://localhost:8444/health
+# curl http://192.168.0.11:8444/health
+# curl https://your-project.supabase.co/health
+```
+
+---
+
+## Git Workflow
+
+### Commit Message Format
+```
+<type>(<scope>): <subject>
+
+<body (optional)>
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Formatting, whitespace (no code change)
+- `refactor`: Code refactoring (no functional change)
+- `test`: Adding or updating tests
+- `chore`: Build process, dependency updates
+
+**Examples:**
+```
+feat(chat): add detailed answer button
+fix(rag): handle empty similarity search results
+docs(readme): update setup instructions
+refactor(backend): extract RAG logic into service
+```
+
+### Branch Naming
+- `feature/<feature-name>` - New features
+- `fix/<bug-name>` - Bug fixes
+- `refactor/<scope>` - Code refactoring
+- `docs/<scope>` - Documentation updates
+
+---
+
+## Testing Guidelines
+
+### Frontend (Vitest)
+- Test React components with user interactions
+- Mock API calls (MSW or vi.mock)
+- Test accessibility (aria labels, keyboard navigation)
+- Snapshot tests for UI components
+
+### Backend (pytest)
+- Unit tests for RAG pipeline functions
+- Integration tests with test database
+- Mock OLLAMA API calls
+- Test error handling and edge cases
+
+**Coverage target:** >70% for backend, >50% for frontend (MVP)
+
+---
+
+## Accessibility (WCAG AA)
+
+- Use semantic HTML (`<main>`, `<nav>`, `<article>`, `<button>`)
+- ARIA labels for icon buttons (`aria-label="Delete query"`)
+- Keyboard navigation (Tab, Enter, Escape)
+- Color contrast 4.5:1 for text
+- Focus indicators on interactive elements
+- Screen reader support (test with NVDA/JAWS)
+
+---
+
+## Performance Targets
+
+- **Fast response:** <15 seconds (95th percentile)
+- **Detailed response:** <240 seconds (timeout)
+- **Similarity search:** <200ms (database query)
+- **Page load:** <2 seconds (First Contentful Paint)
+- **Bundle size:** <50KB JS (main bundle)
+
+---
+
+## Security Best Practices
+
+- **Input validation:** Validate all user input (10-1000 chars for questions)
+- **SQL injection:** Use parameterized queries (never string concatenation)
+- **XSS prevention:** Sanitize user input before rendering (React does this by default)
+- **CSRF protection:** Use CSRF tokens for forms (Supabase Auth handles this)
+- **Rate limiting:** 10 queries/minute per user, 30/minute per IP
+- **JWT validation:** Validate JWT signature on every backend request
+- **HTTPS only:** Enforce HTTPS in production
+- **Secrets management:** Never commit .env files; use environment variables
+
+---
+
+## Documentation Requirements
+
+When creating new features:
+1. Update relevant files in `.ai/` (API plan, DB plan, UI plan)
+2. Add JSDoc comments for complex functions (TypeScript)
+3. Add docstrings for public functions (Python)
+4. Update README.md if setup instructions change
+5. Update CLAUDE.md if project structure changes
+
+---
+
+## Dependencies Management
+
+### Frontend (npm)
+- Run `npm audit` before committing
+- Keep dependencies up to date (monthly check)
+- Use exact versions in package.json (no `^` or `~`)
+
+### Backend (pip)
+- Pin versions in requirements.txt (`package==1.2.3`)
+- Use virtual environment (venv or conda)
+- Run `pip-audit` for security vulnerabilities
+
+---
+
+## Code Review Checklist
+
+Before submitting PR:
+- [ ] Code follows style guidelines (ESLint/Ruff passes)
+- [ ] Tests added/updated (coverage maintained)
+- [ ] Documentation updated (if applicable)
+- [ ] No console.log or print() statements (use logger)
+- [ ] Error handling implemented
+- [ ] TypeScript/type hints added
+- [ ] Accessibility checked (keyboard nav, ARIA)
+- [ ] Performance tested (no obvious bottlenecks)
+- [ ] Secrets not committed (.env excluded)
+
+---
+
+## Resources
+
+- **Astro Docs:** https://docs.astro.build
+- **React Docs:** https://react.dev
+- **FastAPI Docs:** https://fastapi.tiangolo.com
+- **Supabase Docs:** https://supabase.com/docs
+- **LangChain Docs:** https://python.langchain.com
+- **Tailwind Docs:** https://tailwindcss.com/docs
+- **Shadcn/ui:** https://ui.shadcn.com
+
+---
+
+## MVP Scope Reminder
+
+**In scope:**
+- Auth (email/password, no email verification)
+- Chat interface with fast + detailed responses
+- Query history (chronological list)
+- Rating system (thumbs up/down)
+- Onboarding (welcome message, example questions)
+- 20k legal acts (static dataset)
+
+**Out of scope:**
+- Full ISAP database (only 20k acts)
+- Advanced search/filters in history
+- Sharing queries between users
+- Export to PDF/DOCX
+- Mobile apps (web only)
+- Auto-update of legal acts
+- E2E tests
+
+Focus on core functionality. Avoid scope creep.

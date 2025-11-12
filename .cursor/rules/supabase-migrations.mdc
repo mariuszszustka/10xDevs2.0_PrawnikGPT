@@ -1,0 +1,441 @@
+---
+description: Rules for creating Supabase database migrations
+globs: supabase/migrations/**/*.sql
+alwaysApply: false
+---
+
+# Database: Create Migration for PrawnikGPT
+
+You are a Postgres Expert who loves creating secure database schemas.
+
+This project uses the migrations provided by the Supabase CLI.
+
+---
+
+## Creating a Migration File
+
+Given the context of the user's message, create a database migration file inside the folder `supabase/migrations/`.
+
+### Naming Convention
+
+The file MUST follow this naming convention:
+
+**Format:** `YYYYMMDDHHmmss_short_description.sql`
+
+- `YYYY` - Four digits for the year (e.g., `2025`)
+- `MM` - Two digits for the month (01 to 12)
+- `DD` - Two digits for the day of the month (01 to 31)
+- `HH` - Two digits for the hour in 24-hour format (00 to 23)
+- `mm` - Two digits for the minute (00 to 59)
+- `ss` - Two digits for the second (00 to 59)
+- `_short_description` - Brief description in snake_case
+
+**Example:**
+```
+20250115103000_create_queries_table.sql
+20250115103100_create_responses_table.sql
+20250115103200_create_ratings_table.sql
+20250115103300_create_legal_acts_tables.sql
+20250115103400_create_rls_policies.sql
+20250115103500_create_pgvector_indexes.sql
+```
+
+---
+
+## SQL Guidelines
+
+Write Postgres-compatible SQL code for Supabase migration files that:
+
+### 1. Header Comment
+- Include a header comment with:
+  - Purpose of the migration
+  - Affected tables/columns
+  - Any special considerations (performance impact, breaking changes, etc.)
+
+**Example:**
+```sql
+-- Migration: Create queries table
+-- Purpose: Store user queries with timestamps
+-- Tables: queries
+-- Notes: Includes user_id foreign key with CASCADE delete
+```
+
+### 2. Thorough Comments
+- Add comments explaining the purpose and expected behavior of each migration step
+- Document why certain design decisions were made
+
+### 3. Lowercase SQL
+- Write all SQL keywords in lowercase: `create table`, `select`, `insert`
+- More readable and consistent with modern SQL style
+
+### 4. Destructive Operations
+- Add copious comments for any destructive SQL commands
+- This includes: `truncate`, `drop table`, `drop column`, `alter column type`
+- Explain the impact and rationale
+
+**Example:**
+```sql
+-- WARNING: This will delete all data in the table!
+-- Reason: Schema change requires full reset of test data
+truncate table legal_acts cascade;
+```
+
+### 5. Row Level Security (RLS)
+- When creating a new table, you MUST enable Row Level Security (RLS)
+- This applies even if the table is intended for public access
+- Use `alter table <table_name> enable row level security;`
+
+**Example:**
+```sql
+create table queries (
+  id bigserial primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  question text not null,
+  created_at timestamptz not null default now()
+);
+
+-- Enable RLS (required for all tables)
+alter table queries enable row level security;
+```
+
+### 6. RLS Policies
+- Policies should be granular: one policy per operation (`select`, `insert`, `update`, `delete`)
+- Create separate policies for each Supabase role (`anon` and `authenticated`)
+- DO NOT combine policies even if functionality is the same
+- Include comments explaining the rationale and intended behavior
+- For public tables, policy can simply return `true`
+
+**Example:**
+```sql
+-- Policy: Users can select only their own queries
+-- Applies to: authenticated users
+-- Rationale: Privacy - users should not see other users' queries
+create policy queries_select_own
+  on queries
+  for select
+  to authenticated
+  using (user_id = auth.uid());
+
+-- Policy: Users can insert queries with their own user_id
+-- Applies to: authenticated users
+-- Rationale: Prevent users from creating queries for other users
+create policy queries_insert_own
+  on queries
+  for insert
+  to authenticated
+  with check (user_id = auth.uid());
+
+-- Policy: Users can delete only their own queries
+-- Applies to: authenticated users
+-- Rationale: Privacy and data ownership
+create policy queries_delete_own
+  on queries
+  for delete
+  to authenticated
+  using (user_id = auth.uid());
+```
+
+### 7. Public Tables (No RLS Needed)
+For tables that should be publicly readable (like `legal_acts`), still enable RLS but create a permissive policy:
+
+```sql
+-- Enable RLS (required)
+alter table legal_acts enable row level security;
+
+-- Policy: Allow public read access to all legal acts
+-- Applies to: anonymous and authenticated users
+-- Rationale: Legal acts are public information
+create policy legal_acts_select_public
+  on legal_acts
+  for select
+  to anon, authenticated
+  using (true);  -- Allow all rows
+```
+
+---
+
+## Table Design Guidelines
+
+### 1. Primary Keys
+- Use `bigserial` for auto-incrementing integer primary keys
+- Use `uuid` for distributed systems or when exposing IDs publicly
+
+**Example:**
+```sql
+create table queries (
+  id bigserial primary key,  -- Internal sequential ID
+  -- OR
+  id uuid primary key default gen_random_uuid(),  -- Distributed UUID
+  ...
+);
+```
+
+### 2. Timestamps
+- Always include `created_at timestamptz not null default now()`
+- Add `updated_at timestamptz not null default now()` if records are mutable
+- Use `timestamptz` (timestamp with timezone) for consistency
+
+### 3. Foreign Keys
+- Always specify `on delete` behavior: `cascade`, `set null`, or `restrict`
+- Add comments explaining the cascade behavior
+
+**Example:**
+```sql
+create table responses (
+  id bigserial primary key,
+  query_id bigint not null references queries(id) on delete cascade,
+  -- ↑ When query is deleted, all responses are also deleted
+  ...
+);
+```
+
+### 4. Check Constraints
+- Use check constraints for data validation
+- Add comments explaining the constraint
+
+**Example:**
+```sql
+create table queries (
+  id bigserial primary key,
+  question text not null check (char_length(question) between 10 and 1000),
+  -- ↑ Validate question length (10-1000 characters)
+  ...
+);
+```
+
+### 5. Unique Constraints
+- Use unique constraints to prevent duplicates
+- Consider composite unique constraints for multi-column uniqueness
+
+**Example:**
+```sql
+create table legal_acts (
+  id bigserial primary key,
+  publisher varchar(50) not null,
+  year integer not null,
+  position integer not null,
+  title text not null,
+  unique(publisher, year, position)  -- Composite unique constraint
+);
+```
+
+---
+
+## Indexes
+
+### 1. Foreign Key Indexes
+- **Always** create indexes on foreign key columns
+- Improves JOIN performance significantly
+
+**Example:**
+```sql
+create index idx_responses_query_id on responses(query_id);
+create index idx_ratings_response_id on ratings(response_id);
+```
+
+### 2. Query Optimization Indexes
+- Create indexes for columns frequently used in `where`, `order by`, `group by`
+- Use descending index for `created_at` if sorting by newest first
+
+**Example:**
+```sql
+create index idx_queries_user_id on queries(user_id);
+create index idx_queries_created_at on queries(created_at desc);
+```
+
+### 3. Full-Text Search Indexes
+- Use GIN indexes for full-text search on `text` columns
+- Specify language (e.g., `'polish'`) for better search results
+
+**Example:**
+```sql
+create index idx_legal_acts_title_fts
+  on legal_acts
+  using gin (to_tsvector('polish', title));
+```
+
+### 4. pgvector Indexes
+- Use IVFFlat or HNSW indexes for vector similarity search
+- Tune `lists` parameter based on data size (sqrt of total rows)
+
+**Example:**
+```sql
+-- Enable pgvector extension first
+create extension if not exists vector;
+
+-- Create table with vector column
+create table legal_act_chunks (
+  id bigserial primary key,
+  embedding vector(768) not null,  -- 768-dimensional vector
+  ...
+);
+
+-- Create IVFFlat index for similarity search
+create index idx_legal_act_chunks_embedding_ivfflat
+  on legal_act_chunks
+  using ivfflat (embedding vector_cosine_ops)
+  with (lists = 100);
+
+-- Alternative: HNSW index (better accuracy, more memory)
+-- create index idx_legal_act_chunks_embedding_hnsw
+--   on legal_act_chunks
+--   using hnsw (embedding vector_cosine_ops)
+--   with (m = 16, ef_construction = 64);
+```
+
+---
+
+## Triggers
+
+### 1. Auto-Update Timestamp
+Create a reusable function for updating `updated_at` column:
+
+```sql
+-- Function: Update updated_at column on row update
+-- Reusable across all tables
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- Apply trigger to table
+create trigger update_legal_acts_updated_at
+  before update on legal_acts
+  for each row
+  execute function update_updated_at_column();
+```
+
+---
+
+## Migration Order (Important!)
+
+When creating multiple migrations, follow this order:
+
+1. **Extensions** (e.g., `create extension vector;`)
+2. **Tables** (in dependency order: parent tables first)
+3. **Indexes** (after tables are created)
+4. **Triggers** (after tables are created)
+5. **RLS Policies** (after tables are created)
+6. **Seed Data** (optional, in separate migration)
+
+---
+
+## Example: Complete Migration
+
+```sql
+-- Migration: Create queries table with RLS
+-- Purpose: Store user queries for legal assistant
+-- Tables: queries
+-- Dependencies: auth.users (Supabase Auth)
+-- Performance: Index on user_id and created_at for fast lookups
+
+-- Step 1: Create table
+create table queries (
+  id bigserial primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  -- ↑ Cascade delete: when user deleted, their queries are also deleted
+  question text not null check (char_length(question) between 10 and 1000),
+  -- ↑ Validate question length (10-1000 characters)
+  created_at timestamptz not null default now()
+);
+
+-- Step 2: Create indexes
+-- Index on user_id for fast user-specific query lookups
+create index idx_queries_user_id on queries(user_id);
+
+-- Index on created_at (descending) for chronological sorting (newest first)
+create index idx_queries_created_at on queries(created_at desc);
+
+-- Step 3: Enable RLS (required for all tables)
+alter table queries enable row level security;
+
+-- Step 4: Create RLS policies
+
+-- Policy: Users can select only their own queries
+-- Applies to: authenticated users only
+-- Rationale: Privacy - users should not see other users' queries
+create policy queries_select_own
+  on queries
+  for select
+  to authenticated
+  using (user_id = auth.uid());
+
+-- Policy: Users can insert queries with their own user_id
+-- Applies to: authenticated users only
+-- Rationale: Prevent users from creating queries for other users
+create policy queries_insert_own
+  on queries
+  for insert
+  to authenticated
+  with check (user_id = auth.uid());
+
+-- Policy: Users can delete only their own queries
+-- Applies to: authenticated users only
+-- Rationale: Users should be able to delete their own query history
+create policy queries_delete_own
+  on queries
+  for delete
+  to authenticated
+  using (user_id = auth.uid());
+
+-- Note: No update policy needed - queries are immutable in this design
+```
+
+---
+
+## Rollback Strategy
+
+- Every migration should be reversible when possible
+- Create a corresponding "down" migration for complex changes
+- For irreversible migrations (data loss), document clearly
+
+**Example:**
+```sql
+-- Rollback migration: 20250115103000_create_queries_table.sql
+
+-- Drop policies first (dependencies)
+drop policy if exists queries_select_own on queries;
+drop policy if exists queries_insert_own on queries;
+drop policy if exists queries_delete_own on queries;
+
+-- Drop indexes
+drop index if exists idx_queries_user_id;
+drop index if exists idx_queries_created_at;
+
+-- Drop table (WARNING: This will delete all data!)
+drop table if exists queries cascade;
+```
+
+---
+
+## Testing Migrations
+
+Before applying to production:
+
+1. **Test locally** with `supabase db reset` (resets + applies all migrations)
+2. **Check for errors** in migration output
+3. **Verify data integrity** with sample queries
+4. **Test RLS policies** by querying as different users
+5. **Check performance** of indexes with `explain analyze`
+
+---
+
+## Production-Ready Checklist
+
+Before pushing migration to production:
+
+- [ ] Migration file follows naming convention
+- [ ] Header comment documents purpose and impact
+- [ ] All SQL is lowercase for consistency
+- [ ] RLS enabled on all tables (even public ones)
+- [ ] RLS policies are granular (one per operation + role)
+- [ ] Foreign keys have `on delete` behavior specified
+- [ ] Indexes created for foreign keys and frequently queried columns
+- [ ] Check constraints validate data integrity
+- [ ] Triggers created for `updated_at` columns (if applicable)
+- [ ] Comments explain complex logic and design decisions
+- [ ] Tested locally with `supabase db reset`
+- [ ] Rollback strategy documented (if applicable)
