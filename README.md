@@ -75,12 +75,45 @@ Lawyers and legal trainees spend significant time manually searching through leg
 
 ## Getting Started Locally
 
+### Quick Start with Remote Supabase 🚀
+
+If you have Supabase running on a remote server (e.g., `192.168.0.11:8444`):
+
+1. **Install Supabase CLI:**
+   ```powershell
+   scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+   scoop install supabase
+   ```
+
+2. **Configure environment:**
+   ```powershell
+   Copy-Item .env.example .env
+   notepad .env
+   ```
+   - Open Supabase Dashboard: `http://192.168.0.11:8444`
+   - Go to: **Settings** → **API**
+   - Copy credentials to `.env` file
+
+3. **Apply database migrations:**
+   ```powershell
+   .\scripts\apply-migrations.ps1
+   ```
+
+4. **Verify setup:**
+   ```powershell
+   .\scripts\verify-supabase.ps1
+   ```
+
+📖 **Detailed instructions:** See [SETUP_INSTRUCTIONS.md](./SETUP_INSTRUCTIONS.md)
+
+---
+
 ### Prerequisites
 
 - **Node.js** 24.11.0 (see `.nvmrc` for version)
 - **Python** 3.11 or higher
 - **OLLAMA** installed locally ([download](https://ollama.ai/))
-- **Docker** (for local Supabase)
+- **Supabase** (remote or local via Docker)
 - **Supabase CLI** ([installation guide](https://supabase.com/docs/guides/cli))
 
 ### Step 1: Clone the Repository
