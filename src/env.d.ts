@@ -1,5 +1,22 @@
 /// <reference types="astro/client" />
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from './lib/database.types';
+
+/**
+ * Augment Astro global namespace with Supabase client
+ * 
+ * This makes the Supabase client available via `Astro.locals.supabase`
+ * in all Astro pages, layouts, and components.
+ */
+declare global {
+  namespace App {
+    interface Locals {
+      supabase: SupabaseClient<Database>;
+    }
+  }
+}
+
 /**
  * Environment variables type definitions for PrawnikGPT
  * 
@@ -8,9 +25,9 @@
  */
 interface ImportMetaEnv {
   // Public variables (available in browser)
-  readonly PUBLIC_API_BASE_URL?: string;
-  readonly PUBLIC_SUPABASE_URL?: string;
-  readonly PUBLIC_SUPABASE_ANON_KEY?: string;
+  readonly PUBLIC_API_BASE_URL: string;
+  readonly PUBLIC_SUPABASE_URL: string;
+  readonly PUBLIC_SUPABASE_ANON_KEY: string;
 
   // Server-only variables (not exposed to browser)
   readonly SUPABASE_URL?: string;

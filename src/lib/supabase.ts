@@ -6,29 +6,23 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getSupabaseUrl, getSupabaseAnonKey } from './utils';
+import type { Database } from './database.types';
 
 // Get configuration from environment variables
-const supabaseUrl = getSupabaseUrl();
-const supabaseAnonKey = getSupabaseAnonKey();
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
-/**
- * Create Supabase client for browser usage (client-side)
- * Use this in React components and client-side code
- */
-export function createBrowserClient() {
-  return createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl) {
+  throw new Error('PUBLIC_SUPABASE_URL is not set in environment variables');
+}
+
+if (!supabaseAnonKey) {
+  throw new Error('PUBLIC_SUPABASE_ANON_KEY is not set in environment variables');
 }
 
 /**
- * Create Supabase client for server usage (SSR)
- * Use this in Astro pages and server-side code
+ * Supabase client with type-safe database schema
+ * Use this singleton instance throughout the application
  */
-export function createServerClient() {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false, // Don't persist session in SSR
-    },
-  });
-}
+export const supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
