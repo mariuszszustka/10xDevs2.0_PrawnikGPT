@@ -65,14 +65,14 @@ create table legal_act_chunks (
 );
 
 -- trigger function: auto-update content_tsvector on insert/update
--- uses polish text search configuration for proper stemming
--- example: 'konsumenta' → 'konsument' (base form)
+-- uses simple text search configuration (works on all postgresql installations)
+-- note: for proper polish stemming, change 'simple' to 'polish' after installing polish dictionaries
 create or replace function update_legal_act_chunks_tsvector()
 returns trigger as $$
 begin
-  -- generate tsvector from content using polish language configuration
-  -- to_tsvector: parses text, removes stop words, applies stemming
-  new.content_tsvector := to_tsvector('polish', new.content);
+  -- generate tsvector from content using simple text search configuration
+  -- to_tsvector: parses text, removes stop words
+  new.content_tsvector := to_tsvector('simple', new.content);
   return new;
 end;
 $$ language plpgsql;

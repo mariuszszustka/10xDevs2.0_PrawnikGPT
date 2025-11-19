@@ -113,11 +113,10 @@ create index idx_legal_acts_published_date
 
 -- idx_legal_acts_title_fts: full-text search index for titles
 -- gin index: efficient for full-text search queries
--- uses polish text search configuration for proper stemming
--- example: 'konsumenta' matches 'konsument', 'konsumenci', etc.
--- note: if polish dictionaries not installed, will use simple configuration
+-- uses simple text search configuration (works on all postgresql installations)
+-- note: for proper polish stemming, change 'simple' to 'polish' after installing polish dictionaries
 create index idx_legal_acts_title_fts 
-  on legal_acts using gin (to_tsvector('polish', title));
+  on legal_acts using gin (to_tsvector('simple', title));
 
 -- idx_legal_acts_status: speeds up filtering by status
 -- useful for finding only active acts: where status = 'obowiązująca'
