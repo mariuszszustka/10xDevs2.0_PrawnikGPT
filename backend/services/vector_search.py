@@ -51,13 +51,13 @@ async def semantic_search(
     legal_act_ids: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     """
-    Perform semantic search in legal act chunks using pgvector.
+    Perform semantic search in legal act chunks using pgvector RPC.
     
     Args:
-        query_embedding: Query embedding vector (768-dim)
+        query_embedding: Query embedding vector (768 or 1024-dim)
         top_k: Maximum number of results to return
         distance_threshold: Maximum cosine distance (0-2, lower is better)
-        legal_act_ids: Optional filter by legal act IDs
+        legal_act_ids: Optional filter by legal act IDs (not used in RPC version)
         
     Returns:
         List[Dict]: List of matching chunks with metadata:
@@ -82,8 +82,16 @@ async def semantic_search(
     # Validation
     if not query_embedding:
         raise ValueError("query_embedding is required")
-    if len(query_embedding) != 768:
-        raise ValueError(f"Expected 768-dim embedding, got {len(query_embedding)}")
+    
+    # Support both 768-dim and 1024-dim embeddings
+    embedding_dim = len(query_embedding)
+    if embedding_dim not in (768, 1024):
+        raise ValueError(f"Expected 768 or 1024-dim embedding, got {embedding_dim}")
+    
+    # Pad to 1024 if needed (database uses 1024-dim vectors)
+    if embedding_dim == 768:
+        query_embedding = query_embedding + [0.0] * (1024 - 768)
+    
     if top_k < 1:
         raise ValueError("top_k must be >= 1")
     if not (0 <= distance_threshold <= 2):
@@ -92,55 +100,44 @@ async def semantic_search(
     try:
         client = get_supabase()
         
-        # Build query for similarity search
-        # Note: Supabase doesn't directly expose pgvector operators in client library
-        # We'll use RPC function for optimal performance
-        
-        # For now, use direct query with embedding comparison
-        # TODO: Create RPC function `semantic_search_chunks` in Supabase for better performance
-        
-        # Fallback: Manual query with joins
-        query = client.table("legal_act_chunks") \
-            .select("id, legal_act_id, chunk_index, content, legal_acts(id, title, publisher, year, position, status)") \
-            .limit(top_k * 2)  # Fetch more to filter by distance
-        
-        # Apply legal act filter if provided
-        if legal_act_ids:
-            query = query.in_("legal_act_id", legal_act_ids)
-        
-        response = await query.execute()
+        # Use RPC function for pgvector similarity search
+        # This is much faster than client-side filtering
+        response = client.rpc(
+            "semantic_search_chunks",
+            {
+                "query_embedding": query_embedding,
+                "match_count": top_k,
+                "similarity_threshold": distance_threshold
+            }
+        ).execute()
         
         if not response.data:
-            logger.warning("No chunks found in database")
-            raise NoRelevantActsError("No legal act chunks available")
+            logger.warning("No chunks found by semantic search")
+            raise NoRelevantActsError("No relevant legal act chunks found")
         
         chunks = response.data
         
-        # Calculate cosine distance for each chunk
-        # Note: This is a temporary solution. In production, use pgvector operators
-        # For now, we'll simulate distance (placeholder)
-        # TODO: Implement proper pgvector similarity search via RPC
-        
-        # Filter by distance threshold
-        filtered_chunks = []
+        # Transform RPC response to expected format
+        results = []
         for chunk in chunks:
-            # Placeholder: Set random distance for testing
-            # In real implementation, this would be calculated by pgvector
-            chunk["distance"] = 0.3  # Placeholder
-            
-            if chunk["distance"] < distance_threshold:
-                # Flatten legal_acts nested structure
-                if "legal_acts" in chunk and chunk["legal_acts"]:
-                    chunk["legal_act"] = chunk["legal_acts"][0]
-                    del chunk["legal_acts"]
-                
-                filtered_chunks.append(chunk)
-        
-        # Sort by distance (ascending - lower is better)
-        filtered_chunks.sort(key=lambda x: x["distance"])
-        
-        # Take top_k results
-        results = filtered_chunks[:top_k]
+            result = {
+                "id": chunk["id"],
+                "legal_act_id": chunk["legal_act_id"],
+                "chunk_index": chunk["chunk_index"],
+                "content": chunk["content"],
+                "metadata": chunk.get("metadata"),
+                "distance": chunk["distance"],
+                # Nested legal_act structure for compatibility
+                "legal_act": {
+                    "id": chunk["legal_act_id"],
+                    "title": chunk["act_title"],
+                    "publisher": chunk["act_publisher"],
+                    "year": chunk["act_year"],
+                    "position": chunk["act_position"],
+                    "status": chunk["act_status"]
+                }
+            }
+            results.append(result)
         
         if len(results) < MIN_RESULTS_REQUIRED:
             logger.warning(
@@ -217,10 +214,10 @@ async def fetch_related_acts(
     relation_types: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     """
-    Fetch related legal acts using graph traversal.
+    Fetch related legal acts using graph traversal RPC.
     
-    Uses recursive query to find acts related to seed acts
-    up to specified depth.
+    Uses recursive CTE in database to find acts related to seed acts
+    up to specified depth with cycle detection.
     
     Args:
         act_ids: Seed legal act IDs
@@ -229,15 +226,20 @@ async def fetch_related_acts(
             ("modifies", "repeals", "implements", "based_on", "amends")
             
     Returns:
-        List[Dict]: List of related acts with relation metadata
-        
+        List[Dict]: List of related acts with relation metadata:
+            - id: Act ID (UUID)
+            - title: Act title
+            - publisher: Publisher (e.g., "Dz.U.")
+            - year: Publication year
+            - position: Position number
+            - status: Act status
+            - published_date: Publication date
+            - relation_type: Type of relation to seed act
+            - depth: Graph traversal depth
+            
     Raises:
         ValueError: If parameters invalid
         RuntimeError: If operation fails
-        
-    Note:
-        Uses RPC function `fetch_related_acts` in Supabase for optimal performance.
-        If RPC not available, falls back to manual queries.
         
     Example:
         ```python
@@ -262,46 +264,44 @@ async def fetch_related_acts(
     try:
         client = get_supabase()
         
-        # TODO: Create RPC function `fetch_related_acts` in Supabase
-        # For now, use simple query to get directly related acts (depth=1)
+        # Use RPC function for optimized graph traversal
+        rpc_params = {
+            "seed_act_ids": act_ids,
+            "max_depth": depth
+        }
         
-        # Query legal_act_relations table
-        query = client.table("legal_act_relations") \
-            .select("id, source_act_id, target_act_id, relation_type, description, created_at") \
-            .or_(f"source_act_id.in.({','.join(act_ids)}),target_act_id.in.({','.join(act_ids)})")
-        
+        # Add relation_types filter if provided
         if relation_types:
-            query = query.in_("relation_type", relation_types)
+            rpc_params["relation_types"] = relation_types
         
-        response = await query.execute()
+        response = client.rpc("fetch_related_acts", rpc_params).execute()
         
-        relations = response.data or []
+        related_acts = response.data or []
         
-        # Extract unique related act IDs
-        related_act_ids = set()
-        for rel in relations:
-            if rel["source_act_id"] not in act_ids:
-                related_act_ids.add(rel["source_act_id"])
-            if rel["target_act_id"] not in act_ids:
-                related_act_ids.add(rel["target_act_id"])
-        
-        # Fetch act details for related acts
-        if related_act_ids:
-            acts_response = await client.table("legal_acts") \
-                .select("id, title, publisher, year, position, status, published_date") \
-                .in_("id", list(related_act_ids)) \
-                .execute()
-            
-            related_acts = acts_response.data or []
-        else:
-            related_acts = []
+        # Transform RPC response to expected format
+        results = []
+        for act in related_acts:
+            result = {
+                "id": act["act_id"],
+                "title": act["title"],
+                "publisher": act["publisher"],
+                "year": act["year"],
+                "position": act["position"],
+                "status": act["status"],
+                "published_date": act.get("published_date"),
+                "relation_type": act.get("relation_type"),
+                "relation_description": act.get("relation_description"),
+                "source_act_id": act.get("source_act_id"),
+                "depth": act.get("depth", 1)
+            }
+            results.append(result)
         
         logger.info(
-            f"Found {len(related_acts)} related acts for {len(act_ids)} seed acts "
+            f"Found {len(results)} related acts for {len(act_ids)} seed acts "
             f"(depth={depth})"
         )
         
-        return related_acts
+        return results
         
     except APIError as e:
         logger.error(f"Database error fetching related acts: {e}")

@@ -39,3 +39,49 @@
 
 ---
 
+## 2. Submit Query - RAG Pipeline (02-submit-query.md) 🔄
+
+**Data rozpoczęcia:** 2025-12-01  
+**Status:** W TRAKCIE (infrastruktura bazy danych)
+
+### Zaimplementowane komponenty (wcześniej):
+
+| Plik | Opis | Status |
+|------|------|--------|
+| `backend/models/query.py` | Modele Pydantic (QuerySubmitRequest, QueryDetailResponse, etc.) | ✅ |
+| `backend/services/rag_pipeline.py` | Orkiestracja RAG (9 kroków) | ✅ |
+| `backend/services/llm_service.py` | Generowanie tekstu z OLLAMA | ✅ |
+| `backend/services/ollama_service.py` | Embeddings generation | ✅ |
+| `backend/services/exceptions.py` | Custom exceptions | ✅ |
+| `backend/db/queries.py` | Query repository | ✅ |
+| `backend/routers/queries.py` | Endpoints queries | ✅ |
+
+### Nowe komponenty (2025-12-01):
+
+| Plik | Opis |
+|------|------|
+| `supabase/migrations/20251201130000_create_semantic_search_function.sql` | RPC `semantic_search_chunks` - pgvector similarity search |
+| `supabase/migrations/20251201130100_create_fetch_related_acts_function.sql` | RPC `fetch_related_acts` - recursive graph traversal |
+| `backend/services/vector_search.py` | Zaktualizowany do użycia RPC (usunięte placeholdery) |
+| `backend/tests/test_vector_search.py` | 20+ testów jednostkowych dla vector search |
+
+### Funkcje RPC w Supabase:
+
+1. **`semantic_search_chunks(query_embedding, match_count, similarity_threshold)`**
+   - Wyszukiwanie semantyczne przez pgvector
+   - Cosine distance z IVFFlat index
+   - Target: <200ms dla 500k wektorów
+
+2. **`fetch_related_acts(seed_act_ids, max_depth, relation_types)`**
+   - Rekursywne CTE dla BFS graph traversal
+   - Bidirectional relations (incoming + outgoing)
+   - Detekcja cykli, deduplikacja
+
+### Do zrobienia:
+
+- [ ] Uruchomić testy i zweryfikować działanie
+- [ ] Testy integracyjne z rzeczywistym OLLAMA
+- [ ] Optymalizacja wydajności (<15s dla fast response)
+
+---
+
