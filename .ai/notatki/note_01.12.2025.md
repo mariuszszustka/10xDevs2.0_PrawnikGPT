@@ -96,3 +96,44 @@
 
 ---
 
+## 3. Query Management (03-05-query-management.md) ✅
+
+**Data implementacji:** 2025-12-01  
+**Status:** UKOŃCZONY
+
+### Endpointy:
+
+| Endpoint | Opis | Status |
+|----------|------|--------|
+| `GET /api/v1/queries` | Lista zapytań z paginacją | ✅ |
+| `GET /api/v1/queries/{query_id}` | Szczegóły zapytania | ✅ |
+| `DELETE /api/v1/queries/{query_id}` | Usunięcie zapytania | ✅ |
+| `POST /api/v1/queries/{query_id}/accurate-response` | Żądanie dokładnej odpowiedzi | ✅ |
+
+### Naprawione problemy:
+
+1. **Router `get_queries`** - poprawiono mapowanie danych z bazy do modeli Pydantic
+   - Dodano `QueryListItemFastResponse` i `QueryListItemAccurateResponse`
+   - Poprawiono liczenie źródeł (`sources_count`)
+   
+2. **Router `get_query`** - naprawiono logikę statusu
+   - Status określany z obecności `fast_response_content` (nie z nieistniejącego pola)
+   - Poprawiono mapowanie `rating_value` → `value` w `RatingDetail`
+   - Poprawiono parsowanie JSONB sources
+
+### Testy:
+
+| Plik | Testy | Status |
+|------|-------|--------|
+| `backend/tests/test_query_endpoints.py` | 23 testy | ✅ PASS |
+
+### Kategorie testów:
+- List queries (6 testów)
+- Get query details (3 testy)
+- Delete query (2 testy)
+- Request accurate response (4 testy)
+- Query repository (4 testy)
+- Pydantic models (4 testy)
+
+---
+

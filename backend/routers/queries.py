@@ -22,6 +22,8 @@ from backend.models.query import (
     QueryDetailResponse,
     QueryListResponse,
     QueryListItem,
+    QueryListItemFastResponse,
+    QueryListItemAccurateResponse,
     AccurateResponseSubmitResponse,
     FastResponseDetail,
     AccurateResponseDetail,
@@ -221,16 +223,34 @@ async def get_queries(
         )
         
         # Transform to QueryListItem format
-        query_items = [
-            QueryListItem(
+        query_items = []
+        for q in queries:
+            # Build fast response summary
+            fast_response = QueryListItemFastResponse(
+                content=q.get("fast_response_content", "")[:200] + "..." if q.get("fast_response_content") and len(q.get("fast_response_content", "")) > 200 else q.get("fast_response_content", ""),
+                model_name=q.get("fast_model_name", "unknown"),
+                generation_time_ms=q.get("fast_generation_time_ms", 0),
+                sources_count=len(q.get("sources", []) if q.get("sources") else []),
+                rating=None  # Will be populated if rating exists
+            )
+            
+            # Build accurate response summary (if exists)
+            accurate_response = None
+            if q.get("accurate_response_content"):
+                accurate_response = QueryListItemAccurateResponse(
+                    exists=True,
+                    model_name=q.get("accurate_model_name"),
+                    generation_time_ms=q.get("accurate_generation_time_ms"),
+                    rating=None
+                )
+            
+            query_items.append(QueryListItem(
                 query_id=q["id"],
                 query_text=q["query_text"],
-                fast_response_status=q.get("fast_response_status", "pending"),
-                accurate_response_status=q.get("accurate_response_status"),
-                created_at=q["created_at"]
-            )
-            for q in queries
-        ]
+                created_at=q["created_at"],
+                fast_response=fast_response,
+                accurate_response=accurate_response
+            ))
         
         logger.info(
             f"Listed {len(query_items)} queries for user {user_id} "
@@ -309,41 +329,54 @@ async def get_query(
         ratings_map = {}
         for r in ratings_data:
             ratings_map[r["response_type"]] = RatingDetail(
+                value=r["rating_value"],  # Map db column to model field
                 rating_id=r["id"],
-                rating_value=r["rating_value"],
                 created_at=r["created_at"]
             )
         
+        # Determine fast response status from content
+        fast_status = "completed" if query.get("fast_response_content") else "pending"
+        
+        # Parse sources from JSONB
+        sources_data = query.get("sources")
+        sources_list = None
+        if sources_data:
+            if isinstance(sources_data, list):
+                sources_list = sources_data
+            elif isinstance(sources_data, str):
+                import json
+                try:
+                    sources_list = json.loads(sources_data)
+                except json.JSONDecodeError:
+                    sources_list = None
+        
         # Build fast response detail
         fast_response = FastResponseDetail(
-            status=query.get("fast_response_status", "pending"),
+            status=fast_status,
             content=query.get("fast_response_content"),
             model_name=query.get("fast_model_name"),
             generation_time_ms=query.get("fast_generation_time_ms"),
-            sources=query.get("fast_sources") if query.get("fast_sources") else None,
+            sources=sources_list,
             rating=ratings_map.get("fast")
         )
         
+        # Determine accurate response status from content
+        accurate_status = "completed" if query.get("accurate_response_content") else None
+        
         # Build accurate response detail (if exists)
         accurate_response = None
-        if query.get("accurate_response_status"):
+        if accurate_status:
             accurate_response = AccurateResponseDetail(
-                status=query["accurate_response_status"],
+                status=accurate_status,
                 content=query.get("accurate_response_content"),
                 model_name=query.get("accurate_model_name"),
                 generation_time_ms=query.get("accurate_generation_time_ms"),
-                sources=query.get("accurate_sources") if query.get("accurate_sources") else None,
+                sources=sources_list,  # Reuse same sources
                 rating=ratings_map.get("accurate")
             )
         
         # Determine overall status
-        overall_status = "pending"
-        if fast_response.status == "completed":
-            overall_status = "completed"
-        elif fast_response.status == "processing":
-            overall_status = "processing"
-        elif fast_response.status == "failed":
-            overall_status = "failed"
+        overall_status = fast_status
         
         # Build response
         response = QueryDetailResponse(
