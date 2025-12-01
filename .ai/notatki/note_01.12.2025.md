@@ -77,11 +77,22 @@
    - Bidirectional relations (incoming + outgoing)
    - Detekcja cykli, deduplikacja
 
+### Testy jednostkowe (2025-12-01):
+
+| Plik | Testy | Status |
+|------|-------|--------|
+| `backend/tests/test_vector_search.py` | 21 testów | ✅ PASS |
+| `backend/tests/test_rag_pipeline.py` | 16 testów | ✅ PASS |
+| `backend/tests/test_llm_service.py` | 21 testów | ✅ PASS |
+| `backend/tests/test_ollama_service.py` | 18 testów | ✅ PASS |
+| **SUMA** | **76 testów** | ✅ **ALL PASS** |
+
 ### Do zrobienia:
 
-- [ ] Uruchomić testy i zweryfikować działanie
+- [x] ~~Uruchomić testy i zweryfikować działanie~~
 - [ ] Testy integracyjne z rzeczywistym OLLAMA
 - [ ] Optymalizacja wydajności (<15s dla fast response)
+- [ ] Uruchomić migracje na Supabase (`supabase db push`)
 
 ---
 
