@@ -171,3 +171,40 @@
 
 ---
 
+## 5. Legal Acts Management (08-legal-acts.md) ✅
+
+**Data implementacji:** 2025-12-01  
+**Status:** UKOŃCZONY
+
+### Endpointy:
+
+| Endpoint | Opis | Status |
+|----------|------|--------|
+| `GET /api/v1/legal-acts` | Lista aktów z filtrowaniem i FTS | ✅ |
+| `GET /api/v1/legal-acts/{act_id}` | Szczegóły aktu ze statystykami | ✅ |
+| `GET /api/v1/legal-acts/{act_id}/relations` | Graf relacji między aktami | ✅ |
+
+### Funkcje:
+
+- **Full-text search (FTS)** na tytułach aktów (GIN index)
+- **Filtry:** status, publisher, year, order_by, order
+- **Paginacja:** page, per_page (max 100)
+- **Statystyki:** total_chunks, related_acts_count
+- **Graf relacji:** outgoing/incoming z depth 1-2
+- **Publiczne endpointy:** brak wymaganej autentykacji
+
+### Testy:
+
+| Plik | Testy | Status |
+|------|-------|--------|
+| `backend/tests/test_legal_acts_endpoints.py` | 20 testów | ✅ PASS |
+
+### Kategorie testów:
+- List legal acts (6 testów)
+- Get legal act details (2 testy)
+- Get relations (4 testy)
+- Repository (3 testy)
+- Pydantic models (5 testów)
+
+---
+
