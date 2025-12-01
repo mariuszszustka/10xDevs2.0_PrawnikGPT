@@ -137,3 +137,37 @@
 
 ---
 
+## 4. Rating System (07-ratings.md) ✅
+
+**Data implementacji:** 2025-12-01  
+**Status:** UKOŃCZONY
+
+### Endpointy:
+
+| Endpoint | Opis | Status |
+|----------|------|--------|
+| `POST /api/v1/queries/{query_id}/ratings` | Utwórz/zaktualizuj ocenę | ✅ |
+| `GET /api/v1/queries/{query_id}/ratings` | Lista ocen zapytania | ✅ |
+| `DELETE /api/v1/ratings/{rating_id}` | Usuń ocenę | ✅ |
+
+### Nowe migracje:
+
+| Plik | Opis |
+|------|------|
+| `20251201140000_add_unique_rating_constraint.sql` | Unique index na (query_id, user_id, response_type) |
+
+### Testy:
+
+| Plik | Testy | Status |
+|------|-------|--------|
+| `backend/tests/test_rating_endpoints.py` | 21 testów | ✅ PASS |
+
+### Kategorie testów:
+- Create/Update rating (5 testów)
+- List ratings (3 testy)
+- Delete rating (3 testy)
+- Repository (4 testy)
+- Pydantic models (6 testów)
+
+---
+
