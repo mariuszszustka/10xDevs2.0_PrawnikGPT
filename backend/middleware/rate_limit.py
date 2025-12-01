@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # Rate limits (requests per minute)
 RATE_LIMIT_PER_USER = settings.rate_limit_per_user  # 10 req/min
 RATE_LIMIT_PER_IP = settings.rate_limit_per_ip      # 30 req/min
+RATE_LIMIT_HEALTH_PER_IP = settings.rate_limit_health_per_ip  # 60 req/min for health
 
 # Window size for sliding window algorithm
 WINDOW_SIZE_SECONDS = 60  # 1 minute
@@ -250,6 +251,52 @@ async def check_rate_limit(request: Request):
         )
     
     logger.debug(f"Rate limit check passed: {key} ({requests_made}/{limit})")
+
+
+async def check_rate_limit_health(request: Request):
+    """
+    FastAPI dependency: Check rate limit specifically for health endpoint.
+    
+    Uses higher limit (60 req/min) since health checks are typically
+    called frequently by load balancers and monitoring systems.
+    
+    Args:
+        request: FastAPI request object
+        
+    Raises:
+        HTTPException: 429 if rate limit exceeded
+    """
+    # Health endpoint uses IP-based limiting only (no auth)
+    client_ip = request.client.host if request.client else "unknown"
+    key = f"health:{client_ip}"
+    limit = RATE_LIMIT_HEALTH_PER_IP
+    
+    # Check rate limit
+    is_allowed, requests_made, retry_after = rate_limiter.check_rate_limit(
+        key=key,
+        limit=limit,
+        window_seconds=WINDOW_SIZE_SECONDS
+    )
+    
+    # Add rate limit headers
+    remaining = max(0, limit - requests_made)
+    request.state.rate_limit_remaining = remaining
+    request.state.rate_limit_limit = limit
+    
+    if not is_allowed:
+        logger.warning(f"Health rate limit exceeded: {key} ({requests_made}/{limit})")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Rate limit exceeded. Retry after {retry_after} seconds.",
+            headers={
+                "X-RateLimit-Limit": str(limit),
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": str(int(time.time()) + retry_after),
+                "Retry-After": str(retry_after)
+            }
+        )
+    
+    logger.debug(f"Health rate limit check passed: {key} ({requests_made}/{limit})")
 
 
 # =========================================================================

@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     
     rate_limit_per_user: int = 10  # requests per minute
     rate_limit_per_ip: int = 30    # requests per minute
+    rate_limit_health_per_ip: int = 60  # requests per minute for health endpoint
     
     # =========================================================================
     # CORS CONFIGURATION

@@ -57,7 +57,10 @@ class SupabaseClient:
     @classmethod
     async def health_check(cls, timeout_seconds: int = 2) -> bool:
         """
-        Perform database health check using simple SELECT query.
+        Perform database health check using RPC function.
+        
+        Uses the health_check() RPC function created in Supabase migration.
+        Falls back to simple table check if RPC is not available.
         
         Args:
             timeout_seconds: Maximum time to wait for response
@@ -68,9 +71,20 @@ class SupabaseClient:
         try:
             client = cls.get_client()
             
-            # Execute simple query: SELECT 1
-            # This is the fastest way to check database connectivity
-            response = await client.rpc('health_check').execute()
+            # Try RPC health_check first (fastest method)
+            try:
+                response = client.rpc('health_check').execute()
+                
+                # RPC returns True if database is healthy
+                if response.data is True:
+                    logger.debug("Database health check via RPC: OK")
+                    return True
+                    
+            except APIError as rpc_error:
+                # RPC might not exist yet (migration not applied)
+                # Fall back to simple check
+                logger.debug(f"RPC health_check not available: {rpc_error}")
+                return await cls.health_check_simple()
             
             # If we got here without exception, database is healthy
             return True

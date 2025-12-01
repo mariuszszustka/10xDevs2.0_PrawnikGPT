@@ -7,15 +7,17 @@ Public endpoint for monitoring system health and service availability.
 Used by load balancers, monitoring systems, and DevOps tools.
 
 No authentication required.
+Rate limited: 60 requests per minute per IP.
 """
 
 import logging
 from datetime import datetime
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 from backend.models.health import HealthResponse, ServiceHealthStatus
 from backend.services.health_check import perform_health_check
+from backend.middleware.rate_limit import check_rate_limit_health
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -24,10 +26,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="",  # No prefix - endpoint is at root level
     tags=["health"],
+    dependencies=[Depends(check_rate_limit_health)],  # Rate limit: 60 req/min per IP
     responses={
         200: {
             "description": "System is operational (ok or degraded)",
             "model": HealthResponse
+        },
+        429: {
+            "description": "Rate limit exceeded"
         },
         503: {
             "description": "System is down (all services unavailable)",

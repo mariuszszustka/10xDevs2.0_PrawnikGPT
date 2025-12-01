@@ -16,6 +16,7 @@ from backend.middleware.auth import (
 )
 from backend.middleware.rate_limit import (
     check_rate_limit,
+    check_rate_limit_health,
     add_rate_limit_headers
 )
 from backend.middleware.error_handler import (
@@ -30,6 +31,7 @@ __all__ = [
     "create_test_token",
     # Rate Limiting
     "check_rate_limit",
+    "check_rate_limit_health",
     "add_rate_limit_headers",
     # Error Handling
     "register_error_handlers",

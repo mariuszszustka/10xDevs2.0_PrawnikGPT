@@ -10,8 +10,7 @@ from fastapi import APIRouter
 
 from backend.models.onboarding import (
     ExampleQuestionsResponse,
-    ExampleQuestion,
-    QuestionCategory
+    ExampleQuestion
 )
 
 logger = logging.getLogger(__name__)
@@ -27,110 +26,110 @@ router = APIRouter(
 EXAMPLE_QUESTIONS = [
     # Consumer Rights (5 questions)
     ExampleQuestion(
-        id="q1",
+        id=1,
         question="Jakie mam prawa jako konsument przy zakupie wadliwego produktu?",
-        category=QuestionCategory.CONSUMER_RIGHTS
+        category="consumer_rights"
     ),
     ExampleQuestion(
-        id="q2",
+        id=2,
         question="Czy mogę odstąpić od umowy zakupu online w ciągu 14 dni?",
-        category=QuestionCategory.CONSUMER_RIGHTS
+        category="consumer_rights"
     ),
     ExampleQuestion(
-        id="q3",
+        id=3,
         question="Jak reklamować usługę, która nie została wykonana zgodnie z umową?",
-        category=QuestionCategory.CONSUMER_RIGHTS
+        category="consumer_rights"
     ),
     ExampleQuestion(
-        id="q4",
+        id=4,
         question="Jakie są moje prawa przy opóźnieniu w dostawie zamówionego towaru?",
-        category=QuestionCategory.CONSUMER_RIGHTS
+        category="consumer_rights"
     ),
     ExampleQuestion(
-        id="q5",
+        id=5,
         question="Czy sprzedawca może odmówić zwrotu pieniędzy za wadliwy produkt?",
-        category=QuestionCategory.CONSUMER_RIGHTS
+        category="consumer_rights"
     ),
     
     # Civil Law (5 questions)
     ExampleQuestion(
-        id="q6",
+        id=6,
         question="Jakie są warunki ważności umowy sprzedaży nieruchomości?",
-        category=QuestionCategory.CIVIL_LAW
+        category="civil_law"
     ),
     ExampleQuestion(
-        id="q7",
+        id=7,
         question="Czy mogę wypowiedzieć umowę najmu mieszkania przed terminem?",
-        category=QuestionCategory.CIVIL_LAW
+        category="civil_law"
     ),
     ExampleQuestion(
-        id="q8",
+        id=8,
         question="Jak długo trwa przedawnienie roszczeń z tytułu umowy?",
-        category=QuestionCategory.CIVIL_LAW
+        category="civil_law"
     ),
     ExampleQuestion(
-        id="q9",
+        id=9,
         question="Jakie są konsekwencje niewykonania zobowiązania umownego?",
-        category=QuestionCategory.CIVIL_LAW
+        category="civil_law"
     ),
     ExampleQuestion(
-        id="q10",
+        id=10,
         question="Czy można dochodzić odszkodowania za naruszenie dóbr osobistych?",
-        category=QuestionCategory.CIVIL_LAW
+        category="civil_law"
     ),
     
     # Labor Law (5 questions)
     ExampleQuestion(
-        id="q11",
+        id=11,
         question="Jakie są okresy wypowiedzenia umowy o pracę na czas nieokreślony?",
-        category=QuestionCategory.LABOR_LAW
+        category="labor_law"
     ),
     ExampleQuestion(
-        id="q12",
+        id=12,
         question="Czy pracodawca może zwolnić pracownika w czasie zwolnienia lekarskiego?",
-        category=QuestionCategory.LABOR_LAW
+        category="labor_law"
     ),
     ExampleQuestion(
-        id="q13",
+        id=13,
         question="Ile wynosi minimalne wynagrodzenie za urlop wypoczynkowy?",
-        category=QuestionCategory.LABOR_LAW
+        category="labor_law"
     ),
     ExampleQuestion(
-        id="q14",
+        id=14,
         question="Jakie są zasady rozliczania czasu pracy w godzinach nadliczbowych?",
-        category=QuestionCategory.LABOR_LAW
+        category="labor_law"
     ),
     ExampleQuestion(
-        id="q15",
+        id=15,
         question="Czy mogę odmówić wykonania polecenia służbowego?",
-        category=QuestionCategory.LABOR_LAW
+        category="labor_law"
     ),
     
     # Criminal Law (5 questions)
     ExampleQuestion(
-        id="q16",
+        id=16,
         question="Jakie są granice obrony koniecznej w prawie karnym?",
-        category=QuestionCategory.CRIMINAL_LAW
+        category="criminal_law"
     ),
     ExampleQuestion(
-        id="q17",
+        id=17,
         question="Kiedy przestępstwo ulega przedawnieniu?",
-        category=QuestionCategory.CRIMINAL_LAW
+        category="criminal_law"
     ),
     ExampleQuestion(
-        id="q18",
+        id=18,
         question="Jakie są różnice między kradzieżą a przywłaszczeniem?",
-        category=QuestionCategory.CRIMINAL_LAW
+        category="criminal_law"
     ),
     ExampleQuestion(
-        id="q19",
+        id=19,
         question="Czy można umorzyć postępowanie karne warunkowo?",
-        category=QuestionCategory.CRIMINAL_LAW
+        category="criminal_law"
     ),
     ExampleQuestion(
-        id="q20",
+        id=20,
         question="Jakie są kary za prowadzenie pojazdu pod wpływem alkoholu?",
-        category=QuestionCategory.CRIMINAL_LAW
+        category="criminal_law"
     ),
 ]
 
@@ -176,6 +175,6 @@ async def get_example_questions():
     logger.info("Fetching example questions for onboarding")
     
     return ExampleQuestionsResponse(
-        questions=EXAMPLE_QUESTIONS
+        examples=EXAMPLE_QUESTIONS
     )
 
