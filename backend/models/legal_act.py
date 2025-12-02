@@ -79,20 +79,9 @@ class LegalActReference(BaseModel):
         ...,
         description="Full title of legal act"
     )
-    publisher: str = Field(
+    typ_aktu: str = Field(
         ...,
-        description="Publisher (e.g., 'Dz.U.')"
-    )
-    year: int = Field(
-        ...,
-        ge=1918,
-        le=2100,
-        description="Publication year"
-    )
-    position: int = Field(
-        ...,
-        ge=1,
-        description="Position number in publisher's journal"
+        description="Type of act (ustawa, rozporządzenie, etc.)"
     )
     status: LegalActStatus = Field(
         ...,
@@ -104,9 +93,7 @@ class LegalActReference(BaseModel):
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "title": "Ustawa z dnia 23 kwietnia 1964 r. - Kodeks cywilny",
-                "publisher": "Dz.U.",
-                "year": 1964,
-                "position": 16,
+                "typ_aktu": "Ustawa",
                 "status": "obowiazujacy"
             }
         }

@@ -23,7 +23,7 @@ passlib[bcrypt]>=1.7.4
 # OLLAMA / LLM
 ollama>=0.4.0
 
-# Redis (optional, for caching)
+# For caching RAG context
 redis>=5.2.0
 
 # Database

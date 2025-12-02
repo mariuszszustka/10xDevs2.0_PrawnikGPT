@@ -131,16 +131,16 @@ async def list_legal_acts(
         # Transform to response format
         legal_acts = [
             LegalActListItem(
-                act_id=act["id"],
+                id=act["id"],
                 title=act["title"],
-                act_type=act["act_type"],
+                typ_aktu=act["typ_aktu"] if "typ_aktu" in act else act.get("act_type", "ustawa"),
                 publisher=act["publisher"],
                 year=act["year"],
-                number=act["number"],
+                position=act["position"] if "position" in act else act.get("number", 0),
                 status=act["status"],
+                organ_wydajacy=act.get("organ_wydajacy"),
                 published_date=act["published_date"],
                 effective_date=act.get("effective_date"),
-                isap_id=act.get("isap_id"),
                 created_at=act["created_at"]
             )
             for act in acts_data
@@ -226,19 +226,16 @@ async def get_legal_act(act_id: str):
         
         # Transform to response format
         response = LegalActDetailResponse(
-            act_id=act_data["id"],
+            id=act_data["id"],
             title=act_data["title"],
-            act_type=act_data["act_type"],
+            typ_aktu=act_data["typ_aktu"],
             publisher=act_data["publisher"],
             year=act_data["year"],
-            number=act_data["number"],
+            position=act_data["position"],
             status=act_data["status"],
+            organ_wydajacy=act_data.get("organ_wydajacy"),
             published_date=act_data["published_date"],
             effective_date=act_data.get("effective_date"),
-            repeal_date=act_data.get("repeal_date"),
-            isap_id=act_data.get("isap_id"),
-            eli=act_data.get("eli"),
-            keywords=act_data.get("keywords"),
             stats=LegalActStats(
                 total_chunks=act_data["stats"]["total_chunks"],
                 related_acts_count=act_data["stats"]["related_acts_count"]
@@ -332,13 +329,13 @@ async def get_legal_act_relations(
             OutgoingRelation(
                 relation_id=r["id"],
                 target_act=LegalActReference(
-                    act_id=r["target_act"]["id"],
+                    id=r["target_act"]["id"],
                     title=r["target_act"]["title"],
-                    act_type=r["target_act"]["act_type"],
+                    typ_aktu=r["target_act"]["typ_aktu"] if "typ_aktu" in r["target_act"] else r["target_act"].get("act_type", "ustawa"),
                     status=r["target_act"]["status"]
                 ),
                 relation_type=r["relation_type"],
-                article_reference=r.get("article_reference"),
+                description=r.get("article_reference") or "",
                 created_at=r["created_at"]
             )
             for r in relations_data["outgoing"]
@@ -349,13 +346,13 @@ async def get_legal_act_relations(
             IncomingRelation(
                 relation_id=r["id"],
                 source_act=LegalActReference(
-                    act_id=r["source_act"]["id"],
+                    id=r["source_act"]["id"],
                     title=r["source_act"]["title"],
-                    act_type=r["source_act"]["act_type"],
+                    typ_aktu=r["source_act"]["typ_aktu"] if "typ_aktu" in r["source_act"] else r["source_act"].get("act_type", "ustawa"),
                     status=r["source_act"]["status"]
                 ),
                 relation_type=r["relation_type"],
-                article_reference=r.get("article_reference"),
+                description=r.get("article_reference") or "",
                 created_at=r["created_at"]
             )
             for r in relations_data["incoming"]

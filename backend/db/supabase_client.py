@@ -8,9 +8,11 @@ The client is configured via environment variables (see config.py).
 """
 
 import logging
+import os
 from typing import Optional
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
 from postgrest.exceptions import APIError
+import httpx
 
 from backend.config import settings
 
@@ -43,11 +45,22 @@ class SupabaseClient:
         """
         if cls._instance is None:
             try:
+                # For self-signed certificates (common in local/dev environments),
+                # disable SSL verification if SUPABASE_VERIFY_SSL is set to false
+                verify_ssl = os.getenv("SUPABASE_VERIFY_SSL", "true").lower() != "false"
+                
+                # Create HTTP client with SSL verification setting
+                httpx_client = httpx.Client(verify=verify_ssl, timeout=30.0)
+                
+                # Create client options with httpx_client parameter
+                client_options = ClientOptions(httpx_client=httpx_client)
+                
                 cls._instance = create_client(
                     supabase_url=settings.supabase_url,
-                    supabase_key=settings.supabase_service_key
+                    supabase_key=settings.supabase_service_key,
+                    options=client_options
                 )
-                logger.info(f"Supabase client initialized: {settings.supabase_url}")
+                logger.info(f"Supabase client initialized: {settings.supabase_url} (SSL verify: {verify_ssl})")
             except Exception as e:
                 logger.error(f"Failed to initialize Supabase client: {e}")
                 raise RuntimeError(f"Supabase initialization failed: {e}") from e
@@ -142,12 +155,11 @@ def get_supabase() -> Client:
 async def check_database_health(timeout_seconds: int = 2) -> bool:
     """
     Standalone function for database health check.
-    
+
     Args:
         timeout_seconds: Maximum time to wait for response
-        
+
     Returns:
         bool: True if database is healthy, False otherwise
     """
-    return await SupabaseClient.health_check_simple()
-
+    return await SupabaseClient.health_check(timeout_seconds=timeout_seconds)

@@ -141,7 +141,7 @@ async def list_queries(
     order: str = "desc"
 ) -> tuple[List[Dict[str, Any]], int]:
     """
-    List queries for user with pagination.
+    List queries for user with pagination using RPC function.
     
     Args:
         user_id: User ID
@@ -167,33 +167,34 @@ async def list_queries(
     try:
         client = get_supabase()
         
-        # Calculate offset
-        offset = (page - 1) * per_page
-        
-        # Build query
-        query = client.table("query_history") \
-            .select("*", count="exact") \
-            .eq("user_id", user_id) \
-            .order("created_at", desc=(order == "desc")) \
-            .range(offset, offset + per_page - 1)
-        
-        response = await query.execute()
+        # Call the RPC function
+        response = await client.rpc(
+            "list_user_queries",
+            {
+                "p_user_id": user_id,
+                "p_page": page,
+                "p_per_page": per_page,
+                "p_order": order,
+            },
+        ).execute()
         
         queries = response.data or []
-        total_count = response.count or 0
+        
+        # Get total count from the first record if it exists
+        total_count = queries[0].get("total_count", 0) if queries else 0
         
         logger.info(
-            f"Listed queries for user {user_id}: "
+            f"Listed queries for user {user_id} via RPC: "
             f"{len(queries)} items (page {page}, total {total_count})"
         )
         
         return queries, total_count
         
     except APIError as e:
-        logger.error(f"Database error listing queries: {e}")
+        logger.error(f"Database error listing queries via RPC: {e}")
         raise RuntimeError(f"Failed to list queries: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error listing queries: {e}")
+        logger.error(f"Unexpected error listing queries via RPC: {e}")
         raise RuntimeError(f"Failed to list queries: {e}")
 
 

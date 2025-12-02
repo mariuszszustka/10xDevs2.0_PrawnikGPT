@@ -4,6 +4,8 @@ import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
 import node from '@astrojs/node';
 
+import tailwindcss from '@tailwindcss/vite';
+
 // https://astro.build/config
 export default defineConfig({
   integrations: [
@@ -25,6 +27,7 @@ export default defineConfig({
     ssr: {
       noExternal: ['@supabase/supabase-js'], // Supabase client dla SSR
     },
+
+    plugins: [tailwindcss()],
   },
 });
-

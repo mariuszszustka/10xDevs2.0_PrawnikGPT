@@ -231,7 +231,7 @@ async def get_queries(
                 model_name=q.get("fast_model_name", "unknown"),
                 generation_time_ms=q.get("fast_generation_time_ms", 0),
                 sources_count=len(q.get("sources", []) if q.get("sources") else []),
-                rating=None  # Will be populated if rating exists
+                rating={"value": q["fast_rating"]} if q.get("fast_rating") else None
             )
             
             # Build accurate response summary (if exists)
@@ -241,7 +241,7 @@ async def get_queries(
                     exists=True,
                     model_name=q.get("accurate_model_name"),
                     generation_time_ms=q.get("accurate_generation_time_ms"),
-                    rating=None
+                    rating={"value": q["accurate_rating"]} if q.get("accurate_rating") else None
                 )
             
             query_items.append(QueryListItem(

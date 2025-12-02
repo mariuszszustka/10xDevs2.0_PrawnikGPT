@@ -57,16 +57,15 @@ async def list_legal_acts(
         
         # Build query
         query = supabase.table("legal_acts").select(
-            "id, title, act_type, publisher, year, number, "
-            "status, published_date, effective_date, created_at",
+            "id, title, typ_aktu, publisher, year, position, "
+            "status, organ_wydajacy, published_date, effective_date, created_at",
             count="exact"
         )
         
         # Apply filters
         if search:
-            # Full-text search using ILIKE for simplicity
-            # In production, use PostgreSQL tsvector/tsquery
-            query = query.ilike("title", f"%{search}%")
+            # Use RPC for efficient full-text search
+            query = query.rpc("search_legal_acts", {"p_search_query": search})
         
         if status:
             query = query.eq("status", status)
@@ -126,9 +125,9 @@ async def get_legal_act_by_id(act_id: str) -> Optional[Dict[str, Any]]:
         
         # Query act with related data
         response = supabase.table("legal_acts").select(
-            "id, title, act_type, publisher, year, number, "
-            "status, published_date, effective_date, repeal_date, "
-            "isap_id, eli, keywords, updated_at, created_at"
+            "id, title, typ_aktu, publisher, year, position, "
+            "status, organ_wydajacy, published_date, effective_date, "
+            "updated_at, created_at"
         ).eq("id", act_id).single().execute()
         
         act = response.data
@@ -197,7 +196,7 @@ async def get_legal_act_relations(
         # Outgoing relations (this act → others)
         outgoing_query = supabase.table("legal_act_relations").select(
             "id, target_act_id, relation_type, article_reference, created_at, "
-            "target_act:legal_acts!target_act_id(id, title, act_type, status)"
+            "target_act:legal_acts!target_act_id(id, title, typ_aktu, status)"
         ).eq("source_act_id", act_id)
         
         if relation_type:
@@ -209,7 +208,7 @@ async def get_legal_act_relations(
         # Incoming relations (others → this act)
         incoming_query = supabase.table("legal_act_relations").select(
             "id, source_act_id, relation_type, article_reference, created_at, "
-            "source_act:legal_acts!source_act_id(id, title, act_type, status)"
+            "source_act:legal_acts!source_act_id(id, title, typ_aktu, status)"
         ).eq("target_act_id", act_id)
         
         if relation_type:
@@ -228,7 +227,7 @@ async def get_legal_act_relations(
             if outgoing_ids:
                 second_outgoing_query = supabase.table("legal_act_relations").select(
                     "id, source_act_id, target_act_id, relation_type, article_reference, created_at, "
-                    "target_act:legal_acts!target_act_id(id, title, act_type, status)"
+                    "target_act:legal_acts!target_act_id(id, title, typ_aktu, status)"
                 ).in_("source_act_id", outgoing_ids)
                 
                 if relation_type:
@@ -243,7 +242,7 @@ async def get_legal_act_relations(
             if incoming_ids:
                 second_incoming_query = supabase.table("legal_act_relations").select(
                     "id, source_act_id, target_act_id, relation_type, article_reference, created_at, "
-                    "source_act:legal_acts!source_act_id(id, title, act_type, status)"
+                    "source_act:legal_acts!source_act_id(id, title, typ_aktu, status)"
                 ).in_("target_act_id", incoming_ids)
                 
                 if relation_type:
@@ -294,7 +293,7 @@ async def search_legal_acts(
         # Simple ILIKE search for MVP
         # In production, use PostgreSQL tsvector/tsquery for better performance
         response = supabase.table("legal_acts").select(
-            "id, title, act_type, publisher, year, status"
+            "id, title, typ_aktu, publisher, year, position, status"
         ).ilike("title", f"%{query}%").limit(limit).execute()
         
         acts = response.data or []
