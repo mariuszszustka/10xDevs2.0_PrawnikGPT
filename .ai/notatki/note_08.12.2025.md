@@ -674,3 +674,207 @@ Każdy plan zawiera:
 
 ---
 
+## 📋 Sesja Tworzenia Szczegółowego Planu Implementacji Chat View (2025-12-08)
+
+### Kontekst
+- **View Implementation Plans:** ✅ Istniejące (`.ai/view-implementations/*.md`) - podstawowe plany widoków
+- **Chat View Plan:** ✅ Istniejący (`.ai/view-implementations/chat-view-implementation-plan-note.md`) - plan podstawowy
+- **Potrzeba:** Utworzenie szczegółowego, kompleksowego planu implementacji widoku Chat View dla programisty frontendowego
+
+### Cel sesji
+Stworzenie szczegółowego planu implementacji widoku Chat View na podstawie:
+- Planu widoku Chat View (`.ai/view-implementations/chat-view-implementation-plan-note.md`)
+- PRD (`.ai/prd.md`) - user stories i wymagania
+- API Implementation Index (`.ai/api-implementation-index.md`) - endpointy API
+- Type Definitions (`src/lib/types.ts`) - typy TypeScript
+- Tech Stack - Astro 5 + React 19 islands
+
+**Wynik:** Kompleksowy plan implementacji (1325 linii) z 11 sekcjami szczegółów technicznych
+
+---
+
+## 🎯 Zakres pracy
+
+### Analiza dokumentów źródłowych
+- [x] Przegląd planu widoku Chat View (`.ai/view-implementations/chat-view-implementation-plan-note.md`)
+- [x] Przegląd PRD (`.ai/prd.md`) - user stories US-003, US-004, US-005, US-008, US-009, US-010
+- [x] Przegląd typów TypeScript (`src/lib/types.ts`)
+- [x] Przegląd API Client (`src/lib/apiClient.ts`)
+- [x] Przegląd struktury projektu (komponenty, layouts, middleware)
+
+### Wyodrębnienie wymagań
+- [x] Kluczowe komponenty widoku (9 komponentów: React islands + Astro)
+- [x] Endpointy API (5 endpointów: Submit Query, Get Query Details, Accurate Response, Ratings, Example Questions)
+- [x] Typy DTO i ViewModel (szczegółowy podział pól)
+- [x] Custom hooks (7 hooks: polling, state management, optimistic updates)
+- [x] Warunki walidacji (client-side i server-side)
+- [x] Scenariusze błędów (10 typów błędów z obsługą)
+
+### Projektowanie szczegółów implementacji
+- [x] Struktura komponentów (hierarchia, props, state, events)
+- [x] Zarządzanie stanem (AppContext, lokalny stan, custom hooks)
+- [x] Integracja API (5 endpointów z typami request/response)
+- [x] Interakcje użytkownika (mapowanie user stories do przepływów)
+- [x] Warunki i walidacja (client-side, server-side, warunki wyświetlania)
+- [x] Obsługa błędów (10 scenariuszy z komunikatami i strategiami)
+- [x] Kroki implementacji (21 kroków od infrastruktury do testowania)
+
+---
+
+## 📝 Szczegóły utworzonego planu
+
+### Struktura planu (11 sekcji):
+
+1. **Przegląd** - Opis widoku, główne funkcjonalności, kluczowe założenia
+2. **Routing widoku** - Ścieżka `/app` lub `/app/chat`, middleware autoryzacji, layout
+3. **Struktura komponentów** - Hierarchia komponentów (Astro + React islands), diagram drzewa
+4. **Szczegóły komponentów** - Dla każdego z 9 komponentów:
+   - Opis i przeznaczenie
+   - Główne elementy HTML
+   - Obsługiwane zdarzenia
+   - Warunki walidacji
+   - Typy (Props, State, ViewModel)
+   - Integracja z API
+5. **Typy** - DTO (Data Transfer Objects) i ViewModel z szczegółowym podziałem pól
+6. **Zarządzanie stanem** - AppContext, lokalny stan komponentów, 7 custom hooks
+7. **Integracja API** - 5 endpointów z typami request/response i obsługą błędów
+8. **Interakcje użytkownika** - Mapowanie 6 user stories do szczegółowych przepływów
+9. **Warunki i walidacja** - Client-side, server-side, warunki wyświetlania komponentów
+10. **Obsługa błędów** - 10 scenariuszy błędów z komunikatami i strategiami obsługi
+11. **Kroki implementacji** - 21 kroków od infrastruktury do testowania
+
+### Komponenty szczegółowo opisane:
+
+**React Islands (6 komponentów):**
+- `ChatMessagesContainer.tsx` - Główny kontener wiadomości z polling
+- `ChatInput.tsx` - Pole wprowadzania z walidacją i rate limiting
+- `ResponseCard.tsx` - Karta odpowiedzi z Markdown, źródłami, ratingami
+- `RatingButtons.tsx` - Przyciski oceny z optimistic updates
+- `DetailedAnswerModal.tsx` - Modal dla dokładnej odpowiedzi z długim pollingiem
+- `NoRelevantActsCard.tsx` - Komunikat błędu dla aktów spoza bazy
+
+**Astro Components (3 komponenty):**
+- `WelcomeMessage.astro` - Komunikat powitalny dla nowych użytkowników
+- `ExampleQuestions.astro` - Lista przykładowych pytań (klikalne)
+- `SourcesList.astro` - Lista źródeł z linkami do ISAP
+
+### Custom Hooks szczegółowo opisane:
+
+1. `useQueryPolling.ts` - Exponential backoff polling (1s → 2s max, timeout 15s)
+2. `useLongPolling.ts` - Długi polling (co 5s, timeout 240s)
+3. `useActiveQueries.ts` - Zarządzanie limitem 3 aktywnych zapytań
+4. `useRAGContextTimer.ts` - Timer cache TTL (5 minut)
+5. `useOptimisticRating.ts` - Optimistic updates dla ratingów z rollback
+6. `useRateLimit.ts` - Pobieranie rate limit info z AppContext
+7. `useFocusTrap.ts` - Focus trap dla modala
+
+### Endpointy API szczegółowo opisane:
+
+1. `POST /api/v1/queries` - Submit Query (RAG Pipeline)
+2. `GET /api/v1/queries/{query_id}` - Get Query Details (Polling)
+3. `POST /api/v1/queries/{query_id}/accurate-response` - Accurate Response
+4. `POST /api/v1/queries/{query_id}/ratings` - Create/Update Rating
+5. `GET /api/v1/onboarding/example-questions` - Example Questions
+
+### User Stories zmapowane:
+
+- **US-003:** Zadawanie pytania w języku naturalnym → `ChatInput.tsx`
+- **US-004:** Otrzymywanie szybkiej odpowiedzi → `ChatMessagesContainer.tsx` + `ResponseCard.tsx`
+- **US-005:** Żądanie dokładniejszej odpowiedzi → `DetailedAnswerModal.tsx`
+- **US-008:** Udzielanie informacji zwrotnej → `RatingButtons.tsx`
+- **US-009:** Obsługa zapytań o akty spoza bazy → `NoRelevantActsCard.tsx`
+- **US-010:** Onboarding nowego użytkownika → `WelcomeMessage.astro` + `ExampleQuestions.astro`
+
+---
+
+## ✅ Zatwierdzone Decyzje (2025-12-08)
+
+### 1. Format planu implementacji
+- ✅ **11 sekcji szczegółów** - od przeglądu do kroków implementacji
+- ✅ **Kompletność** - każdy komponent z pełną specyfikacją (props, state, events, walidacja)
+- ✅ **Mapowanie wymagań** - user stories → komponenty, endpointy → integracja
+
+### 2. Szczegółowość dokumentacji
+- ✅ **Typy DTO i ViewModel** - szczegółowy podział pól z typami
+- ✅ **Custom hooks** - opis celu, zwracanych wartości, użycia
+- ✅ **Scenariusze błędów** - 10 typów błędów z komunikatami i strategiami obsługi
+- ✅ **Kroki implementacji** - 21 kroków od infrastruktury do testowania
+
+### 3. Gotowość do implementacji
+- ✅ Plan wystarczająco szczegółowy dla programisty frontendowego
+- ✅ Wszystkie komponenty, hooks, typy, endpointy szczegółowo opisane
+- ✅ Warunki walidacji, obsługa błędów, interakcje użytkownika zmapowane
+
+---
+
+## ✅ Postęp pracy
+
+### Zrealizowane:
+- ✅ Analiza wszystkich dokumentów źródłowych (plan widoku, PRD, typy, API client)
+- ✅ Wyodrębnienie wymagań (9 komponentów, 5 endpointów, 7 hooks, 6 user stories)
+- ✅ Projektowanie szczegółów implementacji (struktura, stan, API, interakcje, błędy)
+- ✅ Utworzenie kompleksowego planu implementacji (1325 linii)
+
+### Dokumentacja:
+
+**Nowy plik:**
+- `.ai/chat-view-implementation-plan.md` - Kompleksowy plan implementacji widoku Chat View (1325 linii) zawiera:
+  - Przegląd widoku i główne funkcjonalności
+  - Routing i middleware autoryzacji
+  - Strukturę komponentów z hierarchią
+  - Szczegóły 9 komponentów (React islands + Astro)
+  - Typy DTO i ViewModel z podziałem pól
+  - Zarządzanie stanem (AppContext, lokalny stan, 7 custom hooks)
+  - Integrację z 5 endpointami API
+  - Mapowanie 6 user stories do przepływów
+  - Warunki walidacji (client-side i server-side)
+  - Obsługę 10 scenariuszy błędów
+  - 21 kroków implementacji
+
+**Korzyści:**
+1. **Kompletność** - plan zawiera wszystkie szczegóły potrzebne do implementacji
+2. **Jasność** - każdy komponent, hook, endpoint szczegółowo opisany
+3. **Gotowość** - plan wystarczająco szczegółowy dla programisty frontendowego
+4. **Spójność** - zgodność z PRD, user stories, API, tech stack
+5. **Praktyczność** - 21 kroków implementacji od infrastruktury do testowania
+
+---
+
+## 🔗 Powiązane dokumenty
+
+- `.ai/chat-view-implementation-plan.md` - **NOWY** - Kompleksowy plan implementacji widoku Chat View
+- `.ai/view-implementations/chat-view-implementation-plan-note.md` - Podstawowy plan widoku Chat View
+- `.ai/ui-plan.md` - Architektura UI wysokiego poziomu
+- `.ai/prd.md` - Dokument wymagań produktu (user stories)
+- `.ai/api-implementation-index.md` - Index planów implementacji endpointów
+- `src/lib/types.ts` - Typy TypeScript (DTO, ViewModel)
+- `src/lib/apiClient.ts` - API Client z autoryzacją i obsługą błędów
+
+---
+
+## 📋 Podsumowanie Sesji Tworzenia Szczegółowego Planu Implementacji Chat View (2025-12-08)
+
+### Status: ✅ ZAKOŃCZONE
+
+**Data zakończenia:** 2025-12-08  
+**Czas trwania:** 1 sesja  
+**Wynik:** Kompleksowy plan implementacji widoku Chat View (1325 linii)
+
+### Kluczowe Osiągnięcia:
+
+1. **Kompleksowy plan implementacji** - 11 sekcji szczegółów technicznych
+2. **Szczegółowa specyfikacja komponentów** - 9 komponentów z pełną specyfikacją
+3. **Mapowanie wymagań** - 6 user stories → komponenty, 5 endpointów → integracja
+4. **Gotowość do implementacji** - plan wystarczająco szczegółowy dla programisty frontendowego
+5. **Dokumentacja** - 1325 linii szczegółowego planu implementacji
+
+### Następne Kroki:
+
+1. **Implementacja widoku Chat View** - zgodnie z planem w `.ai/chat-view-implementation-plan.md`
+2. **Odwoływanie się do planu** - jako główne źródło szczegółów implementacji
+3. **Iteracyjne podejście** - implementacja zgodnie z 21 krokami z planu
+
+**Gotowe do rozpoczęcia implementacji widoku Chat View zgodnie z kompleksowym planem!** 🚀
+
+---
+
