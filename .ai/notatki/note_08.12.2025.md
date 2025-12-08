@@ -307,3 +307,220 @@ Wszystkie decyzje architektoniczne zostały zapisane w:
 
 ---
 
+## 📋 Sesja Organizacyjna - View Implementation Plans (2025-12-08)
+
+### Kontekst
+- **UI Plan:** ✅ Utworzony (`.ai/ui-plan.md`) - architektura wysokiego poziomu
+- **API Implementation Plans:** ✅ Istniejące (`.ai/implementations/*.md`) - plany endpointów
+- **Potrzeba:** Utworzenie szczegółowych planów implementacji dla każdego widoku
+
+### Cel sesji
+Stworzenie szczegółowych planów implementacji widoków na podstawie:
+- UI Plan (`.ai/ui-plan.md`) - opisy widoków
+- PRD (`.ai/prd.md`) - user stories
+- API Implementation Index (`.ai/api-implementation-index.md`) - endpointy API
+- Implementacje endpointów (`.ai/implementations/*.md`) - szczegóły API
+
+**Wynik:** 6 szczegółowych planów implementacji widoków + index dokumentacji
+
+---
+
+## 🎯 Zakres pracy
+
+### Identyfikacja widoków
+- [x] Analiza UI Plan - wyodrębnienie 6 głównych widoków do implementacji
+- [x] Kategoryzacja widoków (publiczne vs chronione)
+- [x] Mapowanie widoków na user stories z PRD
+
+### Tworzenie planów implementacji
+- [x] **Landing Page** - widok statyczny (SSG), marketing
+- [x] **Login Page** - formularz logowania, Supabase Auth SDK
+- [x] **Register Page** - formularz rejestracji, auto-login
+- [x] **Chat View** - główny widok aplikacji, RAG integration ⭐
+- [x] **History View** - historia zapytań, paginacja
+- [x] **Settings View** - zarządzanie kontem
+
+### Organizacja dokumentacji
+- [x] Utworzenie folderu `.ai/view-implementations/`
+- [x] Przeniesienie planów widoków do folderu
+- [x] Utworzenie pliku index `.ai/view-implementation-index.md`
+- [x] Aktualizacja referencji w plikach widoków
+
+---
+
+## 📝 Szczegóły implementacji
+
+### Utworzone plany implementacji widoków:
+
+1. **Landing Page** (`landing-page-view-implementation-plan-note.md`)
+   - Widok statyczny (SSG)
+   - Hero section, features, przykładowe pytania
+   - Opcjonalnie: endpoint przykładowych pytań
+   - ~168 linii
+
+2. **Login Page** (`login-page-view-implementation-plan-note.md`)
+   - Formularz logowania (React island)
+   - Supabase Auth SDK integration
+   - User Story: US-002
+   - ~203 linie
+
+3. **Register Page** (`register-page-view-implementation-plan-note.md`)
+   - Formularz rejestracji (React island)
+   - Auto-login po rejestracji
+   - User Story: US-001
+   - ~227 linii
+
+4. **Chat View** (`chat-view-implementation-plan-note.md`) ⭐
+   - Główny widok aplikacji
+   - RAG Pipeline integration
+   - Endpointy: Submit Query, Get Query Details, Accurate Response, Ratings
+   - User Stories: US-003, US-004, US-005, US-008, US-009, US-010
+   - ~434 linie
+
+5. **History View** (`history-view-implementation-plan-note.md`)
+   - Historia zapytań z paginacją
+   - Endpointy: List Queries, Get Query Details, Delete Query, Ratings
+   - User Stories: US-006, US-007, US-008
+   - ~379 linii
+
+6. **Settings View** (`settings-view-implementation-plan-note.md`)
+   - Zarządzanie kontem
+   - Zmiana hasła, usunięcie konta
+   - Supabase Auth SDK (opcjonalnie backend endpoint)
+   - ~272 linie
+
+### Struktura każdego planu:
+
+Każdy plan zawiera:
+1. **Opis widoku** - szczegóły z UI Plan
+2. **User Stories** - powiązane historyjki użytkownika z PRD
+3. **Endpoint Description** - endpointy API używane przez widok
+4. **Endpoint Implementation** - referencje do implementacji backend
+5. **Type Definitions** - typy TypeScript z `src/lib/types.ts`
+6. **Tech Stack** - technologie używane w widoku
+7. **Checklist Implementacji** - zadania do wykonania
+8. **Uwagi Implementacyjne** - wskazówki i best practices
+
+### Organizacja dokumentacji:
+
+**Przed:**
+```
+.ai/
+├── landing-page-view-implementation-plan-note.md
+├── login-page-view-implementation-plan-note.md
+├── register-page-view-implementation-plan-note.md
+├── chat-view-implementation-plan-note.md
+├── history-view-implementation-plan-note.md
+└── settings-view-implementation-plan-note.md
+```
+
+**Po:**
+```
+.ai/
+├── view-implementation-index.md          # Index widoków (NOWY)
+└── view-implementations/                 # Folder z planami (NOWY)
+    ├── landing-page-view-implementation-plan-note.md
+    ├── login-page-view-implementation-plan-note.md
+    ├── register-page-view-implementation-plan-note.md
+    ├── chat-view-implementation-plan-note.md
+    ├── history-view-implementation-plan-note.md
+    └── settings-view-implementation-plan-note.md
+```
+
+**Analogia do API:**
+- `api-implementation-index.md` ↔ `view-implementation-index.md`
+- `implementations/` ↔ `view-implementations/`
+- Spójna struktura dokumentacji
+
+---
+
+## ✅ Zatwierdzone Decyzje (2025-12-08)
+
+### 1. Struktura dokumentacji widoków
+- ✅ **Folder `view-implementations/`** - wszystkie plany widoków w jednym miejscu
+- ✅ **Index `view-implementation-index.md`** - centralny punkt nawigacji
+- ✅ **Spójność z API** - analogiczna struktura do `implementations/`
+
+### 2. Zawartość planów widoków
+- ✅ Każdy plan zawiera pełną specyfikację (opis, user stories, endpointy, typy, checklist)
+- ✅ Mapowanie user stories → widoki
+- ✅ Mapowanie endpointy API → komponenty
+- ✅ Referencje do powiązanych dokumentów
+
+### 3. Organizacja i nawigacja
+- ✅ Wszystkie pliki widoków w jednym folderze
+- ✅ Centralny index z linkami do wszystkich widoków
+- ✅ Zaktualizowane referencje w plikach (linki do indexu)
+
+---
+
+## ✅ Postęp pracy
+
+### Zrealizowane:
+- ✅ Utworzenie 6 szczegółowych planów implementacji widoków
+- ✅ Organizacja dokumentacji (folder + index)
+- ✅ Aktualizacja referencji w plikach
+- ✅ Utworzenie dokumentu `.ai/view-implementation-index.md` (398 linii)
+
+### Dokumentacja:
+
+**Nowe pliki:**
+- `.ai/view-implementation-index.md` - Index widoków z:
+  - Listą wszystkich widoków z opisami
+  - Priorytetami implementacji (fazy)
+  - Architekturą frontend (struktura katalogów)
+  - Instrukcjami użycia
+  - Quick start guide
+  - Metrykami sukcesu MVP
+
+- `.ai/view-implementations/` - Folder z 6 planami implementacji:
+  - Każdy plan zawiera pełną specyfikację widoku
+  - Mapowanie na user stories i endpointy API
+  - Checklist implementacji
+  - Uwagi implementacyjne
+
+**Korzyści:**
+1. **Spójność** - taka sama struktura jak dla endpointów API
+2. **Łatwa nawigacja** - centralny index z linkami
+3. **Skalowalność** - łatwe dodawanie nowych widoków
+4. **Organizacja** - oddzielne foldery dla różnych typów dokumentacji
+5. **Przejrzystość** - jasny podział na publiczne i chronione widoki
+
+---
+
+## 🔗 Powiązane dokumenty
+
+- `.ai/view-implementation-index.md` - **NOWY** - Index planów implementacji widoków
+- `.ai/view-implementations/*.md` - **NOWE** - 6 szczegółowych planów widoków
+- `.ai/ui-plan.md` - Architektura UI wysokiego poziomu
+- `.ai/api-implementation-index.md` - Index planów implementacji endpointów
+- `.ai/implementations/*.md` - Plany implementacji endpointów API
+- `.ai/prd.md` - Dokument wymagań produktu
+
+---
+
+## 📋 Podsumowanie Sesji Organizacyjnej (2025-12-08)
+
+### Status: ✅ ZAKOŃCZONE
+
+**Data zakończenia:** 2025-12-08  
+**Czas trwania:** 1 sesja  
+**Wynik:** Kompletna dokumentacja planów implementacji widoków
+
+### Kluczowe Osiągnięcia:
+
+1. **6 szczegółowych planów widoków** - każdy z pełną specyfikacją
+2. **Organizacja dokumentacji** - folder + index (spójność z API)
+3. **Mapowanie wymagań** - user stories → widoki, endpointy → komponenty
+4. **Dokumentacja** - 398 linii indexu + ~1683 linii planów widoków
+
+### Następne Kroki:
+
+1. **Implementacja widoków** - zgodnie z planami w `view-implementations/`
+2. **Odwoływanie się do indexu** - `view-implementation-index.md` jako punkt startowy
+3. **Iteracyjne podejście** - implementacja widoków zgodnie z fazami
+
+**Gotowe do rozpoczęcia implementacji widoków zgodnie z planami!** 🚀
+
+---
+
