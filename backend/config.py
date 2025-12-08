@@ -5,10 +5,45 @@ This module handles all environment variables and application configuration
 using Pydantic Settings for type safety and validation.
 
 Environment variables are loaded from .env file (see .env.example for template).
+Backend looks for .env in the following order:
+1. backend/.env (when running from backend directory)
+2. ../.env (root directory, when running from project root)
+3. Environment variables (highest priority)
 """
 
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
+
+
+def _find_env_file() -> str:
+    """
+    Find .env file in a predictable location.
+    
+    Checks in order:
+    1. backend/.env (when running from backend directory)
+    2. ../.env (root directory, when running from project root)
+    3. .env (current working directory as fallback)
+    
+    Returns:
+        str: Path to .env file
+    """
+    # Get the directory where this config.py file is located
+    backend_dir = Path(__file__).parent
+    root_dir = backend_dir.parent
+    
+    # Check backend/.env first
+    backend_env = backend_dir / ".env"
+    if backend_env.exists():
+        return str(backend_env)
+    
+    # Check root/.env
+    root_env = root_dir / ".env"
+    if root_env.exists():
+        return str(root_env)
+    
+    # Fallback to .env in current working directory
+    return ".env"
 
 
 class Settings(BaseSettings):
@@ -76,7 +111,8 @@ class Settings(BaseSettings):
     # =========================================================================
     
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Try to find .env in backend/ directory first, then in root directory
+        env_file=_find_env_file(),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
@@ -99,9 +135,105 @@ class Settings(BaseSettings):
 
 
 # =========================================================================
+# CONFIGURATION VALIDATION
+# =========================================================================
+
+def _validate_settings(settings_instance: Settings) -> None:
+    """
+    Validate settings on startup and provide helpful error messages.
+    
+    Checks:
+    - Required environment variables are set
+    - URLs are in valid format
+    - Critical configuration is present
+    
+    Raises:
+        ValueError: If validation fails with helpful error message
+    """
+    import re
+    from urllib.parse import urlparse
+    
+    errors = []
+    warnings = []
+    
+    # Check required Supabase variables
+    if not settings_instance.supabase_url:
+        errors.append("SUPABASE_URL is required but not set")
+    else:
+        try:
+            parsed = urlparse(settings_instance.supabase_url)
+            if not parsed.scheme or not parsed.netloc:
+                errors.append(f"SUPABASE_URL is invalid: {settings_instance.supabase_url}")
+        except Exception as e:
+            errors.append(f"SUPABASE_URL validation failed: {e}")
+    
+    if not settings_instance.supabase_service_key:
+        errors.append("SUPABASE_SERVICE_KEY is required but not set")
+    elif len(settings_instance.supabase_service_key) < 20:
+        warnings.append("SUPABASE_SERVICE_KEY seems too short (expected JWT token)")
+    
+    if not settings_instance.supabase_jwt_secret:
+        errors.append("SUPABASE_JWT_SECRET is required but not set")
+    elif len(settings_instance.supabase_jwt_secret) < 32:
+        warnings.append("SUPABASE_JWT_SECRET should be at least 32 characters long")
+    
+    # Check required OLLAMA variables
+    if not settings_instance.ollama_host:
+        errors.append("OLLAMA_HOST is required but not set")
+    else:
+        try:
+            parsed = urlparse(settings_instance.ollama_host)
+            if not parsed.scheme or not parsed.netloc:
+                errors.append(f"OLLAMA_HOST is invalid: {settings_instance.ollama_host}")
+        except Exception as e:
+            errors.append(f"OLLAMA_HOST validation failed: {e}")
+    
+    # Check if .env file was found
+    env_file_path = _find_env_file()
+    if env_file_path == ".env":
+        # Check if .env actually exists in current directory
+        from pathlib import Path
+        if not Path(".env").exists():
+            warnings.append(
+                f"No .env file found. "
+                f"Checked: backend/.env, ../.env, .env. "
+                f"Using environment variables only."
+            )
+    
+    # Report errors (fatal)
+    if errors:
+        error_msg = "Configuration validation failed:\n"
+        error_msg += "\n".join(f"  ❌ {error}" for error in errors)
+        error_msg += "\n\n"
+        error_msg += "Please check your .env file or environment variables.\n"
+        error_msg += f"See .env.example for required variables.\n"
+        error_msg += f"Expected .env location: {env_file_path}"
+        raise ValueError(error_msg)
+    
+    # Report warnings (non-fatal)
+    if warnings:
+        import logging
+        logger = logging.getLogger(__name__)
+        for warning in warnings:
+            logger.warning(f"Configuration warning: {warning}")
+
+
+# =========================================================================
 # GLOBAL SETTINGS INSTANCE
 # =========================================================================
 
 # Create a single instance of settings to be imported throughout the app
-settings = Settings()
+# Validation happens on first import to catch errors early
+try:
+    settings = Settings()
+    _validate_settings(settings)
+except Exception as e:
+    # Re-raise with helpful context
+    import sys
+    print("\n" + "=" * 80, file=sys.stderr)
+    print("PrawnikGPT Backend - Configuration Error", file=sys.stderr)
+    print("=" * 80, file=sys.stderr)
+    print(str(e), file=sys.stderr)
+    print("=" * 80 + "\n", file=sys.stderr)
+    raise
 

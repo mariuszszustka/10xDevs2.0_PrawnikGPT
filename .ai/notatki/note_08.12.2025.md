@@ -524,3 +524,153 @@ Każdy plan zawiera:
 
 ---
 
+## 🔧 Sesja Code Review i Naprawa Błędów Projektowych (2025-12-08)
+
+### Kontekst
+- **Projekt:** Przegląd kodu przez doświadczonego fullstack developera
+- **Cel:** Identyfikacja i naprawa krytycznych błędów projektowych blokujących rozwój MVP
+- **Metodologia:** Analiza struktury, spójności, potencjalnych problemów
+
+### Zidentyfikowane i naprawione błędy
+
+#### Błąd 1: Brakujący plik `.env.example`
+**Problem:** 
+- Dokumentacja i README odwoływały się do `.env.example`, ale plik nie istniał
+- Uniemożliwiało to szybkie rozpoczęcie pracy z projektem
+- Brak szablonu konfiguracji dla różnych scenariuszy deployment
+
+**Rozwiązanie:**
+- ✅ Utworzono kompletny plik `.env.example` w głównym katalogu projektu
+- ✅ Zawiera wszystkie wymagane zmienne środowiskowe z komentarzami
+- ✅ Przykłady dla 4 scenariuszy deployment (all-in-one, distributed, cloud, hybrid)
+- ✅ Jasny podział na zmienne frontendowe (PUBLIC_*) i backendowe
+
+**Plik:** `.env.example` (5027 bajtów)
+
+---
+
+#### Błąd 2: Brakująca funkcja `getApiBaseUrl()` w `utils.ts`
+**Problem:**
+- `apiClient.ts` importował `getApiBaseUrl` z `utils.ts`, ale funkcja nie istniała
+- Powodowało błąd kompilacji frontendu
+- Brak fallbacku dla brakującej zmiennej środowiskowej
+
+**Rozwiązanie:**
+- ✅ Dodano funkcję `getApiBaseUrl()` w `src/lib/utils.ts`
+- ✅ Pobiera `PUBLIC_API_BASE_URL` ze zmiennych środowiskowych
+- ✅ Fallback do `http://localhost:8000` dla developmentu
+- ✅ Ostrzeżenie w konsoli, jeśli zmienna nie jest ustawiona
+- ✅ Type safety zgodnie z definicjami w `env.d.ts`
+
+**Plik:** `src/lib/utils.ts`
+
+---
+
+#### Błąd 3: Brakująca autoryzacja w `apiClient.ts`
+**Problem:**
+- Funkcja `getAuthHeaders()` miała zakomentowany kod TODO
+- Backend wymaga tokenu JWT w headerze `Authorization` dla chronionych endpointów
+- Wszystkie chronione endpointy zwracały 401 Unauthorized
+
+**Rozwiązanie:**
+- ✅ Zaimplementowano pełną autoryzację w `apiClient.ts`
+- ✅ Import `supabaseClient` z `supabase.ts`
+- ✅ Pobieranie tokenu z sesji Supabase
+- ✅ Automatyczna obsługa 401: próba odświeżenia sesji, przekierowanie do `/login?expired=true`
+- ✅ Obsługa błędów sieciowych z odpowiednimi kodami błędów
+
+**Plik:** `src/lib/apiClient.ts`
+
+---
+
+#### Błąd 4: Niespójność lokalizacji `.env` dla backendu
+**Problem:**
+- `backend/config.py` szukał `.env` w bieżącym katalogu roboczym
+- Gdy backend uruchamiany z root (`uvicorn backend.main:app`) → szukał `root/.env`
+- Gdy uruchamiany z `backend/` → szukał `backend/.env`
+- Dokumentacja wspominała o obu opcjach, powodując zamieszanie
+
+**Rozwiązanie:**
+- ✅ Dodano funkcję `_find_env_file()` w `backend/config.py`
+- ✅ Sprawdza lokalizacje w przewidywalnej kolejności:
+  1. `backend/.env` (gdy uruchamiamy z katalogu backend)
+  2. `../.env` (root, gdy uruchamiamy z root projektu)
+  3. `.env` (bieżący katalog jako fallback)
+- ✅ Backend znajduje `.env` niezależnie od miejsca uruchomienia
+
+**Plik:** `backend/config.py`
+
+---
+
+#### Błąd 5: Słaba obsługa błędów w `apiClient.ts`
+**Problem:**
+- Backend zwraca strukturalne `ErrorResponse` z kodem błędu, szczegółami i `request_id`
+- Frontend rzucał zwykły `Error` z wiadomością
+- Brakowało parsowania strukturalnych odpowiedzi błędów
+- Brak obsługi 401 Unauthorized z automatycznym przekierowaniem
+- Brak obsługi błędów sieciowych
+
+**Rozwiązanie:**
+- ✅ Dodano funkcję `parseErrorResponse()` do parsowania strukturalnych odpowiedzi błędów
+- ✅ `apiFetch()` teraz rzuca `ApiError` zamiast zwykłego `Error`
+- ✅ Automatyczna obsługa 401: próba odświeżenia sesji, przekierowanie do loginu
+- ✅ Obsługa błędów sieciowych z odpowiednim kodem błędu
+- ✅ Zachowanie `request_id` z nagłówków odpowiedzi dla lepszego debugowania
+- ✅ Użycie klasy `ApiError` z `types.ts` dla spójności
+
+**Plik:** `src/lib/apiClient.ts`
+
+---
+
+#### Błąd 6: Brak walidacji konfiguracji przy starcie backendu
+**Problem:**
+- Jeśli brakowało wymaganych zmiennych środowiskowych, Pydantic rzucał niejasny błąd
+- Brak sprawdzania, czy wymagane zmienne są ustawione
+- Brak walidacji formatu URL-i
+- Brak pomocnych komunikatów błędów wskazujących, co jest nie tak
+
+**Rozwiązanie:**
+- ✅ Dodano funkcję `_validate_settings()` w `backend/config.py`
+- ✅ Walidacja przy starcie: sprawdza wszystkie wymagane zmienne
+- ✅ Walidacja formatu URL-i dla `SUPABASE_URL` i `OLLAMA_HOST`
+- ✅ Sprawdzanie długości kluczy (ostrzeżenia dla zbyt krótkich)
+- ✅ Czytelne komunikaty błędów wskazujące, co jest nie tak i gdzie szukać `.env`
+- ✅ Ostrzeżenia (nie blokują startu) dla podejrzanych wartości
+
+**Plik:** `backend/config.py`
+
+---
+
+## ✅ Podsumowanie naprawionych błędów
+
+### Statystyki:
+- **Zidentyfikowanych błędów:** 6
+- **Naprawionych błędów:** 6
+- **Plików zmodyfikowanych:** 4
+- **Plików utworzonych:** 1
+
+### Pliki zmodyfikowane:
+1. `src/lib/utils.ts` - dodano `getApiBaseUrl()`
+2. `src/lib/apiClient.ts` - poprawiono autoryzację i obsługę błędów
+3. `backend/config.py` - dodano walidację konfiguracji i inteligentne wyszukiwanie `.env`
+4. `.ai/notatki/note_08.12.2025.md` - dokumentacja naprawionych błędów
+
+### Pliki utworzone:
+1. `.env.example` - kompletny szablon konfiguracji
+
+### Wpływ na projekt:
+- ✅ **Onboarding:** Nowi deweloperzy mogą szybko rozpocząć pracę (`.env.example`)
+- ✅ **Stabilność:** Backend ma lepszą walidację konfiguracji przy starcie
+- ✅ **UX:** Frontend ma lepszą obsługę błędów i autoryzacji
+- ✅ **Debugowanie:** Czytelne komunikaty błędów ułatwiają diagnozę problemów
+- ✅ **Spójność:** Ujednolicona lokalizacja plików `.env` eliminuje zamieszanie
+
+### Następne kroki:
+1. ✅ Wszystkie krytyczne błędy naprawione
+2. ✅ Projekt gotowy do dalszego rozwoju zgodnie z planami implementacji
+3. ✅ Dokumentacja zaktualizowana
+
+**Projekt jest teraz bardziej odporny na błędy i łatwiejszy w debugowaniu!** 🚀
+
+---
+
