@@ -1095,3 +1095,226 @@ Stworzenie szczegółowego planu implementacji widoku History View na podstawie:
 
 ---
 
+## 📋 Sesja Tworzenia Szczegółowego Planu Implementacji Landing Page View (2025-12-08)
+
+### Kontekst
+- **View Implementation Plans:** ✅ Istniejące (`.ai/view-implementations/*.md`) - podstawowe plany widoków
+- **Landing Page View Plan:** ✅ Istniejący (`.ai/view-implementations/landing-page-view-implementation-plan-note.md`) - plan podstawowy
+- **Chat View Implementation Plan:** ✅ Utworzony wcześniej (`.ai/chat-view-implementation-plan.md`) - wzór formatu
+- **History View Implementation Plan:** ✅ Utworzony wcześniej (`.ai/history-view-implementation-plan.md`) - wzór formatu
+- **Potrzeba:** Utworzenie szczegółowego, kompleksowego planu implementacji widoku Landing Page dla programisty frontendowego
+
+### Cel sesji
+Stworzenie szczegółowego planu implementacji widoku Landing Page na podstawie:
+- Planu widoku Landing Page (`.ai/view-implementations/landing-page-view-implementation-plan-note.md`)
+- PRD (`.ai/prd.md`) - user stories US-001, US-010 (onboarding)
+- API Implementation Index (`.ai/api-implementation-index.md`) - opcjonalny endpoint example-questions
+- Type Definitions (`src/lib/types.ts`) - opcjonalne typy dla widgetu
+- Tech Stack - Astro 5 (SSG), Tailwind CSS
+- Wzór formatu z Chat View i History View Implementation Plans
+
+**Wynik:** Kompleksowy plan implementacji (899 linii) z 11 sekcjami szczegółów technicznych
+
+---
+
+## 🎯 Zakres pracy
+
+### Analiza dokumentów źródłowych
+- [x] Przegląd planu widoku Landing Page (`.ai/view-implementations/landing-page-view-implementation-plan-note.md`)
+- [x] Przegląd PRD (`.ai/prd.md`) - user stories US-001, US-010
+- [x] Przegląd typów TypeScript (`src/lib/types.ts`) - opcjonalne typy ExampleQuestion
+- [x] Przegląd struktury projektu (komponenty, layouts, BaseLayout)
+- [x] Przegląd Chat View i History View Implementation Plans jako wzór formatu
+- [x] Przegląd implementacji endpointu example-questions (`.ai/implementations/09-onboarding.md`)
+
+### Wyodrębnienie wymagań
+- [x] Kluczowe komponenty widoku (7 komponentów: Astro statyczne + opcjonalny React island)
+- [x] Endpointy API (opcjonalnie: GET /api/v1/onboarding/example-questions)
+- [x] Typy DTO i ViewModel (opcjonalne dla interaktywnego widgetu)
+- [x] Custom hooks (opcjonalnie: useState, useEffect dla widgetu)
+- [x] Warunki walidacji (opcjonalnie: walidacja odpowiedzi API)
+- [x] Scenariusze błędów (5 scenariuszy dla opcjonalnego widgetu)
+
+### Projektowanie szczegółów implementacji
+- [x] Struktura komponentów (hierarchia, props, state, events)
+- [x] Zarządzanie stanem (głównie statyczny widok, opcjonalnie lokalny stan React)
+- [x] Integracja API (opcjonalnie: endpoint example-questions)
+- [x] Interakcje użytkownika (nawigacja, kliknięcia, keyboard navigation)
+- [x] Warunki i walidacja (opcjonalnie: walidacja odpowiedzi API)
+- [x] Obsługa błędów (5 scenariuszy dla opcjonalnego widgetu)
+- [x] Kroki implementacji (10 kroków od struktury plików do deploymentu)
+
+---
+
+## 📝 Szczegóły utworzonego planu
+
+### Struktura planu (11 sekcji):
+
+1. **Przegląd** - Opis widoku, główne funkcjonalności, charakterystyka techniczna (SSG)
+2. **Routing widoku** - Ścieżka `/`, typ SSG, brak autentykacji
+3. **Struktura komponentów** - Hierarchia komponentów (Astro statyczne + opcjonalny React island), diagram drzewa
+4. **Szczegóły komponentów** - Dla każdego z 7 komponentów:
+   - Opis i przeznaczenie
+   - Główne elementy HTML
+   - Obsługiwane zdarzenia
+   - Warunki walidacji
+   - Typy (Props, State, ViewModel)
+   - Integracja z API (opcjonalnie)
+5. **Typy** - Opcjonalne typy TypeScript dla interaktywnego widgetu (ExampleQuestion, ExampleQuestionsResponse)
+6. **Zarządzanie stanem** - Głównie statyczny widok, opcjonalnie lokalny stan React dla widgetu
+7. **Integracja API** - Opcjonalna integracja z endpointem example-questions
+8. **Interakcje użytkownika** - 7 scenariuszy interakcji (nawigacja, kliknięcia, keyboard navigation)
+9. **Warunki i walidacja** - Opcjonalna walidacja odpowiedzi API dla widgetu
+10. **Obsługa błędów** - 5 scenariuszy błędów dla opcjonalnego widgetu z graceful degradation
+11. **Kroki implementacji** - 10 kroków od struktury plików do deploymentu
+
+### Komponenty szczegółowo opisane:
+
+**Astro Components (6 komponentów):**
+- `BaseLayout.astro` - Root layout z meta tags SEO
+- `HeroSection.astro` - Główna sekcja z CTA "Wypróbuj za darmo"
+- `FeaturesSection.astro` - Sekcja z 3 funkcjonalnościami (Szybko, Dokładnie, Wiarygodnie)
+- `FeatureCard.astro` - Reużywalna karta funkcjonalności
+- `ExampleQuestionsPreview.astro` - Sekcja z przykładowymi pytaniami (statyczna lub interaktywna)
+- `Footer.astro` - Stopka z linkami (Regulamin, Polityka prywatności, Kontakt)
+
+**Opcjonalny React Island:**
+- `ExampleQuestionsWidget.tsx` - Interaktywny widget pobierający pytania z API (jeśli wybrano wariant interaktywny)
+
+### Warianty implementacji:
+
+**Wariant A: Statyczny (główny)**
+- Wszystkie dane hardcoded w komponentach Astro
+- Brak integracji z API
+- Minimalny JavaScript (zero JS dla większości komponentów)
+- Najszybszy w build time i runtime
+
+**Wariant B: Interaktywny (opcjonalny)**
+- Widget przykładowych pytań jako React island
+- Integracja z `GET /api/v1/onboarding/example-questions`
+- Graceful degradation (fallback do statycznych pytań przy błędzie)
+- Lazy hydration (`client:visible`)
+
+### Endpointy API (opcjonalnie):
+
+1. `GET /api/v1/onboarding/example-questions` - Przykładowe pytania dla widgetu
+
+### User Stories zmapowane:
+
+- **US-001:** Rejestracja nowego użytkownika → CTA "Wypróbuj za darmo" → `/register`
+- **US-010:** Onboarding nowego użytkownika → Landing page jako pierwszy punkt kontaktu
+
+### Kluczowe cechy implementacji:
+
+- **Statyczna generacja (SSG)** - cały widok generowany w czasie build
+- **SEO** - meta tags (title, description, og:image)
+- **Accessibility** - WCAG AA (semantic HTML, ARIA landmarks, keyboard navigation)
+- **Performance** - minimalny JavaScript, optymalizacja obrazów, lazy loading
+- **Responsywność** - mobile-first design
+
+---
+
+## ✅ Zatwierdzone Decyzje (2025-12-08)
+
+### 1. Format planu implementacji
+- ✅ **11 sekcji szczegółów** - od przeglądu do kroków implementacji (zgodnie z wzorem Chat View i History View)
+- ✅ **Kompletność** - każdy komponent z pełną specyfikacją (props, state, events, walidacja)
+- ✅ **Mapowanie wymagań** - user stories → komponenty, opcjonalne endpointy → integracja
+
+### 2. Szczegółowość dokumentacji
+- ✅ **Typy DTO i ViewModel** - opcjonalne typy dla interaktywnego widgetu z podziałem pól
+- ✅ **Warianty implementacji** - statyczny (główny) vs interaktywny (opcjonalny)
+- ✅ **Scenariusze błędów** - 5 typów błędów z graceful degradation
+- ✅ **Kroki implementacji** - 10 kroków od struktury plików do deploymentu
+
+### 3. Priorytetyzacja
+- ✅ **Wariant statyczny** - główny wariant implementacji (najszybszy, najprostszy)
+- ✅ **Wariant interaktywny** - opcjonalny enhancement (może być dodany później)
+- ✅ **Graceful degradation** - fallback do statycznych pytań przy błędzie API
+
+### 4. Gotowość do implementacji
+- ✅ Plan wystarczająco szczegółowy dla programisty frontendowego
+- ✅ Wszystkie komponenty, typy, endpointy szczegółowo opisane
+- ✅ Warunki walidacji, obsługa błędów, interakcje użytkownika zmapowane
+- ✅ SEO, accessibility, performance uwzględnione
+
+---
+
+## ✅ Postęp pracy
+
+### Zrealizowane:
+- ✅ Analiza wszystkich dokumentów źródłowych (plan widoku, PRD, typy, wzór formatu)
+- ✅ Wyodrębnienie wymagań (7 komponentów, opcjonalny endpoint, 2 user stories)
+- ✅ Projektowanie szczegółów implementacji (struktura, stan, API, interakcje, błędy)
+- ✅ Utworzenie kompleksowego planu implementacji (899 linii)
+
+### Dokumentacja:
+
+**Nowy plik:**
+- `.ai/landing-page-view-implementation-plan.md` - Kompleksowy plan implementacji widoku Landing Page (899 linii) zawiera:
+  - Przegląd widoku i główne funkcjonalności (SSG)
+  - Routing i brak autentykacji
+  - Strukturę komponentów z hierarchią
+  - Szczegóły 7 komponentów (Astro statyczne + opcjonalny React island)
+  - Opcjonalne typy DTO i ViewModel dla widgetu
+  - Zarządzanie stanem (głównie statyczny, opcjonalnie lokalny stan React)
+  - Opcjonalną integrację z endpointem example-questions
+  - Mapowanie 2 user stories do przepływów
+  - Opcjonalne warunki walidacji (dla widgetu)
+  - Obsługę 5 scenariuszy błędów (dla widgetu)
+  - 10 kroków implementacji
+
+**Korzyści:**
+1. **Kompletność** - plan zawiera wszystkie szczegóły potrzebne do implementacji
+2. **Jasność** - każdy komponent, typ, endpoint szczegółowo opisany
+3. **Gotowość** - plan wystarczająco szczegółowy dla programisty frontendowego
+4. **Spójność** - zgodność z PRD, user stories, tech stack
+5. **Elastyczność** - dwa warianty implementacji (statyczny i interaktywny)
+6. **Praktyczność** - 10 kroków implementacji od struktury plików do deploymentu
+7. **SEO i A11y** - uwzględnione wymagania SEO i accessibility
+
+---
+
+## 🔗 Powiązane dokumenty
+
+- `.ai/landing-page-view-implementation-plan.md` - **NOWY** - Kompleksowy plan implementacji widoku Landing Page
+- `.ai/view-implementations/landing-page-view-implementation-plan-note.md` - Podstawowy plan widoku Landing Page
+- `.ai/chat-view-implementation-plan.md` - Wzór formatu planu implementacji (Chat View)
+- `.ai/history-view-implementation-plan.md` - Wzór formatu planu implementacji (History View)
+- `.ai/ui-plan.md` - Architektura UI wysokiego poziomu
+- `.ai/prd.md` - Dokument wymagań produktu (user stories)
+- `.ai/api-implementation-index.md` - Index planów implementacji endpointów
+- `.ai/implementations/09-onboarding.md` - Implementacja endpointu example-questions
+- `src/lib/types.ts` - Typy TypeScript (opcjonalne DTO dla widgetu)
+
+---
+
+## 📋 Podsumowanie Sesji Tworzenia Szczegółowego Planu Implementacji Landing Page View (2025-12-08)
+
+### Status: ✅ ZAKOŃCZONE
+
+**Data zakończenia:** 2025-12-08  
+**Czas trwania:** 1 sesja  
+**Wynik:** Kompleksowy plan implementacji widoku Landing Page (899 linii)
+
+### Kluczowe Osiągnięcia:
+
+1. **Kompleksowy plan implementacji** - 11 sekcji szczegółów technicznych
+2. **Szczegółowa specyfikacja komponentów** - 7 komponentów z pełną specyfikacją
+3. **Mapowanie wymagań** - 2 user stories → komponenty, opcjonalny endpoint → integracja
+4. **Elastyczność** - dwa warianty implementacji (statyczny i interaktywny)
+5. **Gotowość do implementacji** - plan wystarczająco szczegółowy dla programisty frontendowego
+6. **SEO i A11y** - uwzględnione wymagania SEO i accessibility
+7. **Dokumentacja** - 899 linii szczegółowego planu implementacji
+
+### Następne Kroki:
+
+1. **Implementacja widoku Landing Page** - zgodnie z planem w `.ai/landing-page-view-implementation-plan.md`
+2. **Odwoływanie się do planu** - jako główne źródło szczegółów implementacji
+3. **Iteracyjne podejście** - implementacja zgodnie z 10 krokami z planu
+4. **Priorytetyzacja** - rozpoczęcie od wariantu statycznego (główny)
+
+**Gotowe do rozpoczęcia implementacji widoku Landing Page zgodnie z kompleksowym planem!** 🚀
+
+---
+
