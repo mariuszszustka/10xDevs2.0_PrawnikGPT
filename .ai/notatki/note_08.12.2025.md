@@ -878,3 +878,220 @@ Stworzenie szczegółowego planu implementacji widoku Chat View na podstawie:
 
 ---
 
+## 📋 Sesja Tworzenia Szczegółowego Planu Implementacji History View (2025-12-08)
+
+### Kontekst
+- **View Implementation Plans:** ✅ Istniejące (`.ai/view-implementations/*.md`) - podstawowe plany widoków
+- **History View Plan:** ✅ Istniejący (`.ai/view-implementations/history-view-implementation-plan-note.md`) - plan podstawowy
+- **Chat View Implementation Plan:** ✅ Utworzony wcześniej (`.ai/chat-view-implementation-plan.md`) - wzór formatu
+- **Potrzeba:** Utworzenie szczegółowego, kompleksowego planu implementacji widoku History View dla programisty frontendowego
+
+### Cel sesji
+Stworzenie szczegółowego planu implementacji widoku History View na podstawie:
+- Planu widoku History View (`.ai/view-implementations/history-view-implementation-plan-note.md`)
+- PRD (`.ai/prd.md`) - user stories US-006, US-007, US-008
+- API Implementation Index (`.ai/api-implementation-index.md`) - endpointy API
+- Type Definitions (`src/lib/types.ts`) - typy TypeScript
+- Tech Stack - Astro 5 + React 19 islands
+- Wzór formatu z Chat View Implementation Plan
+
+**Wynik:** Kompleksowy plan implementacji (1282 linie) z 11 sekcjami szczegółów technicznych
+
+---
+
+## 🎯 Zakres pracy
+
+### Analiza dokumentów źródłowych
+- [x] Przegląd planu widoku History View (`.ai/view-implementations/history-view-implementation-plan-note.md`)
+- [x] Przegląd PRD (`.ai/prd.md`) - user stories US-006, US-007, US-008
+- [x] Przegląd typów TypeScript (`src/lib/types.ts`)
+- [x] Przegląd API Client (`src/lib/apiClient.ts`)
+- [x] Przegląd struktury projektu (komponenty, layouts, middleware)
+- [x] Przegląd Chat View Implementation Plan jako wzór formatu
+
+### Wyodrębnienie wymagań
+- [x] Kluczowe komponenty widoku (6 komponentów: React islands + Astro)
+- [x] Endpointy API (4 endpointy: List Queries, Get Query Details, Delete Query, Ratings)
+- [x] Typy DTO i ViewModel (szczegółowy podział pól)
+- [x] Custom hooks (7 hooks: query list, scroll position, optimistic delete, collapsible, rating, focus trap, query details)
+- [x] Warunki walidacji (client-side i server-side)
+- [x] Scenariusze błędów (10 typów błędów z obsługą)
+
+### Projektowanie szczegółów implementacji
+- [x] Struktura komponentów (hierarchia, props, state, events)
+- [x] Zarządzanie stanem (lokalny stan, custom hooks)
+- [x] Integracja API (4 endpointy z typami request/response)
+- [x] Interakcje użytkownika (mapowanie user stories do przepływów)
+- [x] Warunki i walidacja (client-side, server-side, warunki wyświetlania)
+- [x] Obsługa błędów (10 scenariuszy z komunikatami i strategiami)
+- [x] Kroki implementacji (30 kroków od utility functions do weryfikacji końcowej)
+
+---
+
+## 📝 Szczegóły utworzonego planu
+
+### Struktura planu (11 sekcji):
+
+1. **Przegląd** - Opis widoku, główne funkcjonalności, kluczowe założenia
+2. **Routing widoku** - Ścieżka `/app/history`, middleware autoryzacji, layout
+3. **Struktura komponentów** - Hierarchia komponentów (Astro + React islands), diagram drzewa
+4. **Szczegóły komponentów** - Dla każdego z 6 komponentów:
+   - Opis i przeznaczenie
+   - Główne elementy HTML
+   - Obsługiwane zdarzenia
+   - Warunki walidacji
+   - Typy (Props, State, ViewModel)
+   - Integracja z API
+5. **Typy** - DTO (Data Transfer Objects) i ViewModel z szczegółowym podziałem pól
+6. **Zarządzanie stanem** - Lokalny stan komponentów, 7 custom hooks
+7. **Integracja API** - 4 endpointy z typami request/response i obsługą błędów
+8. **Interakcje użytkownika** - Mapowanie 3 user stories do szczegółowych przepływów
+9. **Warunki i walidacja** - Client-side, server-side, warunki wyświetlania komponentów
+10. **Obsługa błędów** - 10 scenariuszy błędów z komunikatami i strategiami obsługi
+11. **Kroki implementacji** - 30 kroków od utility functions do weryfikacji końcowej
+
+### Komponenty szczegółowo opisane:
+
+**React Islands (5 komponentów):**
+- `HistoryList.tsx` - Główny kontener z paginacją "Załaduj więcej"
+- `QueryCard.tsx` - Karta pojedynczego zapytania z collapsible responses
+- `DeleteQueryButton.tsx` - Przycisk usuwania z confirmation modal
+- `LoadMoreButton.tsx` - Przycisk paginacji z licznikiem
+- `EmptyState.tsx` - Stan pusty z CTA do czatu
+
+**Reuse z Chat View:**
+- `RatingButtons.tsx` - Przyciski oceny z optimistic updates
+- `SourcesList.astro` - Lista źródeł z linkami do ISAP
+
+**Astro Components (1 komponent):**
+- `PageHeader.astro` - Statyczny nagłówek strony
+
+### Custom Hooks szczegółowo opisane:
+
+1. `useQueryList.ts` - Pobieranie listy zapytań z API z cache i refetch
+2. `useScrollPosition.ts` - Zachowanie i przywracanie pozycji scroll przy paginacji
+3. `useOptimisticDelete.ts` - Optimistic update przy usuwaniu zapytania z rollback
+4. `useCollapsible.ts` - Zarządzanie stanem rozwinięcia/zwinięcia responses
+5. `useOptimisticRating.ts` - Optimistic updates dla ratingów z rollback (reuse z Chat View)
+6. `useFocusTrap.ts` - Focus trap dla confirmation modal
+7. `useQueryDetails.ts` - Pobieranie szczegółów zapytania (opcjonalnie, dla refresh)
+
+### Endpointy API szczegółowo opisane:
+
+1. `GET /api/v1/queries` - List User Queries (paginacja)
+2. `GET /api/v1/queries/{query_id}` - Get Query Details (opcjonalnie, dla refresh)
+3. `DELETE /api/v1/queries/{query_id}` - Delete Query
+4. `POST /api/v1/queries/{query_id}/ratings` - Create/Update Rating
+
+### User Stories zmapowane:
+
+- **US-006:** Przeglądanie historii zapytań → `HistoryList.tsx` + `QueryCard.tsx`
+- **US-007:** Usuwanie zapytania z historii → `DeleteQueryButton.tsx` + `ConfirmationModal.tsx`
+- **US-008:** Udzielanie informacji zwrotnej → `RatingButtons.tsx` (reuse z Chat View)
+
+### Utility Functions:
+
+- `formatRelativeTime(date: string): string` - Formatowanie czasu względnego ("2 godz. temu", "wczoraj")
+- `truncateText(text: string, maxLength: number): string` - Skracanie tekstu z ellipsis
+
+---
+
+## ✅ Zatwierdzone Decyzje (2025-12-08)
+
+### 1. Format planu implementacji
+- ✅ **11 sekcji szczegółów** - od przeglądu do kroków implementacji (zgodnie z wzorem Chat View)
+- ✅ **Kompletność** - każdy komponent z pełną specyfikacją (props, state, events, walidacja)
+- ✅ **Mapowanie wymagań** - user stories → komponenty, endpointy → integracja
+
+### 2. Szczegółowość dokumentacji
+- ✅ **Typy DTO i ViewModel** - szczegółowy podział pól z typami
+- ✅ **Custom hooks** - opis celu, zwracanych wartości, użycia
+- ✅ **Scenariusze błędów** - 10 typów błędów z komunikatami i strategiami obsługi
+- ✅ **Kroki implementacji** - 30 kroków od utility functions do weryfikacji końcowej
+
+### 3. Reuse komponentów
+- ✅ **RatingButtons** - reuse z Chat View (bez duplikacji kodu)
+- ✅ **SourcesList** - reuse z Chat View (Astro component)
+- ✅ **Spójność** - te same komponenty w obu widokach zapewniają spójne UX
+
+### 4. Gotowość do implementacji
+- ✅ Plan wystarczająco szczegółowy dla programisty frontendowego
+- ✅ Wszystkie komponenty, hooks, typy, endpointy szczegółowo opisane
+- ✅ Warunki walidacji, obsługa błędów, interakcje użytkownika zmapowane
+
+---
+
+## ✅ Postęp pracy
+
+### Zrealizowane:
+- ✅ Analiza wszystkich dokumentów źródłowych (plan widoku, PRD, typy, API client, wzór formatu)
+- ✅ Wyodrębnienie wymagań (6 komponentów, 4 endpointy, 7 hooks, 3 user stories)
+- ✅ Projektowanie szczegółów implementacji (struktura, stan, API, interakcje, błędy)
+- ✅ Utworzenie kompleksowego planu implementacji (1282 linie)
+
+### Dokumentacja:
+
+**Nowy plik:**
+- `.ai/history-view-implementation-plan.md` - Kompleksowy plan implementacji widoku History View (1282 linie) zawiera:
+  - Przegląd widoku i główne funkcjonalności
+  - Routing i middleware autoryzacji
+  - Strukturę komponentów z hierarchią
+  - Szczegóły 6 komponentów (React islands + Astro)
+  - Typy DTO i ViewModel z podziałem pól
+  - Zarządzanie stanem (lokalny stan, 7 custom hooks)
+  - Integrację z 4 endpointami API
+  - Mapowanie 3 user stories do przepływów
+  - Warunki walidacji (client-side i server-side)
+  - Obsługę 10 scenariuszy błędów
+  - 30 kroków implementacji
+
+**Korzyści:**
+1. **Kompletność** - plan zawiera wszystkie szczegóły potrzebne do implementacji
+2. **Jasność** - każdy komponent, hook, endpoint szczegółowo opisany
+3. **Gotowość** - plan wystarczająco szczegółowy dla programisty frontendowego
+4. **Spójność** - zgodność z PRD, user stories, API, tech stack
+5. **Reuse** - wykorzystanie komponentów z Chat View (RatingButtons, SourcesList)
+6. **Praktyczność** - 30 kroków implementacji od utility functions do weryfikacji końcowej
+
+---
+
+## 🔗 Powiązane dokumenty
+
+- `.ai/history-view-implementation-plan.md` - **NOWY** - Kompleksowy plan implementacji widoku History View
+- `.ai/view-implementations/history-view-implementation-plan-note.md` - Podstawowy plan widoku History View
+- `.ai/chat-view-implementation-plan.md` - Wzór formatu planu implementacji (Chat View)
+- `.ai/ui-plan.md` - Architektura UI wysokiego poziomu
+- `.ai/prd.md` - Dokument wymagań produktu (user stories)
+- `.ai/api-implementation-index.md` - Index planów implementacji endpointów
+- `src/lib/types.ts` - Typy TypeScript (DTO, ViewModel)
+- `src/lib/apiClient.ts` - API Client z autoryzacją i obsługą błędów
+
+---
+
+## 📋 Podsumowanie Sesji Tworzenia Szczegółowego Planu Implementacji History View (2025-12-08)
+
+### Status: ✅ ZAKOŃCZONE
+
+**Data zakończenia:** 2025-12-08  
+**Czas trwania:** 1 sesja  
+**Wynik:** Kompleksowy plan implementacji widoku History View (1282 linie)
+
+### Kluczowe Osiągnięcia:
+
+1. **Kompleksowy plan implementacji** - 11 sekcji szczegółów technicznych
+2. **Szczegółowa specyfikacja komponentów** - 6 komponentów z pełną specyfikacją
+3. **Mapowanie wymagań** - 3 user stories → komponenty, 4 endpointy → integracja
+4. **Reuse komponentów** - RatingButtons i SourcesList z Chat View
+5. **Gotowość do implementacji** - plan wystarczająco szczegółowy dla programisty frontendowego
+6. **Dokumentacja** - 1282 linie szczegółowego planu implementacji
+
+### Następne Kroki:
+
+1. **Implementacja widoku History View** - zgodnie z planem w `.ai/history-view-implementation-plan.md`
+2. **Odwoływanie się do planu** - jako główne źródło szczegółów implementacji
+3. **Iteracyjne podejście** - implementacja zgodnie z 30 krokami z planu
+
+**Gotowe do rozpoczęcia implementacji widoku History View zgodnie z kompleksowym planem!** 🚀
+
+---
+
