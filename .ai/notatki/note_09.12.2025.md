@@ -591,3 +591,311 @@ register.astro (Astro page)
 
 ---
 
+## 📋 Sesja Planistyczna - Settings View Implementation Plan
+
+**Data rozpoczęcia:** 2025-12-09  
+**Status:** UKOŃCZONY
+
+### Kontekst projektu
+- **Backend:** ✅ Zaimplementowany (API endpoints, RAG pipeline, rating system)
+- **Frontend:** 🔄 W trakcie - podstawowe strony Astro (placeholdery)
+- **UI Plan:** ✅ Istniejący (`.ai/ui-plan.md`) - architektura UI wysokiego poziomu
+- **PRD:** ✅ Kompletny (`.ai/prd.md`) - wymagania produktu
+- **View Implementation Plans:** ✅ Chat View, History View, Landing Page, Login View, Register View (wzory formatu)
+
+### Cel sesji
+Stworzenie kompleksowego, szczegółowego planu implementacji widoku ustawień na podstawie:
+- Podstawowego planu widoku (`.ai/view-implementations/settings-view-implementation-plan-note.md`)
+- Dokumentu wymagań produktu (PRD) - wymagania 3.1 (Uwierzytelnianie) i 9 (Wymagania prawne i bezpieczeństwo)
+- Wzorów formatu planów implementacji (Login View, Register View jako najnowsze wzory)
+- Stack technologiczny (Astro 5, React 19, Supabase Auth SDK, Shadcn/ui Dialog)
+
+**Wynik:** Nowy dokument `.ai/settings-view-implementation-plan.md` z kompleksowym planem implementacji zawierającym:
+- Przegląd widoku i jego funkcjonalności (3 sekcje: Profil, Preferencje, Konto)
+- Routing i strukturę komponentów
+- Szczegółową specyfikację każdego komponentu (4 komponenty)
+- Typy DTO i ViewModel (ChangePasswordFormData, ChangePasswordFormErrors, PasswordStrength)
+- Zarządzanie stanem (7 stanów dla ChangePasswordForm, 3 stany dla DeleteAccountButton)
+- Integrację z Supabase Auth SDK (updateUser z ponownym uwierzytelnieniem, deleteUser)
+- Interakcje użytkownika i obsługę błędów
+- 21 kroków implementacji
+
+---
+
+## 🎯 Zakres pracy - Settings View
+
+### Analiza dokumentów źródłowych
+- [x] Przegląd podstawowego planu widoku (`.ai/view-implementations/settings-view-implementation-plan-note.md`)
+- [x] Przegląd PRD (`.ai/prd.md`) - wymagania 3.1 i 9 (zarządzanie kontem, RODO)
+- [x] Przegląd wzorów formatu (`.ai/login-view-implementation-plan.md`, `.ai/register-page-view-implementation-plan.md`)
+- [x] Przegląd konfiguracji Supabase (`.src/lib/supabase.ts`)
+- [x] Przegląd istniejących komponentów UI (Shadcn/ui: Input, Button, Alert, Dialog, Checkbox)
+- [x] Przegląd typów TypeScript (`.src/lib/types.ts`)
+
+### Wyodrębnienie wymagań
+- [x] Kluczowe wymagania z PRD (zarządzanie hasłem, usunięcie konta - RODO)
+- [x] Wymagania bezpieczeństwa (ponowne uwierzytelnienie przed zmianą hasła, podwójne potwierdzenie usunięcia konta, kaskadowe usuwanie danych)
+- [x] Wymagania UX (walidacja w czasie rzeczywistym, wskaźnik siły hasła, confirmation modal, toast notifications)
+- [x] Wymagania dostępności (ARIA labels, keyboard navigation, focus trap w modalu)
+
+### Projektowanie szczegółów implementacji
+- [x] Struktura komponentów (settings.astro, SettingsLayout.astro, ChangePasswordForm.tsx, DeleteAccountButton.tsx)
+- [x] Typy DTO i ViewModel (ChangePasswordFormData, ChangePasswordFormErrors, PasswordStrength, SettingsLayoutProps)
+- [x] Zarządzanie stanem (7 stanów dla ChangePasswordForm, 3 stany dla DeleteAccountButton)
+- [x] Integracja z Supabase Auth SDK (signInWithPassword dla ponownego uwierzytelnienia, updateUser dla zmiany hasła, deleteUser dla usunięcia konta)
+- [x] Interakcje użytkownika (8 scenariuszy)
+- [x] Warunki walidacji (client-side: 7 warunków, server-side: 4 warunki)
+- [x] Obsługa błędów (5 scenariuszy błędów)
+
+### Mapowanie wymagań
+- [x] PRD wymagania 3.1 i 9 → komponenty i przepływ zarządzania kontem
+- [x] Wymagania bezpieczeństwa → ponowne uwierzytelnienie, podwójne potwierdzenie, kaskadowe usuwanie
+- [x] Wymagania UX → interakcje użytkownika i stany UI (toggle hasła, wskaźnik siły hasła, modal)
+
+---
+
+## 📝 Notatki z sesji planistycznej - Settings View
+
+### Analiza dokumentów:
+
+**Z podstawowego planu widoku wyodrębniono:**
+- Widok: Settings View (`/app/settings`)
+- Typ: Astro SSR + React islands (formularze)
+- Autentykacja: Wymagana (chroniony widok)
+- Główne komponenty: `ChangePasswordForm.tsx`, `DeleteAccountButton.tsx`, `SettingsLayout.astro`
+- Wymagania UX: walidacja w czasie rzeczywistym, wskaźnik siły hasła (opcjonalnie), confirmation modal, toast notifications
+- Wymagania bezpieczeństwa: ponowne uwierzytelnienie przed zmianą hasła, podwójne potwierdzenie usunięcia konta, kaskadowe usuwanie danych
+
+**Z PRD wyodrębniono:**
+- **Wymaganie 3.1:** Uwierzytelnianie użytkowników - zarządzanie hasłem i kontem
+- **Wymaganie 9:** Wymagania prawne i bezpieczeństwo - prawo do usunięcia danych (RODO)
+  - Użytkownik może usunąć swoje konto wraz z całą historią zapytań i ocenami
+  - Kaskadowe usuwanie danych (zapytania, oceny)
+- **Security best practice:** Ponowne uwierzytelnienie przed zmianą hasła
+
+**Z wzorów formatu (Login View, Register View) wyodrębniono:**
+- **11 sekcji szczegółów:**
+  1. Przegląd
+  2. Routing widoku
+  3. Struktura komponentów
+  4. Szczegóły komponentów
+  5. Typy
+  6. Zarządzanie stanem
+  7. Integracja API
+  8. Interakcje użytkownika
+  9. Warunki i walidacja
+  10. Obsługa błędów
+  11. Kroki implementacji
+- **Szczegółowość:** Każdy komponent z pełną specyfikacją (props, state, events, walidacja)
+- **Mapowanie wymagań:** PRD → komponenty, Supabase Auth → integracja
+
+**Z konfiguracji Supabase wyodrębniono:**
+- Client setup: `src/lib/supabase.ts` z `supabaseClient`
+- Environment variables: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`
+- Auth methods: `signInWithPassword()` (ponowne uwierzytelnienie), `updateUser()` (zmiana hasła), `getUser()` (pobranie email)
+- Typy: `Session`, `AuthError`, `AuthResponse`, `UserResponse` z `@supabase/supabase-js`
+
+**Z istniejących komponentów UI wyodrębniono:**
+- Shadcn/ui komponenty: `Input`, `Button`, `Alert`, `Dialog`, `Checkbox`, `Card` (dostępne w `src/components/ui/`)
+- Ikony: `lucide-react` (Eye, EyeOff)
+- Toast notifications: `sonner` (dostępne w `package.json`)
+- Stylowanie: Tailwind CSS
+
+### Projektowanie szczegółów implementacji:
+
+**Struktura komponentów:**
+```
+settings.astro (Astro SSR page)
+├── AppLayout.astro (chroniony layout)
+└── SettingsLayout.astro (Astro component)
+    ├── Section: Profil
+    │   ├── Email display (read-only, Astro)
+    │   └── ChangePasswordForm.tsx (React island - client:load)
+    ├── Section: Preferencje (opcjonalnie, post-MVP)
+    └── Section: Konto
+        └── DeleteAccountButton.tsx (React island - client:load)
+```
+
+**Typy DTO i ViewModel:**
+- `ChangePasswordFormData` - Dane formularza (currentPassword, newPassword, newPasswordConfirm)
+- `ChangePasswordFormErrors` - Błędy walidacji (currentPassword?, newPassword?, newPasswordConfirm?, general?)
+- `PasswordStrength` - Typ siły hasła (weak, medium, strong) - opcjonalny
+- `SettingsLayoutProps` - Propsy layoutu (userEmail)
+
+**Zarządzanie stanem:**
+- **ChangePasswordForm (7 stanów):**
+  - `formData: ChangePasswordFormData` - Wartości pól formularza
+  - `errors: ChangePasswordFormErrors` - Komunikaty błędów walidacji
+  - `isLoading: boolean` - Stan ładowania podczas zmiany hasła
+  - `showCurrentPassword: boolean` - Kontrola widoczności obecnego hasła
+  - `showNewPassword: boolean` - Kontrola widoczności nowego hasła
+  - `showNewPasswordConfirm: boolean` - Kontrola widoczności potwierdzenia hasła
+  - `passwordStrength: PasswordStrength | null` - Siła hasła (opcjonalny)
+- **DeleteAccountButton (3 stany):**
+  - `isModalOpen: boolean` - Kontrola widoczności modala
+  - `isConfirmChecked: boolean` - Stan checkboxa "Rozumiem konsekwencje"
+  - `isLoading: boolean` - Stan ładowania podczas usuwania konta
+
+**Integracja z Supabase Auth SDK:**
+- **Zmiana hasła (2 kroki):**
+  1. Ponowne uwierzytelnienie: `supabase.auth.signInWithPassword({ email, password: currentPassword })`
+  2. Zmiana hasła: `supabase.auth.updateUser({ password: newPassword })`
+- **Usunięcie konta:**
+  - Opcja 1: Backend endpoint `DELETE /api/v1/users/me` (zalecane dla bezpieczeństwa)
+  - Opcja 2: Supabase Auth SDK (wymaga service role key, nie dostępne po stronie klienta)
+- **Mapowanie błędów:**
+  - `"Invalid login credentials"` → `"Nieprawidłowe obecne hasło"`
+  - `"Password should be at least 8 characters"` → `"Hasło musi mieć minimum 8 znaków"`
+  - `"New password should be different from the old password"` → `"Nowe hasło musi różnić się od obecnego"`
+  - Inne błędy → `"Wystąpił błąd. Spróbuj ponownie."`
+
+**Interakcje użytkownika (8 scenariuszy):**
+1. Zmiana hasła (wypełnienie formularza, walidacja, ponowne uwierzytelnienie, zmiana hasła)
+2. Toggle widoczności hasła (3 pola osobno)
+3. Wskaźnik siły hasła (opcjonalnie, w czasie rzeczywistym)
+4. Otwarcie modala usunięcia konta
+5. Zaznaczenie checkboxa w modalu
+6. Potwierdzenie usunięcia konta
+7. Anulowanie usunięcia konta
+8. Keyboard navigation (Tab, Enter, Escape, focus trap)
+
+**Warunki walidacji:**
+- **Client-side (7 warunków):**
+  - Obecne hasło wymagane
+  - Nowe hasło wymagane
+  - Nowe hasło minimum 8 znaków
+  - Potwierdzenie hasła wymagane
+  - Zgodność haseł (newPasswordConfirm === newPassword)
+  - Przycisk submit wyłączony podczas ładowania
+  - Checkbox "Rozumiem konsekwencje" wymagany (dla usunięcia konta)
+- **Server-side (4 warunki):**
+  - Obecne hasło poprawne (ponowne uwierzytelnienie)
+  - Nowe hasło różni się od obecnego
+  - Siła hasła (Supabase)
+  - Ownership konta (dla usunięcia)
+
+**Obsługa błędów (5 scenariuszy):**
+1. Błędy walidacji client-side (komunikaty pod polami)
+2. Błędy Supabase Auth (zmiana hasła) - mapowanie na przyjazne komunikaty
+3. Błędy usunięcia konta (401, 403, 404, 500, network error)
+4. Loading states (wyłączenie pól i przycisków)
+5. Komunikaty sukcesu (toast notification, przekierowanie)
+
+---
+
+## ✅ Zatwierdzone Decyzje - Settings View (2025-12-09)
+
+### 1. Format planu implementacji
+- ✅ **11 sekcji szczegółów** - od przeglądu do kroków implementacji (zgodnie z wzorem Login View, Register View)
+- ✅ **Kompletność** - każdy komponent z pełną specyfikacją (props, state, events, walidacja)
+- ✅ **Mapowanie wymagań** - PRD wymagania 3.1 i 9 → komponenty, Supabase Auth → integracja
+
+### 2. Szczegółowość dokumentacji
+- ✅ **Typy DTO i ViewModel** - ChangePasswordFormData, ChangePasswordFormErrors, PasswordStrength, SettingsLayoutProps z podziałem pól
+- ✅ **Zarządzanie stanem** - 7 stanów dla ChangePasswordForm, 3 stany dla DeleteAccountButton z opisem celu i aktualizacji
+- ✅ **Integracja API** - szczegółowy opis Supabase Auth SDK (ponowne uwierzytelnienie + updateUser, deleteUser) z mapowaniem błędów
+- ✅ **Interakcje użytkownika** - 8 scenariuszy z oczekiwanymi wynikami
+- ✅ **Warunki walidacji** - client-side (7 warunków) i server-side (4 warunki) z komunikatami
+- ✅ **Obsługa błędów** - 5 scenariuszy z kodami obsługi
+- ✅ **Kroki implementacji** - 21 kroków od przygotowania do finalizacji
+
+### 3. Bezpieczeństwo
+- ✅ **Ponowne uwierzytelnienie** - wymagane przed zmianą hasła (security best practice)
+- ✅ **Podwójne potwierdzenie** - checkbox "Rozumiem konsekwencje" + przycisk "Usuń konto" dla usunięcia konta
+- ✅ **Kaskadowe usuwanie** - automatyczne usunięcie wszystkich danych użytkownika (zapytania, oceny)
+- ✅ **Walidacja hasła** - minimum 8 znaków (client + server)
+- ✅ **Ogólne komunikaty błędów** - nie ujawniające szczegółów technicznych
+
+### 4. UX i dostępność
+- ✅ **Walidacja w czasie rzeczywistym** - komunikaty błędów pod polami podczas wpisywania
+- ✅ **Wskaźnik siły hasła** - opcjonalny (weak/medium/strong) z kolorami
+- ✅ **Toggle hasła** - możliwość pokazania/ukrycia hasła (dla 3 pól osobno)
+- ✅ **Confirmation modal** - Dialog z focus trap i keyboard navigation
+- ✅ **Toast notifications** - sukces po zmianie hasła
+- ✅ **Accessibility** - ARIA labels, keyboard navigation, aria-invalid, aria-describedby, focus trap
+
+### 5. Gotowość do implementacji
+- ✅ Plan wystarczająco szczegółowy dla programisty frontendowego
+- ✅ Wszystkie komponenty, typy, integracje szczegółowo opisane
+- ✅ Warunki walidacji, obsługa błędów, interakcje użytkownika zmapowane
+- ✅ 21 kroków implementacji od przygotowania do finalizacji
+
+---
+
+## ✅ Postęp pracy - Settings View
+
+### Zrealizowane:
+- ✅ Analiza wszystkich dokumentów źródłowych (plan widoku, PRD, wzory formatu Login/Register View, konfiguracja Supabase)
+- ✅ Wyodrębnienie wymagań (PRD wymagania 3.1 i 9, wymagania bezpieczeństwa, UX, dostępności)
+- ✅ Projektowanie szczegółów implementacji (struktura, typy, stan, API, interakcje, błędy)
+- ✅ Utworzenie kompleksowego planu implementacji (904 linie)
+
+### Dokumentacja:
+
+**Nowy plik:**
+- `.ai/settings-view-implementation-plan.md` - Kompleksowy plan implementacji widoku Ustawień (904 linie) zawiera:
+  - Przegląd widoku i główne funkcjonalności (3 sekcje: Profil, Preferencje, Konto)
+  - Routing i parametry URL (`/app/settings`)
+  - Strukturę komponentów z hierarchią (settings.astro, SettingsLayout.astro, ChangePasswordForm.tsx, DeleteAccountButton.tsx)
+  - Szczegóły 4 komponentów (Astro page, Astro layout, 2 React islands)
+  - Typy DTO i ViewModel (ChangePasswordFormData, ChangePasswordFormErrors, PasswordStrength, SettingsLayoutProps)
+  - Zarządzanie stanem (7 stanów dla ChangePasswordForm, 3 stany dla DeleteAccountButton)
+  - Integrację z Supabase Auth SDK (ponowne uwierzytelnienie + updateUser, deleteUser)
+  - 8 interakcji użytkownika z oczekiwanymi wynikami
+  - Warunki walidacji (client-side: 7 warunków, server-side: 4 warunki)
+  - Obsługę 5 scenariuszy błędów z kodami obsługi
+  - 21 kroków implementacji
+
+**Korzyści:**
+1. **Kompletność** - plan zawiera wszystkie szczegóły potrzebne do implementacji
+2. **Jasność** - każdy komponent, typ, integracja szczegółowo opisana
+3. **Gotowość** - plan wystarczająco szczegółowy dla programisty frontendowego
+4. **Spójność** - zgodność z PRD, wymaganiami 3.1 i 9, tech stack
+5. **Bezpieczeństwo** - ponowne uwierzytelnienie, podwójne potwierdzenie, kaskadowe usuwanie
+6. **Praktyczność** - 21 kroków implementacji od przygotowania do finalizacji
+7. **UX i A11y** - uwzględnione wymagania UX (walidacja w czasie rzeczywistym, wskaźnik siły hasła, modal) i accessibility
+
+---
+
+## 🔗 Powiązane dokumenty - Settings View
+
+- `.ai/settings-view-implementation-plan.md` - **NOWY** - Kompleksowy plan implementacji widoku Ustawień
+- `.ai/view-implementations/settings-view-implementation-plan-note.md` - Podstawowy plan widoku Ustawień
+- `.ai/login-view-implementation-plan.md` - Wzór formatu planu implementacji (Login View)
+- `.ai/register-page-view-implementation-plan.md` - Wzór formatu planu implementacji (Register View)
+- `.ai/ui-plan.md` - Architektura UI wysokiego poziomu
+- `.ai/prd.md` - Dokument wymagań produktu (wymagania 3.1 i 9)
+- `src/lib/supabase.ts` - Konfiguracja Supabase client
+- `src/lib/types.ts` - Typy TypeScript (możliwość dodania typów ChangePasswordFormData, ChangePasswordFormErrors, PasswordStrength)
+
+---
+
+## 📋 Podsumowanie Sesji Tworzenia Szczegółowego Planu Implementacji Settings View (2025-12-09)
+
+### Status: ✅ ZAKOŃCZONE
+
+**Data zakończenia:** 2025-12-09  
+**Czas trwania:** 1 sesja  
+**Wynik:** Kompleksowy plan implementacji widoku Ustawień (904 linie)
+
+### Kluczowe Osiągnięcia:
+
+1. **Kompleksowy plan implementacji** - 11 sekcji szczegółów technicznych
+2. **Szczegółowa specyfikacja komponentów** - 4 komponenty z pełną specyfikacją
+3. **Mapowanie wymagań** - PRD wymagania 3.1 i 9 → komponenty, Supabase Auth → integracja
+4. **Bezpieczeństwo** - ponowne uwierzytelnienie, podwójne potwierdzenie, kaskadowe usuwanie danych
+5. **Gotowość do implementacji** - plan wystarczająco szczegółowy dla programisty frontendowego
+6. **UX i A11y** - uwzględnione wymagania UX (walidacja w czasie rzeczywistym, wskaźnik siły hasła, modal) i accessibility
+7. **Dokumentacja** - 904 linie szczegółowego planu implementacji
+
+### Następne Kroki:
+
+1. **Implementacja widoku Ustawień** - zgodnie z planem w `.ai/settings-view-implementation-plan.md`
+2. **Odwoływanie się do planu** - jako główne źródło szczegółów implementacji
+3. **Iteracyjne podejście** - implementacja zgodnie z 21 krokami z planu
+4. **Priorytetyzacja** - rozpoczęcie od struktury plików i podstawowych komponentów
+
+**Gotowe do rozpoczęcia implementacji widoku Ustawień zgodnie z kompleksowym planem!** 🚀
+
+---
+
