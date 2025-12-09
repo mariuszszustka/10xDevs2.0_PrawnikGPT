@@ -13,6 +13,7 @@
 **Najbardziej złożony endpoint w systemie** - implementuje pełny pipeline RAG do przetwarzania pytań prawnych.
 
 ### 8 Kroków Pipeline'u:
+
 1. Generate query embedding (OLLAMA)
 2. Similarity search (pgvector)
 3. Fetch related acts (graph traversal)
@@ -30,6 +31,7 @@
 **URL:** `/api/v1/queries`
 
 **Body:**
+
 ```json
 {
   "query_text": "Jakie są podstawowe prawa konsumenta w Polsce?"
@@ -37,6 +39,7 @@
 ```
 
 **Validation:**
+
 - `query_text`: 10-1000 characters, required
 
 ---
@@ -44,6 +47,7 @@
 ## Response
 
 ### 202 Accepted (Immediate)
+
 ```json
 {
   "query_id": "uuid",
@@ -58,6 +62,7 @@
 ```
 
 ### After Processing (via polling/WebSocket)
+
 ```json
 {
   "query_id": "uuid",
@@ -77,6 +82,7 @@
 ## Kluczowe Komponenty do Implementacji
 
 ### 1. Embedding Service (`backend/services/embedding_service.py`)
+
 ```python
 class EmbeddingService:
     async def generate_embedding(self, text: str) -> List[float]:
@@ -85,6 +91,7 @@ class EmbeddingService:
 ```
 
 ### 2. LLM Service (`backend/services/llm_service.py`)
+
 ```python
 class LLMService:
     async def generate(self, prompt: str, model: str, timeout: float) -> Dict:
@@ -93,6 +100,7 @@ class LLMService:
 ```
 
 ### 3. Vector Search Service (`backend/services/vector_search.py`)
+
 ```python
 class VectorSearchService:
     async def semantic_search(self, embedding: List[float], top_k: int) -> List[Dict]:
@@ -101,6 +109,7 @@ class VectorSearchService:
 ```
 
 ### 4. RAG Pipeline (`backend/services/rag_pipeline.py`)
+
 ```python
 class RAGPipeline:
     async def generate_fast_response(self, query_text: str, query_id: UUID) -> Dict:
@@ -113,6 +122,7 @@ class RAGPipeline:
 ## Database Functions (Supabase RPC)
 
 ### Semantic Search Function
+
 ```sql
 CREATE OR REPLACE FUNCTION semantic_search_chunks(
     query_embedding vector(768),
@@ -125,6 +135,7 @@ $$;
 ```
 
 ### Related Acts Traversal
+
 ```sql
 CREATE OR REPLACE FUNCTION fetch_related_acts(
     act_ids uuid[],
@@ -140,6 +151,7 @@ $$;
 ## Bezpieczeństwo
 
 ### Zagrożenia:
+
 1. **SQL Injection** - ZAWSZE parametryzowane zapytania
 2. **Prompt Injection** - Sanityzacja input, clear prompt structure
 3. **DoS** - Rate limiting (10 queries/min), timeouts (15s)
@@ -150,6 +162,7 @@ $$;
 ## Wydajność
 
 **Cele:**
+
 - Initial response: <200ms (202 Accepted)
 - Processing time: <15s (p95)
 - Embedding: <2s
@@ -157,6 +170,7 @@ $$;
 - LLM generation: <10s
 
 **Optymalizacje:**
+
 - Connection pooling
 - Async operations (asyncio)
 - Efficient indexes (IVFFlat)
@@ -167,24 +181,28 @@ $$;
 ## Checklist Implementacji
 
 ### Infrastructure
+
 - [ ] Struktura katalogów (models, services, db, routers)
 - [ ] Config setup (environment variables)
 - [ ] Supabase client
 - [ ] Redis client
 
 ### Services
+
 - [ ] EmbeddingService + testy
 - [ ] LLMService + testy
 - [ ] VectorSearchService + testy
 - [ ] RAGPipeline (orchestration) + testy
 
 ### Database
+
 - [ ] semantic_search_chunks RPC function
 - [ ] fetch_related_acts RPC function
 - [ ] QueryRepository
 - [ ] Indexes (pgvector IVFFlat)
 
 ### API
+
 - [ ] Pydantic models (QuerySubmitRequest, QuerySubmitResponse, etc.)
 - [ ] Custom exceptions (NoRelevantActsError, OLLAMATimeoutError)
 - [ ] Auth middleware
@@ -193,6 +211,7 @@ $$;
 - [ ] Background task orchestration
 
 ### Testing
+
 - [ ] Unit tests dla każdego serwisu
 - [ ] Integration tests z rzeczywistym OLLAMA
 - [ ] Integration tests z Supabase
@@ -216,4 +235,3 @@ $$;
 **Pełny szczegółowy plan (1800 linii kodu) dostępny w oryginalnym pliku.**
 
 **Powrót do:** [Index](../api-implementation-index.md)
-

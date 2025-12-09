@@ -5,6 +5,7 @@
 Chat View to główny interfejs aplikacji PrawnikGPT, umożliwiający zadawanie pytań prawnych w języku naturalnym i otrzymywanie odpowiedzi z systemu RAG. Widok wykorzystuje dwupoziomowy mechanizm odpowiedzi: szybką odpowiedź (<15s) z mniejszego modelu oraz opcjonalną dokładną odpowiedź (do 240s) z większego modelu 120B. Widok jest zbudowany w architekturze Astro 5 + React 19 islands, gdzie statyczne elementy (komunikaty powitalne, przykładowe pytania) są renderowane przez Astro, a interaktywne komponenty (input, lista wiadomości, przyciski oceny) są React islands z strategicznym użyciem dyrektyw hydratacji.
 
 **Główne funkcjonalności:**
+
 - Zadawanie pytań z walidacją (10-1000 znaków)
 - Otrzymywanie szybkich odpowiedzi z polling (exponential backoff 1s → 2s max)
 - Żądanie dokładniejszych odpowiedzi z długim pollingiem (co 5s, timeout 240s)
@@ -23,11 +24,13 @@ Chat View to główny interfejs aplikacji PrawnikGPT, umożliwiający zadawanie 
 **Autentykacja:** Wymagana (middleware sprawdzający sesję użytkownika)
 
 **Middleware:**
+
 - Sprawdzenie autoryzacji użytkownika przez Supabase Auth
 - Przekierowanie do `/login` jeśli użytkownik nie jest zalogowany
 - Dodanie Supabase client do `Astro.locals.supabase` (już zaimplementowane w `src/middleware/index.ts`)
 
 **Layout:**
+
 - Użycie `AppLayout.astro` (jeśli istnieje) lub `BaseLayout.astro` z nagłówkiem aplikacji
 - Nagłówek zawiera: logo, nawigację (Chat, Historia, Ustawienia), User Menu, wskaźnik aktywnych zapytań (X/3)
 
@@ -91,6 +94,7 @@ Chat View (app/index.astro)
 Główny kontener zarządzający listą wiadomości czatu. Odpowiedzialny za wyświetlanie par query/response, zarządzanie pollingiem dla szybkich odpowiedzi, auto-scroll do najnowszej wiadomości oraz obsługę stanów ładowania i błędów.
 
 **Główne elementy:**
+
 - `<div role="log" aria-live="polite" aria-label="Historia czatu">` - Kontener wiadomości z ARIA live region
 - `QueryBubble` - Komponent wyświetlający pytanie użytkownika (right-aligned bubble)
 - `ResponseCard` - Komponent wyświetlający odpowiedź (left-aligned card)
@@ -99,16 +103,19 @@ Główny kontener zarządzający listą wiadomości czatu. Odpowiedzialny za wy�
 - Auto-scroll do najnowszej wiadomości przy użyciu `useEffect` i `scrollIntoView`
 
 **Obsługiwane zdarzenia:**
+
 - `onQuerySubmit` - Callback wywoływany po wysłaniu zapytania (dodaje optimistic query do listy)
 - `onResponseReceived` - Callback wywoływany po otrzymaniu odpowiedzi (aktualizuje listę)
 - `onError` - Callback wywoływany przy błędzie (wyświetla komunikat błędu)
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie statusu odpowiedzi (`pending`, `processing`, `completed`, `failed`)
 - Weryfikacja czy odpowiedź zawiera błąd `NoRelevantActsError` (kod błędu z API)
 - Timeout handling dla szybkich odpowiedzi (15s) - wyświetlenie komunikatu błędu
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface ChatMessagesContainerProps {
@@ -122,10 +129,12 @@ Główny kontener zarządzający listą wiadomości czatu. Odpowiedzialny za wy�
   - `activeQueryIds: Set<string>` - Zbiór ID zapytań w trakcie przetwarzania
 
 **Custom Hooks:**
+
 - `useQueryPolling(queryId: string)` - Polling z exponential backoff (1s → 2s max) dla szybkich odpowiedzi
 - `useActiveQueries()` - Zarządzanie limitem 3 równoczesnych zapytań (z AppContext)
 
 **Integracja z API:**
+
 - `GET /api/v1/queries/{query_id}` - Polling dla aktualizacji statusu odpowiedzi
 - Obsługa statusów: `pending` → `processing` → `completed` / `failed`
 
@@ -135,6 +144,7 @@ Główny kontener zarządzający listą wiadomości czatu. Odpowiedzialny za wy�
 Pole wprowadzania pytań z walidacją, licznikiem znaków, wskaźnikiem rate limit oraz obsługą klawiatury (Enter do wysłania, Shift+Enter dla nowej linii).
 
 **Główne elementy:**
+
 - `<form>` - Formularz z obsługą submit
 - `<textarea>` - Pole tekstowe z auto-resize (max 5 linii widocznych, scroll po przekroczeniu)
 - `<div>` - Licznik znaków (10-1000, kolor czerwony jeśli poza zakresem)
@@ -143,12 +153,14 @@ Pole wprowadzania pytań z walidacją, licznikiem znaków, wskaźnikiem rate lim
 - Auto-focus na textarea po załadowaniu komponentu
 
 **Obsługiwane zdarzenia:**
+
 - `onSubmit: (queryText: string) => Promise<string>` - Callback wywoływany po wysłaniu zapytania, zwraca `query_id`
 - `onKeyDown` - Obsługa Enter (submit) i Shift+Enter (nowa linia)
 - `onChange` - Aktualizacja wartości i walidacja w czasie rzeczywistym
 - `onExampleQuestionClick` - Callback wywoływany po kliknięciu przykładowego pytania (ustawia wartość textarea)
 
 **Obsługiwana walidacja:**
+
 - **Client-side:**
   - Długość tekstu: 10-1000 znaków (walidacja w czasie rzeczywistym)
   - Rate limit: Maksymalnie 10 zapytań/min (sprawdzanie przez AppContext)
@@ -158,6 +170,7 @@ Pole wprowadzania pytań z walidacją, licznikiem znaków, wskaźnikiem rate lim
   - Rate limit przez API (kod błędu `RATE_LIMIT_EXCEEDED` jeśli przekroczony)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface ChatInputProps {
@@ -173,10 +186,12 @@ Pole wprowadzania pytań z walidacją, licznikiem znaków, wskaźnikiem rate lim
   - `isValid: boolean` - Flaga walidacji (10-1000 znaków)
 
 **Custom Hooks:**
+
 - `useRateLimit()` - Pobieranie informacji o rate limit z AppContext
 - `useActiveQueries()` - Sprawdzanie liczby aktywnych zapytań z AppContext
 
 **Integracja z API:**
+
 - `POST /api/v1/queries` - Wysłanie zapytania
   - Request: `QuerySubmitRequest` (`query_text: string`)
   - Response: `QuerySubmitResponse` (`query_id`, `status: "processing"`, `fast_response.status: "pending"`)
@@ -187,6 +202,7 @@ Pole wprowadzania pytań z walidacją, licznikiem znaków, wskaźnikiem rate lim
 Karta wyświetlająca pojedynczą odpowiedź (szybką lub dokładną) z renderowaniem Markdown, listą źródeł, przyciskami oceny, przyciskiem "Uzyskaj dokładniejszą odpowiedź" oraz wskaźnikiem czasu generowania.
 
 **Główne elementy:**
+
 - `<article>` - Semantic HTML dla odpowiedzi
 - `MarkdownContent` - Renderowanie treści odpowiedzi z sanitizacją (`rehype-sanitize`)
 - `SourcesList` - Lista źródeł z linkami do ISAP
@@ -196,21 +212,24 @@ Karta wyświetlająca pojedynczą odpowiedź (szybką lub dokładną) z renderow
 - `RAGContextTimer` - Wskaźnik czasu ważności cache RAG context (5 minut, wizualny timer)
 
 **Obsługiwane zdarzenia:**
+
 - `onRatingClick: (responseType: ResponseType, ratingValue: RatingValue) => Promise<void>` - Callback po kliknięciu oceny
 - `onDetailedAnswerClick: () => Promise<void>` - Callback po kliknięciu "Uzyskaj dokładniejszą odpowiedź"
 - `onSourceClick: (link: string) => void` - Callback po kliknięciu źródła (otwarcie w nowej karcie)
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy odpowiedź jest kompletna (`status === "completed"`)
 - Sprawdzanie czy dokładna odpowiedź już istnieje (ukrycie przycisku "Uzyskaj dokładniejszą odpowiedź")
 - Sprawdzanie czy cache RAG context jest ważny (<5 minut od utworzenia zapytania)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface ResponseCardProps {
     query: QueryDetailResponse; // Pełne dane zapytania
-    responseType: 'fast' | 'accurate'; // Typ odpowiedzi do wyświetlenia
+    responseType: "fast" | "accurate"; // Typ odpowiedzi do wyświetlenia
     onRatingClick?: (responseType: ResponseType, ratingValue: RatingValue) => Promise<void>;
     onDetailedAnswerClick?: () => Promise<void>;
   }
@@ -229,10 +248,12 @@ Karta wyświetlająca pojedynczą odpowiedź (szybką lub dokładną) z renderow
   ```
 
 **Custom Hooks:**
+
 - `useRAGContextTimer(createdAt: string)` - Timer odliczający czas ważności cache (5 minut)
 - `useOptimisticRating(queryId: string, responseType: ResponseType)` - Optimistic updates dla ratingów
 
 **Integracja z API:**
+
 - `POST /api/v1/queries/{query_id}/ratings` - Tworzenie/aktualizacja oceny
 - `POST /api/v1/queries/{query_id}/accurate-response` - Żądanie dokładniejszej odpowiedzi
 
@@ -242,21 +263,25 @@ Karta wyświetlająca pojedynczą odpowiedź (szybką lub dokładną) z renderow
 Przyciski oceny (kciuk w górę/dół) z optimistic updates, rollback przy błędzie oraz wizualną zmianą stanu po oddaniu głosu.
 
 **Główne elementy:**
+
 - `<button aria-label="Oceń pozytywnie">` - Przycisk kciuk w górę
 - `<button aria-label="Oceń negatywnie">` - Przycisk kciuk w dół
 - Wizualna zmiana stanu: aktywny przycisk (wypełniony kolor), nieaktywny (disabled, szary)
 - Toast notification po sukcesie (opcjonalnie, przez AppContext)
 
 **Obsługiwane zdarzenia:**
+
 - `onClick: (ratingValue: RatingValue) => Promise<void>` - Callback po kliknięciu oceny
 - Optimistic update: Natychmiastowa zmiana stanu wizualnego przed otrzymaniem odpowiedzi z API
 - Rollback: Przywrócenie poprzedniego stanu przy błędzie API
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy ocena już istnieje (blokada drugiego przycisku)
 - Sprawdzanie czy odpowiedź jest kompletna (tylko kompletne odpowiedzi można oceniać)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface RatingButtonsProps {
@@ -271,9 +296,11 @@ Przyciski oceny (kciuk w górę/dół) z optimistic updates, rollback przy błę
   - `isSubmitting: boolean` - Flaga wskazująca wysyłanie oceny
 
 **Custom Hooks:**
+
 - `useOptimisticRating(queryId: string, responseType: ResponseType)` - Logika optimistic updates z rollback
 
 **Integracja z API:**
+
 - `POST /api/v1/queries/{query_id}/ratings` - Tworzenie/aktualizacja oceny
   - Request: `RatingCreateRequest` (`response_type`, `rating_value`)
   - Response: `RatingResponse` (201 Created dla nowej, 200 OK dla aktualizacji)
@@ -284,6 +311,7 @@ Przyciski oceny (kciuk w górę/dół) z optimistic updates, rollback przy błę
 Modal wyświetlający dokładną odpowiedź z długim pollingiem (co 5s, timeout 240s), progress barem podczas generowania oraz możliwością zamknięcia.
 
 **Główne elementy:**
+
 - `<div role="dialog" aria-modal="true" aria-labelledby="modal-title">` - Modal z ARIA attributes
 - `<button aria-label="Zamknij modal">` - Przycisk zamknięcia (X w prawym górnym rogu)
 - `ProgressBar` - Indeterminate progress bar podczas generowania
@@ -293,16 +321,19 @@ Modal wyświetlający dokładną odpowiedź z długim pollingiem (co 5s, timeout
 - Focus trap: Focus pozostaje w modalu, przywrócenie focus po zamknięciu
 
 **Obsługiwane zdarzenia:**
+
 - `onClose: () => void` - Callback wywoływany po zamknięciu modala (ESC, kliknięcie backdrop, przycisk X)
 - `onRatingClick: (ratingValue: RatingValue) => Promise<void>` - Callback po kliknięciu oceny
 - `onEscapeKey` - Zamknięcie modala klawiszem ESC
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie statusu odpowiedzi (`pending`, `processing`, `completed`, `failed`)
 - Timeout handling (240s) - wyświetlenie komunikatu błędu z możliwością ponowienia
 - Sprawdzanie czy cache RAG context jest ważny (jeśli wygasł, wyświetlenie komunikatu)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface DetailedAnswerModalProps {
@@ -318,10 +349,12 @@ Modal wyświetlający dokładną odpowiedź z długim pollingiem (co 5s, timeout
   - `timeoutReached: boolean` - Flaga wskazująca timeout (240s)
 
 **Custom Hooks:**
+
 - `useLongPolling(queryId: string, timeout: number = 240000)` - Długi polling co 5s z timeoutem 240s
 - `useFocusTrap(isOpen: boolean)` - Focus trap dla modala
 
 **Integracja z API:**
+
 - `POST /api/v1/queries/{query_id}/accurate-response` - Żądanie dokładniejszej odpowiedzi
   - Request: Empty body
   - Response (202 Accepted): `AccurateResponseSubmitResponse` (`status: "processing"`, `estimated_time_seconds: 180`)
@@ -334,18 +367,22 @@ Modal wyświetlający dokładną odpowiedź z długim pollingiem (co 5s, timeout
 Statyczny komponent Astro wyświetlający komunikat powitalny dla nowych użytkowników (tylko jeśli brak historii zapytań).
 
 **Główne elementy:**
+
 - `<section>` - Sekcja z komunikatem powitalnym
 - `<h2>` - Tytuł: "Witaj w PrawnikGPT!"
 - `<p>` - Opis zakresu MVP i funkcjonalności
 - `<p>` - Informacja o ograniczeniach (20k ustaw)
 
 **Obsługiwane zdarzenia:**
+
 - Brak (komponent statyczny)
 
 **Obsługiwana walidacja:**
+
 - Warunek wyświetlenia: `hasQueryHistory === false` (sprawdzane w Astro page)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface WelcomeMessageProps {
@@ -359,19 +396,23 @@ Statyczny komponent Astro wyświetlający komunikat powitalny dla nowych użytko
 Statyczny komponent Astro wyświetlający listę przykładowych pytań (klikalne, przekazują tekst do ChatInput).
 
 **Główne elementy:**
+
 - `<section>` - Sekcja z przykładowymi pytaniami
 - `<h3>` - Tytuł: "Przykładowe pytania"
 - `<ul>` - Lista przykładowych pytań
 - `<button>` - Przyciski z przykładowymi pytaniami (klikalne, przekazują tekst do ChatInput przez event)
 
 **Obsługiwane zdarzenia:**
+
 - `onExampleQuestionClick: (question: string) => void` - Callback wywoływany po kliknięciu przykładowego pytania (przekazywany do ChatInput przez Astro)
 
 **Obsługiwana walidacja:**
+
 - Warunek wyświetlenia: `hasQueryHistory === false` (sprawdzane w Astro page)
 - Sprawdzanie czy lista przykładowych pytań nie jest pusta
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface ExampleQuestionsProps {
@@ -381,6 +422,7 @@ Statyczny komponent Astro wyświetlający listę przykładowych pytań (klikalne
   ```
 
 **Integracja z API:**
+
 - `GET /api/v1/onboarding/example-questions` - Pobranie listy przykładowych pytań (wywoływane w Astro page, SSR)
 
 ### 4.8. SourcesList.astro
@@ -389,6 +431,7 @@ Statyczny komponent Astro wyświetlający listę przykładowych pytań (klikalne
 Statyczny komponent Astro wyświetlający listę źródeł z linkami do ISAP.
 
 **Główne elementy:**
+
 - `<section>` - Sekcja z źródłami
 - `<h4>` - Tytuł: "Źródła"
 - `<ul>` - Lista źródeł
@@ -396,13 +439,16 @@ Statyczny komponent Astro wyświetlający listę źródeł z linkami do ISAP.
 - `<a target="_blank" rel="noopener noreferrer">` - Link do ISAP (otwarcie w nowej karcie)
 
 **Obsługiwane zdarzenia:**
+
 - Brak (komponent statyczny, linki otwierają się w nowej karcie)
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy lista źródeł nie jest pusta
 - Walidacja URL (link do ISAP)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface SourcesListProps {
@@ -416,18 +462,22 @@ Statyczny komponent Astro wyświetlający listę źródeł z linkami do ISAP.
 React island wyświetlający komunikat błędu dla zapytań o akty spoza bazy (NoRelevantActsError).
 
 **Główne elementy:**
+
 - `<div role="alert">` - Alert z komunikatem błędu
 - `<h3>` - Tytuł: "Akt prawny nie został znaleziony"
 - `<p>` - Komunikat: "Przepraszam, moja baza wiedzy jest na razie ograniczona..."
 - `<button>` - Przycisk "Spróbuj ponownie" (opcjonalnie)
 
 **Obsługiwane zdarzenia:**
+
 - `onRetry?: () => void` - Callback wywoływany po kliknięciu "Spróbuj ponownie"
 
 **Obsługiwana walidacja:**
+
 - Warunek wyświetlenia: `errorCode === "NO_RELEVANT_ACTS"` (kod błędu z API)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface NoRelevantActsCardProps {
@@ -443,6 +493,7 @@ React island wyświetlający komunikat błędu dla zapytań o akty spoza bazy (N
 Wszystkie typy DTO są zdefiniowane w `src/lib/types.ts` i pochodzą z dokumentacji API:
 
 **QuerySubmitRequest:**
+
 ```typescript
 interface QuerySubmitRequest {
   query_text: string; // 10-1000 znaków, required
@@ -450,6 +501,7 @@ interface QuerySubmitRequest {
 ```
 
 **QuerySubmitResponse:**
+
 ```typescript
 interface QuerySubmitResponse {
   query_id: string;
@@ -464,6 +516,7 @@ interface QuerySubmitResponse {
 ```
 
 **QueryDetailResponse:**
+
 ```typescript
 interface QueryDetailResponse {
   query_id: string;
@@ -490,6 +543,7 @@ interface QueryDetailResponse {
 ```
 
 **AccurateResponseSubmitResponse:**
+
 ```typescript
 interface AccurateResponseSubmitResponse {
   query_id: string;
@@ -501,6 +555,7 @@ interface AccurateResponseSubmitResponse {
 ```
 
 **RatingCreateRequest:**
+
 ```typescript
 interface RatingCreateRequest {
   response_type: ResponseType; // "fast" | "accurate"
@@ -509,6 +564,7 @@ interface RatingCreateRequest {
 ```
 
 **RatingResponse:**
+
 ```typescript
 interface RatingResponse {
   rating_id: string;
@@ -521,6 +577,7 @@ interface RatingResponse {
 ```
 
 **ExampleQuestionsResponse:**
+
 ```typescript
 interface ExampleQuestionsResponse {
   examples: ExampleQuestion[];
@@ -528,6 +585,7 @@ interface ExampleQuestionsResponse {
 ```
 
 **ExampleQuestion:**
+
 ```typescript
 interface ExampleQuestion {
   id: number;
@@ -537,6 +595,7 @@ interface ExampleQuestion {
 ```
 
 **SourceReference:**
+
 ```typescript
 interface SourceReference {
   act_title: string;
@@ -547,6 +606,7 @@ interface SourceReference {
 ```
 
 **RatingDetail:**
+
 ```typescript
 interface RatingDetail {
   rating_id: string;
@@ -556,6 +616,7 @@ interface RatingDetail {
 ```
 
 **ErrorResponse:**
+
 ```typescript
 interface ErrorResponse {
   error: {
@@ -569,6 +630,7 @@ interface ErrorResponse {
 ```
 
 **ApiErrorCode:**
+
 ```typescript
 type ApiErrorCode =
   | "VALIDATION_ERROR"
@@ -589,6 +651,7 @@ type ApiErrorCode =
 ### 5.2. Typy ViewModel (dla komponentów)
 
 **ResponseCardViewModel:**
+
 ```typescript
 interface ResponseCardViewModel {
   content: string; // Treść odpowiedzi (Markdown)
@@ -602,6 +665,7 @@ interface ResponseCardViewModel {
 ```
 
 **ChatInputViewModel:**
+
 ```typescript
 interface ChatInputViewModel {
   queryText: string;
@@ -618,6 +682,7 @@ interface ChatInputViewModel {
 ```
 
 **DetailedAnswerModalViewModel:**
+
 ```typescript
 interface DetailedAnswerModalViewModel {
   queryId: string;
@@ -633,16 +698,17 @@ interface DetailedAnswerModalViewModel {
 ### 6.1. Globalny stan (AppContext)
 
 **AppContext.tsx:**
+
 ```typescript
 interface AppContextType {
   // Aktywne zapytania (limit 3)
   activeQueries: Set<string>; // Set<query_id>
   setActiveQueries: (queries: Set<string>) => void;
-  
+
   // Sesja użytkownika
   userSession: Session | null;
   setUserSession: (session: Session | null) => void;
-  
+
   // Rate limit info
   rateLimitInfo: {
     used: number;
@@ -654,6 +720,7 @@ interface AppContextType {
 ```
 
 **Użycie:**
+
 - Provider w `AppLayout.astro` (lub `BaseLayout.astro` z nagłówkiem)
 - Consume w React islands przez `useContext(AppContext)`
 - Aktualizacja rate limit info z nagłówków odpowiedzi API (`X-RateLimit-*`)
@@ -661,24 +728,29 @@ interface AppContextType {
 ### 6.2. Lokalny stan komponentów
 
 **ChatMessagesContainer:**
+
 - `queries: QueryDetailResponse[]` - Lista zapytań i odpowiedzi
 - `isPolling: boolean` - Flaga aktywności polling
 - `activeQueryIds: Set<string>` - Zbiór ID zapytań w trakcie przetwarzania
 
 **ChatInput:**
+
 - `queryText: string` - Wartość pola tekstowego
 - `isSubmitting: boolean` - Flaga wysyłania zapytania
 - `characterCount: number` - Liczba znaków (obliczana)
 
 **ResponseCard:**
+
 - `isExpanded: boolean` - Flaga rozwinięcia (dla przyszłych funkcji)
 - `ragContextTimer: number` - Pozostały czas cache (w sekundach)
 
 **RatingButtons:**
+
 - `optimisticRating: RatingValue | null` - Optimistic rating
 - `isSubmitting: boolean` - Flaga wysyłania oceny
 
 **DetailedAnswerModal:**
+
 - `accurateResponse: AccurateResponseData | null` - Dane dokładnej odpowiedzi
 - `isPolling: boolean` - Flaga aktywności polling
 - `timeoutReached: boolean` - Flaga timeout
@@ -686,6 +758,7 @@ interface AppContextType {
 ### 6.3. Custom Hooks
 
 **useQueryPolling(queryId: string):**
+
 ```typescript
 function useQueryPolling(queryId: string) {
   // Exponential backoff: 1s → 1.5s → 2s (max)
@@ -695,6 +768,7 @@ function useQueryPolling(queryId: string) {
 ```
 
 **useLongPolling(queryId: string, timeout: number = 240000):**
+
 ```typescript
 function useLongPolling(queryId: string, timeout: number = 240000) {
   // Polling co 5s
@@ -704,6 +778,7 @@ function useLongPolling(queryId: string, timeout: number = 240000) {
 ```
 
 **useActiveQueries():**
+
 ```typescript
 function useActiveQueries() {
   // Pobiera activeQueries z AppContext
@@ -712,6 +787,7 @@ function useActiveQueries() {
 ```
 
 **useRAGContextTimer(createdAt: string):**
+
 ```typescript
 function useRAGContextTimer(createdAt: string) {
   // Timer odliczający czas ważności cache (5 minut od createdAt)
@@ -720,6 +796,7 @@ function useRAGContextTimer(createdAt: string) {
 ```
 
 **useOptimisticRating(queryId: string, responseType: ResponseType):**
+
 ```typescript
 function useOptimisticRating(queryId: string, responseType: ResponseType) {
   // Optimistic updates dla ratingów
@@ -728,6 +805,7 @@ function useOptimisticRating(queryId: string, responseType: ResponseType) {
 ```
 
 **useRateLimit():**
+
 ```typescript
 function useRateLimit() {
   // Pobiera rateLimitInfo z AppContext
@@ -736,6 +814,7 @@ function useRateLimit() {
 ```
 
 **useFocusTrap(isOpen: boolean):**
+
 ```typescript
 function useFocusTrap(isOpen: boolean) {
   // Focus trap dla modala
@@ -751,6 +830,7 @@ function useFocusTrap(isOpen: boolean) {
 **Metoda API Client:** `apiPost<QuerySubmitResponse>('/api/v1/queries', request)`
 
 **Request:**
+
 ```typescript
 const request: QuerySubmitRequest = {
   query_text: string; // 10-1000 znaków
@@ -758,6 +838,7 @@ const request: QuerySubmitRequest = {
 ```
 
 **Response (202 Accepted):**
+
 ```typescript
 const response: QuerySubmitResponse = {
   query_id: string;
@@ -772,12 +853,14 @@ const response: QuerySubmitResponse = {
 ```
 
 **Obsługa:**
+
 - Po otrzymaniu odpowiedzi, dodanie optimistic query do listy w `ChatMessagesContainer`
 - Rozpoczęcie polling przez `useQueryPolling(query_id)`
 - Aktualizacja `activeQueries` w AppContext
 - Parsowanie nagłówków `X-RateLimit-*` i aktualizacja `rateLimitInfo` w AppContext
 
 **Błędy:**
+
 - `VALIDATION_ERROR` (400) - Nieprawidłowa długość tekstu → wyświetlenie komunikatu w ChatInput
 - `RATE_LIMIT_EXCEEDED` (429) - Przekroczony limit → wyświetlenie komunikatu w ChatInput
 - `UNAUTHORIZED` (401) - Brak autoryzacji → przekierowanie do `/login`
@@ -789,6 +872,7 @@ const response: QuerySubmitResponse = {
 **Metoda API Client:** `apiGet<QueryDetailResponse>(`/api/v1/queries/${queryId}`)`
 
 **Response (200 OK):**
+
 ```typescript
 const response: QueryDetailResponse = {
   query_id: string;
@@ -808,12 +892,14 @@ const response: QueryDetailResponse = {
 ```
 
 **Obsługa:**
+
 - Polling z exponential backoff (1s → 1.5s → 2s max) przez `useQueryPolling`
 - Aktualizacja listy w `ChatMessagesContainer` po otrzymaniu odpowiedzi
 - Zatrzymanie polling po `status === "completed"` lub `status === "failed"`
 - Timeout 15s dla szybkich odpowiedzi
 
 **Błędy:**
+
 - `NOT_FOUND` (404) - Zapytanie nie istnieje → wyświetlenie komunikatu błędu
 - `GATEWAY_TIMEOUT` (504) - Timeout → wyświetlenie komunikatu błędu z możliwością ponowienia
 - `GENERATION_TIMEOUT` - Timeout generowania → wyświetlenie komunikatu błędu
@@ -826,6 +912,7 @@ const response: QueryDetailResponse = {
 **Request:** Empty body
 
 **Response (202 Accepted):**
+
 ```typescript
 const response: AccurateResponseSubmitResponse = {
   query_id: string;
@@ -837,12 +924,14 @@ const response: AccurateResponseSubmitResponse = {
 ```
 
 **Obsługa:**
+
 - Po otrzymaniu odpowiedzi, otwarcie `DetailedAnswerModal`
 - Rozpoczęcie długiego polling przez `useLongPolling(query_id, 240000)`
 - Polling co 5s do czasu `status === "completed"` lub `status === "failed"`
 - Timeout 240s
 
 **Błędy:**
+
 - `NOT_FOUND` (404) - Zapytanie nie istnieje → wyświetlenie komunikatu błędu
 - `CONFLICT` (409) - Dokładna odpowiedź już istnieje → aktualizacja modala
 - `GATEWAY_TIMEOUT` (504) - Timeout → wyświetlenie komunikatu błędu z możliwością ponowienia
@@ -854,6 +943,7 @@ const response: AccurateResponseSubmitResponse = {
 **Metoda API Client:** `apiPost<RatingResponse>(`/api/v1/queries/${queryId}/ratings`, request)`
 
 **Request:**
+
 ```typescript
 const request: RatingCreateRequest = {
   response_type: "fast" | "accurate";
@@ -862,6 +952,7 @@ const request: RatingCreateRequest = {
 ```
 
 **Response (201 Created / 200 OK):**
+
 ```typescript
 const response: RatingResponse = {
   rating_id: string;
@@ -874,12 +965,14 @@ const response: RatingResponse = {
 ```
 
 **Obsługa:**
+
 - Optimistic update przez `useOptimisticRating`
 - Natychmiastowa zmiana stanu wizualnego przed otrzymaniem odpowiedzi
 - Rollback przy błędzie API
 - Toast notification po sukcesie (opcjonalnie)
 
 **Błędy:**
+
 - `VALIDATION_ERROR` (400) - Nieprawidłowe parametry → rollback optimistic update
 - `NOT_FOUND` (404) - Zapytanie nie istnieje → rollback optimistic update
 - `UNAUTHORIZED` (401) - Brak autoryzacji → przekierowanie do `/login`
@@ -890,6 +983,7 @@ const response: RatingResponse = {
 **Metoda API Client:** `apiGet<ExampleQuestionsResponse>('/api/v1/onboarding/example-questions')`
 
 **Response (200 OK):**
+
 ```typescript
 const response: ExampleQuestionsResponse = {
   examples: ExampleQuestion[];
@@ -897,11 +991,13 @@ const response: ExampleQuestionsResponse = {
 ```
 
 **Obsługa:**
+
 - Wywołanie w Astro page (SSR) przed renderowaniem
 - Przekazanie listy do `ExampleQuestions.astro`
 - Kliknięcie przykładowego pytania przekazuje tekst do `ChatInput`
 
 **Błędy:**
+
 - `SERVICE_UNAVAILABLE` (503) - Błąd serwera → ukrycie komponentu `ExampleQuestions.astro`
 
 ## 8. Interakcje użytkownika
@@ -909,6 +1005,7 @@ const response: ExampleQuestionsResponse = {
 ### 8.1. Zadawanie pytania (US-003)
 
 **Przepływ:**
+
 1. Użytkownik wpisuje tekst w `ChatInput` (textarea)
 2. Licznik znaków aktualizuje się w czasie rzeczywistym (10-1000)
 3. Przycisk "Wyślij" jest disabled jeśli <10 lub >1000 znaków lub rate limit osiągnięty
@@ -922,6 +1019,7 @@ const response: ExampleQuestionsResponse = {
 11. Auto-scroll do najnowszej wiadomości
 
 **Obsługa błędów:**
+
 - `VALIDATION_ERROR` → wyświetlenie komunikatu w ChatInput
 - `RATE_LIMIT_EXCEEDED` → wyświetlenie komunikatu w ChatInput z czasem resetu
 - `SERVICE_UNAVAILABLE` → wyświetlenie komunikatu błędu z możliwością ponowienia
@@ -929,6 +1027,7 @@ const response: ExampleQuestionsResponse = {
 ### 8.2. Otrzymywanie szybkiej odpowiedzi (US-004)
 
 **Przepływ:**
+
 1. Polling przez `useQueryPolling` (exponential backoff 1s → 2s max)
 2. `ResponseCard` wyświetla odpowiedź z Markdown (z sanitizacją)
 3. `SourcesList` wyświetla listę źródeł z linkami do ISAP
@@ -938,6 +1037,7 @@ const response: ExampleQuestionsResponse = {
 7. Auto-scroll do najnowszej wiadomości
 
 **Obsługa błędów:**
+
 - Timeout 15s → wyświetlenie komunikatu błędu z możliwością ponowienia
 - `GENERATION_TIMEOUT` → wyświetlenie komunikatu błędu
 - `NO_RELEVANT_ACTS` → wyświetlenie `NoRelevantActsCard` z komunikatem
@@ -945,6 +1045,7 @@ const response: ExampleQuestionsResponse = {
 ### 8.3. Żądanie dokładniejszej odpowiedzi (US-005)
 
 **Przepływ:**
+
 1. Użytkownik klika "Uzyskaj dokładniejszą odpowiedź" w `ResponseCard`
 2. Przycisk zmienia się we wskaźnik ładowania (`aria-busy="true"`)
 3. `ResponseCard` wywołuje `onDetailedAnswerClick()`
@@ -956,6 +1057,7 @@ const response: ExampleQuestionsResponse = {
 9. `RatingButtons` wyświetla przyciski oceny
 
 **Obsługa błędów:**
+
 - Timeout 240s → wyświetlenie komunikatu błędu z możliwością ponowienia
 - `GENERATION_TIMEOUT` → wyświetlenie komunikatu błędu
 - `CONFLICT` (409) → aktualizacja modala z istniejącą odpowiedzią
@@ -963,6 +1065,7 @@ const response: ExampleQuestionsResponse = {
 ### 8.4. Ocenianie odpowiedzi (US-008)
 
 **Przepływ:**
+
 1. Użytkownik klika przycisk oceny (kciuk w górę/dół) w `RatingButtons`
 2. Optimistic update: natychmiastowa zmiana stanu wizualnego
 3. `POST /api/v1/queries/{query_id}/ratings` jest wywoływany
@@ -971,11 +1074,13 @@ const response: ExampleQuestionsResponse = {
 6. Toast notification po sukcesie (opcjonalnie)
 
 **Obsługa błędów:**
+
 - Błąd API → rollback optimistic update, wyświetlenie komunikatu błędu
 
 ### 8.5. Onboarding nowego użytkownika (US-010)
 
 **Przepływ:**
+
 1. Sprawdzenie czy użytkownik ma historię zapytań (SSR w Astro page)
 2. Jeśli brak historii, wyświetlenie `WelcomeMessage.astro`
 3. `GET /api/v1/onboarding/example-questions` jest wywoływany (SSR)
@@ -985,17 +1090,20 @@ const response: ExampleQuestionsResponse = {
 7. Użytkownik może edytować tekst lub wysłać bezpośrednio
 
 **Obsługa błędów:**
+
 - `SERVICE_UNAVAILABLE` → ukrycie `ExampleQuestions.astro`
 
 ### 8.6. Obsługa zapytań o akty spoza bazy (US-009)
 
 **Przepływ:**
+
 1. Po otrzymaniu odpowiedzi z API, sprawdzenie czy `error.code === "NO_RELEVANT_ACTS"`
 2. Jeśli tak, wyświetlenie `NoRelevantActsCard` zamiast `ResponseCard`
 3. Komunikat: "Przepraszam, moja baza wiedzy jest na razie ograniczona..."
 4. Opcjonalnie: przycisk "Spróbuj ponownie" (resetuje zapytanie)
 
 **Obsługa błędów:**
+
 - Komunikat jest wyświetlany w `NoRelevantActsCard`
 
 ## 9. Warunki i walidacja
@@ -1003,6 +1111,7 @@ const response: ExampleQuestionsResponse = {
 ### 9.1. Walidacja client-side
 
 **ChatInput:**
+
 - **Długość tekstu:** 10-1000 znaków
   - Walidacja w czasie rzeczywistym (`onChange`)
   - Licznik znaków: kolor czerwony jeśli poza zakresem
@@ -1016,6 +1125,7 @@ const response: ExampleQuestionsResponse = {
   - Przycisk "Wyślij" disabled jeśli >= 3 aktywne zapytania
 
 **ResponseCard:**
+
 - **Status odpowiedzi:** Tylko kompletne odpowiedzi (`status === "completed"`) mogą być oceniane
   - Przyciski oceny disabled jeśli `status !== "completed"`
 - **Dokładna odpowiedź:** Przycisk "Uzyskaj dokładniejszą odpowiedź" ukryty jeśli dokładna odpowiedź już istnieje
@@ -1025,6 +1135,7 @@ const response: ExampleQuestionsResponse = {
   - Wizualny wskaźnik: kolor żółty jeśli <1 minuta, czerwony jeśli wygasł
 
 **DetailedAnswerModal:**
+
 - **Status odpowiedzi:** Polling kontynuowany do czasu `status === "completed"` lub `status === "failed"`
 - **Timeout:** 240s dla dokładnych odpowiedzi
   - Wyświetlenie komunikatu błędu jeśli timeout osiągnięty
@@ -1034,16 +1145,19 @@ const response: ExampleQuestionsResponse = {
 ### 9.2. Walidacja server-side
 
 **POST /api/v1/queries:**
+
 - **Długość tekstu:** 10-1000 znaków (walidacja przez Pydantic)
 - **Rate limit:** 10 zapytań/min (sprawdzanie przez backend)
 - **Autoryzacja:** JWT token wymagany
 
 **POST /api/v1/queries/{query_id}/accurate-response:**
+
 - **Zapytanie istnieje:** Sprawdzanie czy `query_id` istnieje w bazie
 - **Dokładna odpowiedź nie istnieje:** Sprawdzanie czy dokładna odpowiedź już nie została wygenerowana (409 Conflict jeśli istnieje)
 - **Cache RAG context:** Sprawdzanie czy cache jest ważny (<5 minut)
 
 **POST /api/v1/queries/{query_id}/ratings:**
+
 - **Zapytanie istnieje:** Sprawdzanie czy `query_id` istnieje w bazie
 - **Odpowiedź istnieje:** Sprawdzanie czy odpowiedź (fast/accurate) istnieje i jest kompletna
 - **Autoryzacja:** JWT token wymagany
@@ -1051,19 +1165,24 @@ const response: ExampleQuestionsResponse = {
 ### 9.3. Warunki wyświetlania komponentów
 
 **WelcomeMessage.astro:**
+
 - Warunek: `hasQueryHistory === false` (sprawdzane w Astro page przez SSR)
 
 **ExampleQuestions.astro:**
+
 - Warunek: `hasQueryHistory === false` (sprawdzane w Astro page przez SSR)
 - Warunek: `examples.length > 0` (sprawdzane w Astro page)
 
 **NoRelevantActsCard.tsx:**
+
 - Warunek: `errorCode === "NO_RELEVANT_ACTS"` (sprawdzane w `ChatMessagesContainer`)
 
 **DetailedAnswerModal.tsx:**
+
 - Warunek: `isOpen === true` (kontrolowany przez `ResponseCard`)
 
 **DetailedAnswerButton:**
+
 - Warunek: `query.accurate_response === null || query.accurate_response.status !== "completed"` (sprawdzane w `ResponseCard`)
 
 ## 10. Obsługa błędów
@@ -1071,6 +1190,7 @@ const response: ExampleQuestionsResponse = {
 ### 10.1. Błędy walidacji
 
 **VALIDATION_ERROR (400):**
+
 - **Przyczyna:** Nieprawidłowa długość tekstu (<10 lub >1000 znaków)
 - **Obsługa:** Wyświetlenie komunikatu w `ChatInput` pod textarea
 - **Komunikat:** "Pytanie musi zawierać od 10 do 1000 znaków"
@@ -1078,11 +1198,13 @@ const response: ExampleQuestionsResponse = {
 ### 10.2. Błędy autoryzacji
 
 **UNAUTHORIZED (401):**
+
 - **Przyczyna:** Brak lub nieprawidłowy JWT token
 - **Obsługa:** Przekierowanie do `/login?expired=true` (obsługiwane przez `apiClient.ts`)
 - **Komunikat:** "Sesja wygasła. Zaloguj się ponownie."
 
 **FORBIDDEN (403):**
+
 - **Przyczyna:** Brak uprawnień do zasobu
 - **Obsługa:** Wyświetlenie komunikatu błędu
 - **Komunikat:** "Brak uprawnień do wykonania tej operacji."
@@ -1090,6 +1212,7 @@ const response: ExampleQuestionsResponse = {
 ### 10.3. Błędy rate limiting
 
 **RATE_LIMIT_EXCEEDED (429):**
+
 - **Przyczyna:** Przekroczony limit 10 zapytań/min
 - **Obsługa:** Wyświetlenie komunikatu w `ChatInput` z czasem resetu
 - **Komunikat:** "Przekroczono limit zapytań. Spróbuj ponownie za X sekund."
@@ -1098,11 +1221,13 @@ const response: ExampleQuestionsResponse = {
 ### 10.4. Błędy timeout
 
 **GATEWAY_TIMEOUT (504):**
+
 - **Przyczyna:** Timeout połączenia z backendem
 - **Obsługa:** Wyświetlenie komunikatu błędu z możliwością ponowienia
 - **Komunikat:** "Przekroczono czas oczekiwania. Spróbuj ponownie."
 
 **GENERATION_TIMEOUT:**
+
 - **Przyczyna:** Timeout generowania odpowiedzi (15s dla szybkich, 240s dla dokładnych)
 - **Obsługa:** Wyświetlenie komunikatu błędu z możliwością ponowienia
 - **Komunikat:** "Generowanie odpowiedzi trwa zbyt długo. Spróbuj ponownie."
@@ -1110,11 +1235,13 @@ const response: ExampleQuestionsResponse = {
 ### 10.5. Błędy sieciowe
 
 **SERVICE_UNAVAILABLE (503):**
+
 - **Przyczyna:** Backend niedostępny lub błąd sieciowy
 - **Obsługa:** Wyświetlenie komunikatu błędu z możliwością ponowienia
 - **Komunikat:** "Serwis tymczasowo niedostępny. Spróbuj ponownie za chwilę."
 
 **Network Error:**
+
 - **Przyczyna:** Brak połączenia z internetem lub błąd DNS
 - **Obsługa:** Wyświetlenie komunikatu błędu
 - **Komunikat:** "Brak połączenia z internetem. Sprawdź swoje połączenie."
@@ -1122,16 +1249,19 @@ const response: ExampleQuestionsResponse = {
 ### 10.6. Błędy biznesowe
 
 **NO_RELEVANT_ACTS:**
+
 - **Przyczyna:** Zapytanie dotyczy aktu prawnego spoza bazy (20k ustaw)
 - **Obsługa:** Wyświetlenie `NoRelevantActsCard` z komunikatem
 - **Komunikat:** "Przepraszam, moja baza wiedzy jest na razie ograniczona i nie zawiera tego aktu. Aktualnie dysponuję informacjami o 20 000 najnowszych ustaw."
 
 **NOT_FOUND (404):**
+
 - **Przyczyna:** Zapytanie nie istnieje w bazie
 - **Obsługa:** Wyświetlenie komunikatu błędu
 - **Komunikat:** "Zapytanie nie zostało znalezione."
 
 **CONFLICT (409):**
+
 - **Przyczyna:** Dokładna odpowiedź już istnieje (przy ponownym żądaniu)
 - **Obsługa:** Aktualizacja `DetailedAnswerModal` z istniejącą odpowiedzią
 - **Komunikat:** Brak (automatyczna aktualizacja)
@@ -1139,11 +1269,13 @@ const response: ExampleQuestionsResponse = {
 ### 10.7. Błędy wewnętrzne
 
 **INTERNAL_SERVER_ERROR (500):**
+
 - **Przyczyna:** Błąd serwera
 - **Obsługa:** Wyświetlenie komunikatu błędu z możliwością ponowienia
 - **Komunikat:** "Wystąpił błąd serwera. Spróbuj ponownie."
 
 **LLM_SERVICE_UNAVAILABLE:**
+
 - **Przyczyna:** OLLAMA niedostępny
 - **Obsługa:** Wyświetlenie komunikatu błędu
 - **Komunikat:** "Usługa generowania odpowiedzi jest tymczasowo niedostępna."
@@ -1151,18 +1283,22 @@ const response: ExampleQuestionsResponse = {
 ### 10.8. Strategia obsługi błędów
 
 **Optimistic Updates:**
+
 - Rollback przy błędzie API (np. `RatingButtons`)
 - Przywrócenie poprzedniego stanu wizualnego
 
 **Retry Logic:**
+
 - Przycisk "Spróbuj ponownie" dla błędów timeout i sieciowych
 - Automatyczne ponowienie przy 401 (refresh token) w `apiClient.ts`
 
 **Error Boundaries:**
+
 - `ErrorBoundary.tsx` dla React islands (przechwytywanie błędów React)
 - Fallback UI dla krytycznych komponentów
 
 **Logging:**
+
 - Logowanie błędów do konsoli w dev
 - Logowanie błędów do Sentry w prod (opcjonalnie)
 
@@ -1321,4 +1457,3 @@ const response: ExampleQuestionsResponse = {
     - Sprawdzenie zgodności z coding guidelines
     - Sprawdzenie zgodności z PRD i user stories
     - Sprawdzenie bezpieczeństwa (sanitizacja, walidacja, rate limiting)
-

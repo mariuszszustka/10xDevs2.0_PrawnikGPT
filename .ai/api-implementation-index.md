@@ -20,7 +20,7 @@ Ze względu na rozbudowaną dokumentację, plan implementacji został podzielony
    - `GET /health`
    - Monitoring i status serwisów
    - ~700 linii
-   
+
 ### Query Management (Główna funkcjonalność)
 
 2. **[Submit Query - RAG Pipeline](./implementations/02-submit-query.md)** ⭐ **NAJWAŻNIEJSZY**
@@ -79,12 +79,14 @@ Ze względu na rozbudowaną dokumentację, plan implementacji został podzielony
 ### Faza 1: Fundamenty (Tydzień 1-2)
 
 **Krok 1: Infrastruktura**
+
 - [ ] Struktura katalogów (`backend/models/`, `backend/services/`, etc.)
 - [ ] Konfiguracja środowiska (`.env`, `config.py`)
 - [ ] Supabase client setup
 - [ ] OLLAMA client setup
 
 **Krok 2: Podstawowe Endpointy**
+
 - [ ] Implementacja: [Health Check](./implementations/01-health-check.md)
   - Prosty endpoint, dobry start
   - Testuje połączenia z serwisami
@@ -93,6 +95,7 @@ Ze względu na rozbudowaną dokumentację, plan implementacji został podzielony
 ### Faza 2: RAG Pipeline (Tydzień 3-4) ⭐
 
 **Krok 3: Kluczowa Funkcjonalność**
+
 - [ ] Implementacja: [Submit Query - RAG](./implementations/02-submit-query.md)
   - Embedding Service
   - LLM Service
@@ -103,6 +106,7 @@ Ze względu na rozbudowaną dokumentację, plan implementacji został podzielony
 - [ ] Optymalizacja wydajności (<15s)
 
 **Krok 4: Historia Zapytań**
+
 - [ ] Implementacja: [List Queries](./implementations/03-list-queries.md)
 - [ ] Implementacja: [Query Details](./implementations/04-query-details.md)
 - [ ] Implementacja: [Delete Query](./implementations/05-delete-query.md)
@@ -110,12 +114,14 @@ Ze względu na rozbudowaną dokumentację, plan implementacji został podzielony
 ### Faza 3: Rozszerzenia (Tydzień 5)
 
 **Krok 5: Accurate Response**
+
 - [ ] Implementacja: [Accurate Response](./implementations/06-accurate-response.md)
   - Cache management (Redis)
   - Większy model (120B)
   - Timeout handling (240s)
 
 **Krok 6: Rating System**
+
 - [ ] Implementacja: [Ratings](./implementations/07-ratings.md)
   - Upsert logic
   - Agregacje
@@ -123,12 +129,14 @@ Ze względu na rozbudowaną dokumentację, plan implementacji został podzielony
 ### Faza 4: Reference Data (Tydzień 6)
 
 **Krok 7: Legal Acts**
+
 - [ ] Implementacja: [Legal Acts](./implementations/08-legal-acts.md)
   - Full-text search
   - Filtry
   - Graph traversal (relacje)
 
 **Krok 8: Onboarding**
+
 - [ ] Implementacja: [Onboarding](./implementations/09-onboarding.md)
   - Static data
   - Przykładowe pytania
@@ -198,16 +206,19 @@ backend/
 ## 🔗 Powiązane Dokumenty
 
 ### Dokumentacja Architektoniczna
+
 - **[api-plan.md](../api-plan.md)** - Specyfikacja REST API (endpoints, validation, responses)
 - **[db-plan.md](../db-plan.md)** - Schemat bazy danych (tabele, relacje, indeksy, RLS)
 - **[rag-implementation-plan.md](../rag-implementation-plan.md)** - Plan implementacji RAG pipeline
 - **[tech-stack.md](../tech-stack.md)** - Stack technologiczny i deployment
 
 ### Dokumentacja Projektu
+
 - **[prd.md](../prd.md)** - Product Requirements Document
 - **[ui-plan.md](../ui-plan.md)** - Plan interfejsu użytkownika
 
 ### Typy i Konfiguracja
+
 - **Frontend:** `src/lib/types.ts` - TypeScript types (DTOs)
 - **Frontend:** `src/lib/database.types.ts` - Supabase generated types
 - **Backend:** `backend/models/` - Pydantic models (do utworzenia)
@@ -230,6 +241,7 @@ backend/
 ### Dla Każdego Endpointu:
 
 Każdy plik implementacji zawiera:
+
 1. **Przegląd** - cel i charakterystyka
 2. **Request** - szczegóły żądania (method, URL, params, body)
 3. **Response** - przykłady JSON, status codes
@@ -339,5 +351,4 @@ pytest --cov=backend --cov-report=html
 
 **Powodzenia z implementacją! 🎉**
 
-*Ostatnia aktualizacja: 2025-11-19*
-
+_Ostatnia aktualizacja: 2025-11-19_

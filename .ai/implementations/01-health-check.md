@@ -13,6 +13,7 @@
 Endpoint monitorujący dostępność i stan systemu. Sprawdza połączenia z kluczowymi serwisami (Supabase, OLLAMA, Supabase Auth) i zwraca ich status. Używany przez systemy monitoringu, load balancery i DevOps do health checks.
 
 **Charakterystyka:**
+
 - **Publiczny** (bez autentykacji)
 - **Wysoka dostępność** (musi działać nawet przy częściowej awarii)
 - **Szybki** (<100ms)
@@ -31,6 +32,7 @@ Endpoint monitorujący dostępność i stan systemu. Sprawdza połączenia z klu
 - **Headers:** Brak wymaganych
 
 **Przykład wywołania:**
+
 ```bash
 curl http://localhost:8000/health
 ```
@@ -129,6 +131,7 @@ export interface HealthResponse {
 ```
 
 **Status codes:**
+
 - `200 OK` - System działa (ok lub degraded)
 - `503 Service Unavailable` - System nie działa (down)
 
@@ -142,26 +145,26 @@ graph TD
     B --> C{Check Database}
     B --> D{Check OLLAMA}
     B --> E{Check Supabase Auth}
-    
+
     C -->|SELECT 1| F[Supabase PostgreSQL]
     F -->|Success| C
     F -->|Timeout/Error| C
-    
+
     D -->|GET /api/version| G[OLLAMA Service]
     G -->|200 OK| D
     G -->|Timeout/Error| D
-    
+
     E -->|Validate JWT secret| E
-    
+
     C --> H[Aggregate Results]
     D --> H
     E --> H
-    
+
     H --> I{All OK?}
     I -->|Yes| J[Return 200 OK]
     I -->|Partial| K[Return 200 degraded]
     I -->|All Down| L[Return 503 down]
-    
+
     J --> A
     K --> A
     L --> A
@@ -186,6 +189,7 @@ graph TD
 ## 1.6. Względy bezpieczeństwa
 
 ### Autentykacja i Autoryzacja
+
 - **Brak autentykacji** - endpoint publiczny
 - **Uzasadnienie:** Health checks muszą działać bez logowania dla load balancerów
 
@@ -193,7 +197,7 @@ graph TD
 
 1. **Information Disclosure:**
    - **Zagrożenie:** Ujawnienie szczegółów infrastruktury (wersje, nazwy serwisów)
-   - **Mitygacja:** 
+   - **Mitygacja:**
      - Nie zwracaj szczegółowych wersji serwisów
      - Nie ujawniaj adresów IP/hostów
      - Ogranicz informacje w środowisku produkcyjnym
@@ -215,19 +219,20 @@ graph TD
 
 ### Scenariusze błędów
 
-| Scenariusz | Status Code | Response | Akcja |
-|------------|-------------|----------|-------|
-| Wszystkie serwisy działają | 200 OK | status: "ok" | Brak akcji |
-| OLLAMA nie odpowiada | 200 OK | status: "degraded", ollama: "down" | Alert dla DevOps |
-| Database timeout | 200 OK | status: "degraded", database: "down" | Alert CRITICAL |
-| Wszystkie serwisy down | 503 Service Unavailable | status: "down" | Alert CRITICAL + Incident |
-| Nieoczekiwany błąd wewnętrzny | 500 Internal Server Error | Standard error response | Log błędu + Alert |
+| Scenariusz                    | Status Code               | Response                             | Akcja                     |
+| ----------------------------- | ------------------------- | ------------------------------------ | ------------------------- |
+| Wszystkie serwisy działają    | 200 OK                    | status: "ok"                         | Brak akcji                |
+| OLLAMA nie odpowiada          | 200 OK                    | status: "degraded", ollama: "down"   | Alert dla DevOps          |
+| Database timeout              | 200 OK                    | status: "degraded", database: "down" | Alert CRITICAL            |
+| Wszystkie serwisy down        | 503 Service Unavailable   | status: "down"                       | Alert CRITICAL + Incident |
+| Nieoczekiwany błąd wewnętrzny | 500 Internal Server Error | Standard error response              | Log błędu + Alert         |
 
 ---
 
 ## 1.8. Wydajność
 
 ### Cele wydajnościowe
+
 - **Response time:** <100ms (p95)
 - **Timeout:** 2s per service check
 - **Throughput:** 100 req/s
@@ -287,4 +292,3 @@ class HealthResponse(BaseModel):
 ---
 
 **Powrót do:** [Index](../api-implementation-index.md)
-

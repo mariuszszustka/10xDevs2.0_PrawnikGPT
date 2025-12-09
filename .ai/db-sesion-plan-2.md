@@ -15,6 +15,7 @@
 </decisions>
 
 <matched_recommendations>
+
 1. Utrzymanie minimalnego profilu użytkownika lokalnie dla RLS: decyzje 1 i 2 rozwijają tę koncepcję.
 2. Jedna tabela `responses` z typem odpowiedzi i metadanymi modeli: decyzje 3 i 4 rozszerzają rekomendację.
 3. Snapshot kontekstu i źródeł odpowiedzi: decyzja 5 odpowiada rekomendacji o `response_sources`.
@@ -32,6 +33,7 @@ Schemat ma wspierać pełny przepływ użytkownika (logowanie, czat, historia, o
 </database_planning_summary>
 
 <unresolved_issues>
+
 1. Nie ustalono ostatecznie struktury tabeli kontekstu (np. `query_contexts` vs. `response_sources` + JSONB snapshot).
 2. Brak decyzji o docelowym mechanizmie partycjonowania (kiedy i które tabele będą partycjonowane).
 3. Nie doprecyzowano limitów długości `question_text` ani polityki przechowywania historii w czasie (retencja danych).

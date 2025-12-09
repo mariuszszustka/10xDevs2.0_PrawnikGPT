@@ -10,7 +10,7 @@
 
 ## Przegląd
 
-Generuje dokładną odpowiedź przy użyciu większego modelu (gpt-oss:120b). 
+Generuje dokładną odpowiedź przy użyciu większego modelu (gpt-oss:120b).
 
 **Kluczowe:** Wykorzystuje cached RAG context (ważny 5 min po initial query).
 
@@ -27,6 +27,7 @@ Generuje dokładną odpowiedź przy użyciu większego modelu (gpt-oss:120b).
 ## Response
 
 ### 202 Accepted (Immediate)
+
 ```json
 {
   "query_id": "uuid",
@@ -38,6 +39,7 @@ Generuje dokładną odpowiedź przy użyciu większego modelu (gpt-oss:120b).
 ```
 
 ### After Completion
+
 ```json
 {
   "query_id": "uuid",
@@ -64,6 +66,7 @@ Generuje dokładną odpowiedź przy użyciu większego modelu (gpt-oss:120b).
 ## Implementacja
 
 ### Preconditions Check
+
 ```python
 # 1. Check if accurate response exists
 if query.accurate_response_content:
@@ -76,6 +79,7 @@ if not context:
 ```
 
 ### Generation
+
 ```python
 # 3. Generate with larger model (timeout 240s)
 try:
@@ -102,11 +106,13 @@ await query_repo.update_accurate_response(
 ## Wydajność
 
 **Cele:**
+
 - Timeout: 240s (4 minuty)
 - Cache hit: 100% (context musi istnieć)
 - Response quality: Wyższa niż fast response
 
 **Optymalizacje:**
+
 - Używanie cached context (no re-search)
 - Streaming response (future enhancement)
 - Queue for multiple requests
@@ -126,4 +132,3 @@ await query_repo.update_accurate_response(
 ---
 
 **Powrót do:** [Index](../api-implementation-index.md)
-

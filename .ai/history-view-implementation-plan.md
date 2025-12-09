@@ -5,6 +5,7 @@
 History View to widok umożliwiający przeglądanie chronologicznej historii zapytań i odpowiedzi użytkownika. Widok wyświetla listę zapytań od najnowszych, z możliwością rozwijania odpowiedzi (domyślnie zwinięte dla lepszej czytelności), usuwania zapytań z potwierdzeniem oraz oceniania odpowiedzi. Widok wykorzystuje paginację typu "Załaduj więcej" zamiast tradycyjnej paginacji, co zapewnia lepsze UX dla długich list. Widok jest zbudowany w architekturze Astro 5 + React 19 islands, gdzie statyczne elementy są renderowane przez Astro, a interaktywne komponenty (lista zapytań, karty zapytań, przyciski usuwania i oceny) są React islands z strategicznym użyciem dyrektyw hydratacji.
 
 **Główne funkcjonalności:**
+
 - Wyświetlanie listy zapytań z paginacją "Załaduj więcej" (domyślnie 20 na stronę)
 - Collapsible responses (domyślnie zwinięte, możliwość rozwinięcia)
 - Status badge ("Ukończone" / "Przetwarzanie...") z możliwością odświeżenia
@@ -23,11 +24,13 @@ History View to widok umożliwiający przeglądanie chronologicznej historii zap
 **Autentykacja:** Wymagana (middleware sprawdzający sesję użytkownika)
 
 **Middleware:**
+
 - Sprawdzenie autoryzacji użytkownika przez Supabase Auth
 - Przekierowanie do `/login` jeśli użytkownik nie jest zalogowany
 - Dodanie Supabase client do `Astro.locals.supabase` (już zaimplementowane w `src/middleware/index.ts`)
 
 **Layout:**
+
 - Użycie `AppLayout.astro` (jeśli istnieje) lub `BaseLayout.astro` z nagłówkiem aplikacji
 - Nagłówek zawiera: logo, nawigację (Chat, Historia, Ustawienia), User Menu
 
@@ -91,6 +94,7 @@ History View (app/history.astro)
 Główny kontener zarządzający listą zapytań użytkownika. Odpowiedzialny za pobieranie danych z API, zarządzanie paginacją typu "Załaduj więcej", zachowanie scroll position, wyświetlanie empty state oraz obsługę stanów ładowania i błędów.
 
 **Główne elementy:**
+
 - `<div role="list" aria-label="Lista zapytań">` - Kontener listy z ARIA attributes
 - `QueryCard` - Komponenty kart zapytań (renderowane w pętli)
 - `LoadMoreButton` - Przycisk "Załaduj więcej" z licznikiem pozostałych zapytań
@@ -99,16 +103,19 @@ Główny kontener zarządzający listą zapytań użytkownika. Odpowiedzialny za
 - Scroll position preservation przy użyciu `useRef` i `scrollIntoView`
 
 **Obsługiwane zdarzenia:**
+
 - `onLoadMore: () => Promise<void>` - Callback wywoływany po kliknięciu "Załaduj więcej"
 - `onQueryDelete: (queryId: string) => Promise<void>` - Callback po usunięciu zapytania (optimistic update)
 - `onRatingChange: (queryId: string, responseType: ResponseType, rating: RatingDetail) => void` - Callback po zmianie oceny
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy są jeszcze zapytania do załadowania (`pagination.page < pagination.total_pages`)
 - Sprawdzanie czy lista jest pusta (wyświetlenie empty state)
 - Sprawdzanie czy zapytanie należy do użytkownika (backend weryfikuje przez RLS)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface HistoryListProps {
@@ -125,11 +132,13 @@ Główny kontener zarządzający listą zapytań użytkownika. Odpowiedzialny za
   - `scrollPosition: number` - Pozycja scroll przed załadowaniem nowych elementów
 
 **Custom Hooks:**
+
 - `useQueryList(page: number, perPage: number, order: "desc" | "asc")` - Hook do pobierania listy zapytań z API
 - `useScrollPosition()` - Hook do zachowania i przywracania pozycji scroll
 - `useOptimisticDelete(queryId: string)` - Optimistic update przy usuwaniu zapytania
 
 **Integracja z API:**
+
 - `GET /api/v1/queries?page={page}&per_page={per_page}&order={order}` - Pobieranie listy zapytań
   - Request: Query parameters (`QueryListParams`)
   - Response: `QueryListResponse` (200 OK)
@@ -140,6 +149,7 @@ Główny kontener zarządzający listą zapytań użytkownika. Odpowiedzialny za
 Karta pojedynczego zapytania z collapsible responses. Wyświetla pytanie użytkownika, timestamp, status badge, szybką odpowiedź (domyślnie zwiniętą) oraz wskaźnik dokładnej odpowiedzi (jeśli istnieje). Odpowiedzialna za zarządzanie stanem rozwinięcia/zwinięcia odpowiedzi oraz przekazywanie zdarzeń do komponentów potomnych.
 
 **Główne elementy:**
+
 - `<article aria-label="Zapytanie z {timestamp}">` - Semantic HTML dla karty zapytania
 - `QueryHeader` - Nagłówek z pytaniem, timestampem, status badge i przyciskiem usuwania
 - `FastResponseSection` - Sekcja szybkiej odpowiedzi (collapsible)
@@ -157,6 +167,7 @@ Karta pojedynczego zapytania z collapsible responses. Wyświetla pytanie użytko
 - Smooth expand/collapse animation przy użyciu CSS transitions
 
 **Obsługiwane zdarzenia:**
+
 - `onExpandFastResponse: () => void` - Callback po rozwinięciu szybkiej odpowiedzi
 - `onCollapseFastResponse: () => void` - Callback po zwinięciu szybkiej odpowiedzi
 - `onExpandAccurateResponse: () => void` - Callback po rozwinięciu dokładnej odpowiedzi
@@ -164,11 +175,13 @@ Karta pojedynczego zapytania z collapsible responses. Wyświetla pytanie użytko
 - `onRatingChange: (responseType: ResponseType, rating: RatingDetail) => void` - Callback po zmianie oceny
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy szybka odpowiedź istnieje i jest kompletna (status === "completed")
 - Sprawdzanie czy dokładna odpowiedź istnieje (`accurate_response.exists === true`)
 - Sprawdzanie czy zapytanie należy do użytkownika (backend weryfikuje przez RLS)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface QueryCardProps {
@@ -184,10 +197,12 @@ Karta pojedynczego zapytania z collapsible responses. Wyświetla pytanie użytko
   - `isDeleting: boolean` - Flaga wskazująca proces usuwania
 
 **Custom Hooks:**
+
 - `useCollapsible(initialExpanded: boolean)` - Hook do zarządzania stanem rozwinięcia/zwinięcia
 - `useQueryDetails(queryId: string)` - Hook do pobierania szczegółów zapytania (opcjonalnie, dla refresh)
 
 **Integracja z API:**
+
 - `GET /api/v1/queries/{query_id}` - Pobieranie szczegółów zapytania (opcjonalnie, dla refresh)
   - Response: `QueryDetailResponse` (200 OK)
 - `DELETE /api/v1/queries/{query_id}` - Usuwanie zapytania (delegowane do DeleteQueryButton)
@@ -199,6 +214,7 @@ Karta pojedynczego zapytania z collapsible responses. Wyświetla pytanie użytko
 Przycisk usuwania zapytania z confirmation modal. Zapewnia bezpieczne usuwanie z potwierdzeniem użytkownika, optimistic update w liście oraz obsługę błędów z rollback.
 
 **Główne elementy:**
+
 - `<button aria-label="Usuń zapytanie">` - Przycisk usuwania (ikona 🗑️)
 - `ConfirmationModal` - Modal potwierdzenia z focus trap
   - Nagłówek: "Usunąć zapytanie?"
@@ -207,6 +223,7 @@ Przycisk usuwania zapytania z confirmation modal. Zapewnia bezpieczne usuwanie z
   - Focus trap: Focus pozostaje w modalu, przywrócenie focus po zamknięciu
 
 **Obsługiwane zdarzenia:**
+
 - `onClick: () => void` - Callback po kliknięciu przycisku (otwiera modal)
 - `onConfirm: (queryId: string) => Promise<void>` - Callback po potwierdzeniu usunięcia
 - `onCancel: () => void` - Callback po anulowaniu (zamyka modal)
@@ -214,10 +231,12 @@ Przycisk usuwania zapytania z confirmation modal. Zapewnia bezpieczne usuwanie z
 - Rollback: Przywrócenie zapytania w liście przy błędzie API
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy zapytanie należy do użytkownika (backend weryfikuje przez RLS, 403 Forbidden jeśli nie)
 - Sprawdzanie czy zapytanie istnieje (404 Not Found)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface DeleteQueryButtonProps {
@@ -232,10 +251,12 @@ Przycisk usuwania zapytania z confirmation modal. Zapewnia bezpieczne usuwanie z
   - `error: ApiError | null` - Błąd API (jeśli wystąpił)
 
 **Custom Hooks:**
+
 - `useFocusTrap(isActive: boolean)` - Hook do zarządzania focus trap w modalu
 - `useOptimisticDelete(queryId: string, onDelete: (id: string) => Promise<void>)` - Optimistic update z rollback
 
 **Integracja z API:**
+
 - `DELETE /api/v1/queries/{query_id}` - Usuwanie zapytania
   - Response: 204 No Content (sukces)
   - Error Responses:
@@ -249,6 +270,7 @@ Przycisk usuwania zapytania z confirmation modal. Zapewnia bezpieczne usuwanie z
 Stan pusty wyświetlany gdy użytkownik nie ma jeszcze żadnych zapytań. Zawiera ikonę, nagłówek, opis oraz CTA button przekierowujący do czatu.
 
 **Główne elementy:**
+
 - `<div role="status" aria-live="polite">` - Kontener z ARIA live region
 - Ikona lub ilustracja (opcjonalnie)
 - Nagłówek: "Nie masz jeszcze żadnych zapytań"
@@ -256,12 +278,15 @@ Stan pusty wyświetlany gdy użytkownik nie ma jeszcze żadnych zapytań. Zawier
 - `<a href="/app">` - CTA button "Przejdź do czatu"
 
 **Obsługiwane zdarzenia:**
+
 - `onNavigateToChat: () => void` - Callback po kliknięciu CTA (opcjonalnie, dla tracking)
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy lista zapytań jest pusta (`queries.length === 0`)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface EmptyStateProps {
@@ -271,9 +296,11 @@ Stan pusty wyświetlany gdy użytkownik nie ma jeszcze żadnych zapytań. Zawier
 - Brak state (komponent statyczny)
 
 **Custom Hooks:**
+
 - Brak (komponent statyczny)
 
 **Integracja z API:**
+
 - Brak (komponent statyczny)
 
 ### 4.5. LoadMoreButton.tsx
@@ -282,20 +309,24 @@ Stan pusty wyświetlany gdy użytkownik nie ma jeszcze żadnych zapytań. Zawier
 Przycisk "Załaduj więcej" z licznikiem pozostałych zapytań. Wyświetla się na dole listy gdy są jeszcze zapytania do załadowania.
 
 **Główne elementy:**
+
 - `<button aria-label="Załaduj więcej zapytań">` - Przycisk z tekstem i licznikiem
 - Tekst: "Załaduj więcej ({remaining} pozostałych)"
 - Loading state: Spinner podczas ładowania
 - Disabled state: Gdy wszystkie zapytania zostały załadowane
 
 **Obsługiwane zdarzenia:**
+
 - `onClick: () => Promise<void>` - Callback po kliknięciu (ładuje kolejną stronę)
 - Zachowanie scroll position po załadowaniu nowych elementów
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy są jeszcze zapytania do załadowania (`pagination.page < pagination.total_pages`)
 - Sprawdzanie czy nie trwa już ładowanie (`isLoadingMore === false`)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface LoadMoreButtonProps {
@@ -307,9 +338,11 @@ Przycisk "Załaduj więcej" z licznikiem pozostałych zapytań. Wyświetla się 
 - Brak state (komponent kontrolowany przez rodzica)
 
 **Custom Hooks:**
+
 - Brak (komponent kontrolowany)
 
 **Integracja z API:**
+
 - Brak (delegowane do HistoryList)
 
 ### 4.6. RatingButtons.tsx
@@ -318,21 +351,25 @@ Przycisk "Załaduj więcej" z licznikiem pozostałych zapytań. Wyświetla się 
 Przyciski oceny (kciuk w górę/dół) z optimistic updates, rollback przy błędzie oraz wizualną zmianą stanu po oddaniu głosu. Komponent jest reuse z Chat View.
 
 **Główne elementy:**
+
 - `<button aria-label="Oceń pozytywnie">` - Przycisk kciuk w górę
 - `<button aria-label="Oceń negatywnie">` - Przycisk kciuk w dół
 - Wizualna zmiana stanu: aktywny przycisk (wypełniony kolor), nieaktywny (disabled, szary)
 - Toast notification po sukcesie (opcjonalnie, przez AppContext)
 
 **Obsługiwane zdarzenia:**
+
 - `onClick: (ratingValue: RatingValue) => Promise<void>` - Callback po kliknięciu oceny
 - Optimistic update: Natychmiastowa zmiana stanu wizualnego przed otrzymaniem odpowiedzi z API
 - Rollback: Przywrócenie poprzedniego stanu przy błędzie API
 
 **Obsługiwana walidacja:**
+
 - Sprawdzanie czy ocena już istnieje (blokada drugiego przycisku)
 - Sprawdzanie czy odpowiedź jest kompletna (tylko kompletne odpowiedzi można oceniać)
 
 **Typy:**
+
 - **Props:**
   ```typescript
   interface RatingButtonsProps {
@@ -347,9 +384,11 @@ Przyciski oceny (kciuk w górę/dół) z optimistic updates, rollback przy błę
   - `isSubmitting: boolean` - Flaga wskazująca wysyłanie oceny
 
 **Custom Hooks:**
+
 - `useOptimisticRating(queryId: string, responseType: ResponseType)` - Logika optimistic updates z rollback
 
 **Integracja z API:**
+
 - `POST /api/v1/queries/{query_id}/ratings` - Tworzenie/aktualizacja oceny
   - Request: `RatingCreateRequest` (`response_type`, `rating_value`)
   - Response: `RatingResponse` (201 Created dla nowej, 200 OK dla aktualizacji)
@@ -361,6 +400,7 @@ Przyciski oceny (kciuk w górę/dół) z optimistic updates, rollback przy błę
 Wszystkie typy DTO są zdefiniowane w `src/lib/types.ts` i pochodzą z backend API:
 
 **QueryListResponse:**
+
 ```typescript
 interface QueryListResponse {
   queries: QueryListItem[];
@@ -369,6 +409,7 @@ interface QueryListResponse {
 ```
 
 **QueryListItem:**
+
 ```typescript
 interface QueryListItem {
   query_id: string;
@@ -391,6 +432,7 @@ interface QueryListItem {
 ```
 
 **QueryDetailResponse:**
+
 ```typescript
 interface QueryDetailResponse {
   query_id: string;
@@ -417,6 +459,7 @@ interface QueryDetailResponse {
 ```
 
 **PaginationMetadata:**
+
 ```typescript
 interface PaginationMetadata {
   page: number;
@@ -427,6 +470,7 @@ interface PaginationMetadata {
 ```
 
 **RatingSummary:**
+
 ```typescript
 interface RatingSummary {
   value: RatingValue; // 'up' | 'down'
@@ -434,6 +478,7 @@ interface RatingSummary {
 ```
 
 **RatingDetail:**
+
 ```typescript
 interface RatingDetail extends RatingSummary {
   rating_id: string;
@@ -442,6 +487,7 @@ interface RatingDetail extends RatingSummary {
 ```
 
 **RatingCreateRequest:**
+
 ```typescript
 interface RatingCreateRequest {
   response_type: ResponseType; // 'fast' | 'accurate'
@@ -450,6 +496,7 @@ interface RatingCreateRequest {
 ```
 
 **RatingResponse:**
+
 ```typescript
 interface RatingResponse {
   rating_id: string;
@@ -462,6 +509,7 @@ interface RatingResponse {
 ```
 
 **QueryListParams:**
+
 ```typescript
 interface QueryListParams {
   page?: number; // default=1, min=1
@@ -471,11 +519,13 @@ interface QueryListParams {
 ```
 
 **QueryProcessingStatus:**
+
 ```typescript
 type QueryProcessingStatus = "pending" | "processing" | "completed" | "failed";
 ```
 
 **SourceReference:**
+
 ```typescript
 interface SourceReference {
   act_title: string;
@@ -486,6 +536,7 @@ interface SourceReference {
 ```
 
 **ErrorResponse:**
+
 ```typescript
 interface ErrorResponse {
   error: {
@@ -499,6 +550,7 @@ interface ErrorResponse {
 ```
 
 **ApiErrorCode:**
+
 ```typescript
 type ApiErrorCode =
   | "VALIDATION_ERROR"
@@ -520,6 +572,7 @@ type ApiErrorCode =
 ViewModel to typy używane wewnętrznie w komponentach, które mogą różnić się od DTO:
 
 **QueryCardViewModel:**
+
 ```typescript
 interface QueryCardViewModel {
   queryId: string;
@@ -546,6 +599,7 @@ interface QueryCardViewModel {
 ```
 
 **HistoryListViewModel:**
+
 ```typescript
 interface HistoryListViewModel {
   queries: QueryCardViewModel[];
@@ -570,6 +624,7 @@ interface HistoryListViewModel {
 Każdy komponent zarządza swoim lokalnym stanem przy użyciu React hooks:
 
 **HistoryList:**
+
 - `useState<QueryListItem[]>` - Lista zapytań
 - `useState<PaginationMetadata | null>` - Metadane paginacji
 - `useState<boolean>` - Flagi `isLoading`, `isLoadingMore`
@@ -577,19 +632,23 @@ Każdy komponent zarządza swoim lokalnym stanem przy użyciu React hooks:
 - `useRef<number>` - Scroll position przed załadowaniem nowych elementów
 
 **QueryCard:**
+
 - `useState<boolean>` - Flagi `isFastResponseExpanded`, `isAccurateResponseExpanded`, `isDeleting`
 
 **DeleteQueryButton:**
+
 - `useState<boolean>` - Flagi `isModalOpen`, `isDeleting`
 - `useState<ApiError | null>` - Błąd API
 
 **RatingButtons:**
+
 - `useState<RatingValue | null>` - Optimistic rating
 - `useState<boolean>` - Flaga `isSubmitting`
 
 ### 6.2. Custom Hooks
 
 **useQueryList:**
+
 ```typescript
 function useQueryList(
   page: number,
@@ -600,23 +659,27 @@ function useQueryList(
   isLoading: boolean;
   error: ApiError | null;
   refetch: () => Promise<void>;
-}
+};
 ```
+
 - Hook do pobierania listy zapytań z API
 - Obsługuje cache i refetch
 - Zwraca dane, stan ładowania i błąd
 
 **useScrollPosition:**
+
 ```typescript
 function useScrollPosition(): {
   save: () => void;
   restore: () => void;
-}
+};
 ```
+
 - Hook do zachowania i przywracania pozycji scroll
 - Używany przy paginacji "Załaduj więcej"
 
 **useOptimisticDelete:**
+
 ```typescript
 function useOptimisticDelete(
   queryId: string,
@@ -625,25 +688,29 @@ function useOptimisticDelete(
   deleteQuery: () => Promise<void>;
   isDeleting: boolean;
   error: ApiError | null;
-}
+};
 ```
+
 - Hook do optimistic update przy usuwaniu zapytania
 - Natychmiastowe usunięcie z listy przed API call
 - Rollback przy błędzie
 
 **useCollapsible:**
+
 ```typescript
 function useCollapsible(initialExpanded: boolean): {
   isExpanded: boolean;
   toggle: () => void;
   expand: () => void;
   collapse: () => void;
-}
+};
 ```
+
 - Hook do zarządzania stanem rozwinięcia/zwinięcia
 - Używany w QueryCard dla collapsible responses
 
 **useOptimisticRating:**
+
 ```typescript
 function useOptimisticRating(
   queryId: string,
@@ -653,28 +720,33 @@ function useOptimisticRating(
   optimisticRating: RatingValue | null;
   isSubmitting: boolean;
   error: ApiError | null;
-}
+};
 ```
+
 - Hook do optimistic update przy ocenianiu odpowiedzi
 - Natychmiastowa zmiana stanu wizualnego przed API call
 - Rollback przy błędzie
 
 **useFocusTrap:**
+
 ```typescript
-function useFocusTrap(isActive: boolean): void
+function useFocusTrap(isActive: boolean): void;
 ```
+
 - Hook do zarządzania focus trap w modalu
 - Utrzymuje focus w modalu, przywraca po zamknięciu
 
 **useQueryDetails:**
+
 ```typescript
 function useQueryDetails(queryId: string): {
   data: QueryDetailResponse | null;
   isLoading: boolean;
   error: ApiError | null;
   refetch: () => Promise<void>;
-}
+};
 ```
+
 - Hook do pobierania szczegółów zapytania (opcjonalnie, dla refresh)
 - Używany dla zapytań w statusie "processing"
 
@@ -690,6 +762,7 @@ Jeśli potrzebny jest globalny stan (np. dla synchronizacji między widokami), m
 **Autentykacja:** Wymagana (JWT token w headerze `Authorization: Bearer {token}`)
 
 **Request:**
+
 - Method: `GET`
 - Query Parameters:
   - `page` (number, default=1, min=1)
@@ -700,6 +773,7 @@ Jeśli potrzebny jest globalny stan (np. dla synchronizacji między widokami), m
   - `Content-Type: application/json`
 
 **Response (200 OK):**
+
 ```typescript
 QueryListResponse {
   queries: QueryListItem[];
@@ -708,22 +782,22 @@ QueryListResponse {
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized` - Przekierowanie do `/login?expired=true`
 - `422 Unvalidation Error` - Nieprawidłowe parametry paginacji
 - `500 Internal Server Error` - Błąd serwera
 
 **Implementacja w API Client:**
+
 ```typescript
 // src/lib/apiClient.ts
-export async function getQueries(
-  params: QueryListParams = {}
-): Promise<QueryListResponse> {
+export async function getQueries(params: QueryListParams = {}): Promise<QueryListResponse> {
   const queryString = new URLSearchParams({
     page: String(params.page || 1),
     per_page: String(params.per_page || 20),
     order: params.order || "desc",
   }).toString();
-  
+
   return apiGet<QueryListResponse>(`/api/v1/queries?${queryString}`);
 }
 ```
@@ -734,6 +808,7 @@ export async function getQueries(
 **Autentykacja:** Wymagana
 
 **Request:**
+
 - Method: `GET`
 - Path Parameters:
   - `query_id` (UUID)
@@ -741,16 +816,19 @@ export async function getQueries(
   - `Authorization: Bearer {token}`
 
 **Response (200 OK):**
+
 ```typescript
-QueryDetailResponse
+QueryDetailResponse;
 ```
 
 **Error Responses:**
+
 - `401 Unauthorized` - Przekierowanie do `/login`
 - `403 Forbidden` - Użytkownik nie jest właścicielem zapytania
 - `404 Not Found` - Zapytanie nie istnieje
 
 **Implementacja w API Client:**
+
 ```typescript
 export async function getQueryDetails(queryId: string): Promise<QueryDetailResponse> {
   return apiGet<QueryDetailResponse>(`/api/v1/queries/${queryId}`);
@@ -763,6 +841,7 @@ export async function getQueryDetails(queryId: string): Promise<QueryDetailRespo
 **Autentykacja:** Wymagana
 
 **Request:**
+
 - Method: `DELETE`
 - Path Parameters:
   - `query_id` (UUID)
@@ -770,14 +849,17 @@ export async function getQueryDetails(queryId: string): Promise<QueryDetailRespo
   - `Authorization: Bearer {token}`
 
 **Response (204 No Content):**
+
 - Brak body
 
 **Error Responses:**
+
 - `401 Unauthorized` - Przekierowanie do `/login`
 - `403 Forbidden` - Użytkownik nie jest właścicielem zapytania
 - `404 Not Found` - Zapytanie nie istnieje
 
 **Implementacja w API Client:**
+
 ```typescript
 export async function deleteQuery(queryId: string): Promise<void> {
   return apiDelete<void>(`/api/v1/queries/${queryId}`);
@@ -790,6 +872,7 @@ export async function deleteQuery(queryId: string): Promise<void> {
 **Autentykacja:** Wymagana
 
 **Request:**
+
 - Method: `POST`
 - Path Parameters:
   - `query_id` (UUID)
@@ -805,28 +888,26 @@ export async function deleteQuery(queryId: string): Promise<void> {
   - `Content-Type: application/json`
 
 **Response (201 Created / 200 OK):**
+
 ```typescript
-RatingResponse
+RatingResponse;
 ```
+
 - `201 Created` - Nowa ocena utworzona
 - `200 OK` - Istniejąca ocena zaktualizowana
 
 **Error Responses:**
+
 - `401 Unauthorized` - Przekierowanie do `/login`
 - `403 Forbidden` - Użytkownik nie jest właścicielem zapytania
 - `404 Not Found` - Zapytanie nie istnieje
 - `422 Validation Error` - Nieprawidłowe `response_type` lub `rating_value`
 
 **Implementacja w API Client:**
+
 ```typescript
-export async function createRating(
-  queryId: string,
-  request: RatingCreateRequest
-): Promise<RatingResponse> {
-  return apiPost<RatingResponse>(
-    `/api/v1/queries/${queryId}/ratings`,
-    request
-  );
+export async function createRating(queryId: string, request: RatingCreateRequest): Promise<RatingResponse> {
+  return apiPost<RatingResponse>(`/api/v1/queries/${queryId}/ratings`, request);
 }
 ```
 
@@ -835,6 +916,7 @@ export async function createRating(
 ### 8.1. Przeglądanie historii zapytań (US-006)
 
 **Scenariusz:**
+
 1. Użytkownik otwiera widok `/app/history`
 2. System pobiera pierwszą stronę zapytań (20 najnowszych)
 3. Lista zapytań wyświetla się z domyślnie zwiniętymi odpowiedziami
@@ -843,6 +925,7 @@ export async function createRating(
 6. Użytkownik może rozwinąć dokładną odpowiedź klikając ikonę 🔬
 
 **Implementacja:**
+
 - `HistoryList` pobiera dane przez `useQueryList` przy mount
 - `QueryCard` zarządza stanem rozwinięcia przez `useCollapsible`
 - Smooth expand/collapse animation przez CSS transitions
@@ -850,6 +933,7 @@ export async function createRating(
 ### 8.2. Paginacja "Załaduj więcej"
 
 **Scenariusz:**
+
 1. Użytkownik przewija listę do dołu
 2. Wyświetla się przycisk "Załaduj więcej (45 pozostałych)"
 3. Użytkownik klika przycisk
@@ -859,6 +943,7 @@ export async function createRating(
 7. Pozycja scroll jest przywracana
 
 **Implementacja:**
+
 - `LoadMoreButton` wyświetla się gdy `pagination.page < pagination.total_pages`
 - `HistoryList` używa `useScrollPosition` do zachowania pozycji
 - Po załadowaniu nowych elementów, scroll position jest przywracana przez `scrollIntoView`
@@ -866,6 +951,7 @@ export async function createRating(
 ### 8.3. Usuwanie zapytania z historii (US-007)
 
 **Scenariusz:**
+
 1. Użytkownik klika ikonę 🗑️ na karcie zapytania
 2. Otwiera się confirmation modal
 3. Użytkownik potwierdza usunięcie klikając "Usuń"
@@ -875,6 +961,7 @@ export async function createRating(
 7. Jeśli błąd, zapytanie jest przywracane do listy (rollback)
 
 **Implementacja:**
+
 - `DeleteQueryButton` zarządza modalem przez `useState`
 - `useOptimisticDelete` wykonuje optimistic update z rollback
 - Focus trap przez `useFocusTrap` w modalu
@@ -882,6 +969,7 @@ export async function createRating(
 ### 8.4. Ocenianie odpowiedzi (US-008)
 
 **Scenariusz:**
+
 1. Użytkownik rozwija odpowiedź (szybką lub dokładną)
 2. Użytkownik klika przycisk 👍 lub 👎
 3. Przycisk natychmiast zmienia stan wizualny (optimistic update)
@@ -890,6 +978,7 @@ export async function createRating(
 6. Jeśli błąd, przycisk wraca do poprzedniego stanu (rollback)
 
 **Implementacja:**
+
 - `RatingButtons` używa `useOptimisticRating` dla optimistic updates
 - Rollback przy błędzie API
 - Wizualna zmiana stanu: aktywny (kolor), nieaktywny (disabled, szary)
@@ -897,6 +986,7 @@ export async function createRating(
 ### 8.5. Odświeżenie zapytania w statusie "processing"
 
 **Scenariusz:**
+
 1. Zapytanie ma status "processing"
 2. Wyświetla się badge "Przetwarzanie..." z przyciskiem odświeżenia
 3. Użytkownik klika przycisk odświeżenia
@@ -904,18 +994,21 @@ export async function createRating(
 5. Jeśli status zmienił się na "completed", odpowiedź jest wyświetlana
 
 **Implementacja:**
+
 - `QueryCard` używa `useQueryDetails` dla refresh (opcjonalnie)
 - Auto-refresh można zaimplementować przez `setInterval` (opcjonalnie)
 
 ### 8.6. Empty state
 
 **Scenariusz:**
+
 1. Użytkownik nie ma jeszcze żadnych zapytań
 2. Wyświetla się empty state z ikoną, nagłówkiem, opisem i CTA
 3. Użytkownik klika "Przejdź do czatu"
 4. System przekierowuje do `/app`
 
 **Implementacja:**
+
 - `EmptyState` wyświetla się gdy `queries.length === 0`
 - Link do `/app` przez `<a href="/app">` lub `window.location.href`
 
@@ -924,20 +1017,24 @@ export async function createRating(
 ### 9.1. Walidacja po stronie frontendu
 
 **QueryListParams:**
+
 - `page`: min=1, default=1
 - `per_page`: min=1, max=100, default=20
 - `order`: values: "desc" | "asc", default="desc"
 
 **Walidacja w HistoryList:**
+
 - Sprawdzanie czy `page >= 1` przed API call
 - Sprawdzanie czy `per_page >= 1 && per_page <= 100` przed API call
 - Sprawdzanie czy `order === "desc" || order === "asc"` przed API call
 
 **Walidacja w DeleteQueryButton:**
+
 - Sprawdzanie czy `queryId` jest prawidłowym UUID (opcjonalnie, backend weryfikuje)
 - Sprawdzanie czy użytkownik jest zalogowany (token w session)
 
 **Walidacja w RatingButtons:**
+
 - Sprawdzanie czy `responseType === "fast" || responseType === "accurate"`
 - Sprawdzanie czy `ratingValue === "up" || ratingValue === "down"`
 - Sprawdzanie czy odpowiedź jest kompletna (status === "completed")
@@ -945,15 +1042,18 @@ export async function createRating(
 ### 9.2. Walidacja po stronie backendu
 
 **GET /api/v1/queries:**
+
 - RLS policy: Użytkownik widzi tylko swoje zapytania
 - Walidacja parametrów: `page >= 1`, `per_page >= 1 && per_page <= 100`, `order IN ("desc", "asc")`
 
 **DELETE /api/v1/queries/{query_id}:**
+
 - RLS policy: Użytkownik może usuwać tylko swoje zapytania
 - Weryfikacja ownership przed usunięciem (403 Forbidden jeśli nie)
 - Kaskadowe usuwanie ocen (handled by database)
 
 **POST /api/v1/queries/{query_id}/ratings:**
+
 - RLS policy: Użytkownik może oceniać tylko swoje zapytania
 - Walidacja: `response_type IN ("fast", "accurate")`, `rating_value IN ("up", "down")`
 - Weryfikacja czy odpowiedź istnieje i jest kompletna
@@ -961,12 +1061,14 @@ export async function createRating(
 ### 9.3. Warunki wpływające na stan UI
 
 **HistoryList:**
+
 - `queries.length === 0` → Wyświetl `EmptyState`
 - `pagination.page < pagination.total_pages` → Wyświetl `LoadMoreButton`
 - `isLoading === true` → Wyświetl `SkeletonLoader`
 - `error !== null` → Wyświetl komunikat błędu
 
 **QueryCard:**
+
 - `fast_response.status === "completed"` → Wyświetl odpowiedź
 - `fast_response.status === "processing"` → Wyświetl badge "Przetwarzanie..." z przyciskiem odświeżenia
 - `accurate_response.exists === true` → Wyświetl ikonę 🔬
@@ -974,11 +1076,13 @@ export async function createRating(
 - `isAccurateResponseExpanded === true` → Rozwiń sekcję dokładnej odpowiedzi
 
 **DeleteQueryButton:**
+
 - `isModalOpen === true` → Wyświetl confirmation modal
 - `isDeleting === true` → Disable przycisk "Usuń" i wyświetl spinner
 - `error !== null` → Wyświetl komunikat błędu w modalu
 
 **RatingButtons:**
+
 - `currentRating !== undefined` → Wyświetl aktywny przycisk dla `currentRating.value`
 - `optimisticRating !== null` → Wyświetl optimistic rating (tymczasowy stan)
 - `isSubmitting === true` → Disable przyciski podczas wysyłania
@@ -988,36 +1092,43 @@ export async function createRating(
 ### 10.1. Błędy API
 
 **401 Unauthorized:**
+
 - Przyczyna: Token JWT wygasł lub jest nieprawidłowy
 - Obsługa: Automatyczne przekierowanie do `/login?expired=true` przez `apiClient.ts`
 - Implementacja: `apiClient.ts` sprawdza status 401 i próbuje odświeżyć session, jeśli nie udaje się, przekierowuje do login
 
 **403 Forbidden:**
+
 - Przyczyna: Użytkownik próbuje usunąć/ocenić zapytanie, które nie należy do niego
 - Obsługa: Wyświetlenie komunikatu błędu "Nie masz uprawnień do wykonania tej operacji"
 - Implementacja: `DeleteQueryButton` i `RatingButtons` wyświetlają toast notification z błędem
 
 **404 Not Found:**
+
 - Przyczyna: Zapytanie nie istnieje (np. zostało usunięte przez innego użytkownika)
 - Obsługa: Usunięcie zapytania z listy (jeśli było w liście) i wyświetlenie komunikatu
 - Implementacja: `HistoryList` filtruje usunięte zapytania z listy
 
 **422 Validation Error:**
+
 - Przyczyna: Nieprawidłowe parametry paginacji lub rating
 - Obsługa: Wyświetlenie komunikatu błędu z szczegółami walidacji
 - Implementacja: Walidacja po stronie frontendu przed API call
 
 **429 Rate Limit Exceeded:**
+
 - Przyczyna: Zbyt wiele requestów w krótkim czasie
 - Obsługa: Wyświetlenie komunikatu "Zbyt wiele żądań. Spróbuj ponownie za chwilę."
 - Implementacja: `apiClient.ts` zwraca `ApiError` z kodem `RATE_LIMIT_EXCEEDED`
 
 **500 Internal Server Error:**
+
 - Przyczyna: Błąd serwera
 - Obsługa: Wyświetlenie komunikatu "Wystąpił błąd serwera. Spróbuj ponownie później."
 - Implementacja: `HistoryList` wyświetla komunikat błędu z możliwością retry
 
 **503 Service Unavailable:**
+
 - Przyczyna: Backend jest niedostępny
 - Obsługa: Wyświetlenie komunikatu "Serwis jest tymczasowo niedostępny. Spróbuj ponownie później."
 - Implementacja: `apiClient.ts` zwraca `ApiError` z kodem `SERVICE_UNAVAILABLE`
@@ -1025,6 +1136,7 @@ export async function createRating(
 ### 10.2. Błędy sieciowe
 
 **Network Error:**
+
 - Przyczyna: Brak połączenia z internetem lub backend jest niedostępny
 - Obsługa: Wyświetlenie komunikatu "Brak połączenia z serwerem. Sprawdź połączenie internetowe."
 - Implementacja: `apiClient.ts` wykrywa `TypeError: fetch failed` i zwraca `SERVICE_UNAVAILABLE`
@@ -1032,33 +1144,39 @@ export async function createRating(
 ### 10.3. Błędy walidacji po stronie frontendu
 
 **Nieprawidłowe parametry paginacji:**
+
 - Przyczyna: `page < 1` lub `per_page < 1 || per_page > 100`
 - Obsługa: Użycie wartości domyślnych (page=1, per_page=20)
 - Implementacja: Walidacja w `HistoryList` przed API call
 
 **Nieprawidłowy UUID:**
+
 - Przyczyna: `queryId` nie jest prawidłowym UUID
 - Obsługa: Wyświetlenie komunikatu błędu (opcjonalnie, backend weryfikuje)
 
 ### 10.4. Rollback przy błędach
 
 **Optimistic Delete:**
+
 - Jeśli `DELETE /api/v1/queries/{id}` zwraca błąd, zapytanie jest przywracane do listy
 - Implementacja: `useOptimisticDelete` przechowuje kopię zapytania i przywraca przy błędzie
 
 **Optimistic Rating:**
+
 - Jeśli `POST /api/v1/queries/{id}/ratings` zwraca błąd, ocena wraca do poprzedniego stanu
 - Implementacja: `useOptimisticRating` przechowuje poprzednią ocenę i przywraca przy błędzie
 
 ### 10.5. Komunikaty błędów dla użytkownika
 
 Wszystkie komunikaty błędów powinny być:
+
 - Zrozumiałe dla użytkownika (nie techniczne)
 - W języku polskim
 - Z możliwością retry (jeśli dotyczy)
 - Wyświetlane przez toast notification lub inline message
 
 **Przykłady komunikatów:**
+
 - "Nie udało się usunąć zapytania. Spróbuj ponownie."
 - "Nie udało się zapisać oceny. Spróbuj ponownie."
 - "Nie udało się załadować historii. Odśwież stronę."
@@ -1278,4 +1396,3 @@ Wszystkie komunikaty błędów powinny być:
 ---
 
 **Powrót do:** [View Implementation Index](../view-implementation-index.md) | [UI Plan](../ui-plan.md) | [PRD](../prd.md) | [API Implementation Index](../api-implementation-index.md)
-

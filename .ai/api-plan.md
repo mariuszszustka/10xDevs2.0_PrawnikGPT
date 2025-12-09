@@ -23,6 +23,7 @@
 ## 1. Overview
 
 The PrawnikGPT REST API provides endpoints for:
+
 - **User query submission** with RAG-powered responses (fast & accurate tiers)
 - **Query history management** (read, delete)
 - **Rating system** for response quality feedback
@@ -39,14 +40,14 @@ The PrawnikGPT REST API provides endpoints for:
 
 ## 2. Resources
 
-| Resource | Database Table | Description | Access Level |
-|----------|---------------|-------------|--------------|
-| **Queries** | `query_history` | User questions and AI-generated responses (fast + accurate) | User-owned (RLS) |
-| **Ratings** | `ratings` | User ratings for responses (thumbs up/down) | User-owned (RLS) |
-| **Legal Acts** | `legal_acts` | Metadata of legal acts (20k Polish laws) | Public (read-only) |
-| **Legal Act Chunks** | `legal_act_chunks` | Text fragments with embeddings (RAG) | Public (read-only, internal use) |
-| **Legal Act Relations** | `legal_act_relations` | Relations between legal acts (modifies, repeals, etc.) | Public (read-only) |
-| **Onboarding** | N/A | Static example questions for new users | Public (no auth) |
+| Resource                | Database Table        | Description                                                 | Access Level                     |
+| ----------------------- | --------------------- | ----------------------------------------------------------- | -------------------------------- |
+| **Queries**             | `query_history`       | User questions and AI-generated responses (fast + accurate) | User-owned (RLS)                 |
+| **Ratings**             | `ratings`             | User ratings for responses (thumbs up/down)                 | User-owned (RLS)                 |
+| **Legal Acts**          | `legal_acts`          | Metadata of legal acts (20k Polish laws)                    | Public (read-only)               |
+| **Legal Act Chunks**    | `legal_act_chunks`    | Text fragments with embeddings (RAG)                        | Public (read-only, internal use) |
+| **Legal Act Relations** | `legal_act_relations` | Relations between legal acts (modifies, repeals, etc.)      | Public (read-only)               |
+| **Onboarding**          | N/A                   | Static example questions for new users                      | Public (no auth)                 |
 
 ---
 
@@ -61,6 +62,7 @@ The PrawnikGPT REST API provides endpoints for:
 **Authentication:** None
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -75,6 +77,7 @@ The PrawnikGPT REST API provides endpoints for:
 ```
 
 **Status Codes:**
+
 - `200 OK` - Service is healthy
 - `503 Service Unavailable` - Service is degraded or down
 
@@ -89,6 +92,7 @@ The PrawnikGPT REST API provides endpoints for:
 **Authentication:** Required (JWT)
 
 **Request Body:**
+
 ```json
 {
   "query_text": "Jakie są podstawowe prawa konsumenta w Polsce?"
@@ -96,9 +100,11 @@ The PrawnikGPT REST API provides endpoints for:
 ```
 
 **Validation:**
+
 - `query_text`: string, required, length 10-1000 characters
 
 **Response (202 Accepted):**
+
 ```json
 {
   "query_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -113,6 +119,7 @@ The PrawnikGPT REST API provides endpoints for:
 ```
 
 **Response (after processing, via polling or WebSocket):**
+
 ```json
 {
   "query_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -138,6 +145,7 @@ The PrawnikGPT REST API provides endpoints for:
 ```
 
 **Status Codes:**
+
 - `202 Accepted` - Query submitted, processing started
 - `400 Bad Request` - Invalid input (e.g., text too short/long)
 - `401 Unauthorized` - Missing or invalid JWT token
@@ -145,10 +153,12 @@ The PrawnikGPT REST API provides endpoints for:
 - `500 Internal Server Error` - Server error during processing
 
 **Rate Limiting:**
+
 - 10 queries/minute per user
 - 30 queries/minute per IP
 
 **Business Logic:**
+
 1. Validate query length (10-1000 chars)
 2. Generate embedding for query using OLLAMA embedding model
 3. Perform similarity search in `legal_act_chunks` (top 10 results)
@@ -167,9 +177,11 @@ The PrawnikGPT REST API provides endpoints for:
 **Authentication:** Required (JWT, must own the query)
 
 **Path Parameters:**
+
 - `query_id`: UUID of the query
 
 **Response (200 OK):**
+
 ```json
 {
   "query_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -198,6 +210,7 @@ The PrawnikGPT REST API provides endpoints for:
 ```
 
 **Status Codes:**
+
 - `200 OK` - Query found
 - `401 Unauthorized` - Not authenticated
 - `403 Forbidden` - Query belongs to another user
@@ -212,11 +225,13 @@ The PrawnikGPT REST API provides endpoints for:
 **Authentication:** Required (JWT)
 
 **Query Parameters:**
+
 - `page` (optional): integer, default=1, min=1
 - `per_page` (optional): integer, default=20, min=1, max=100
 - `order` (optional): string, enum=['desc', 'asc'], default='desc' (newest first)
 
 **Response (200 OK):**
+
 ```json
 {
   "queries": [
@@ -251,11 +266,13 @@ The PrawnikGPT REST API provides endpoints for:
 ```
 
 **Status Codes:**
+
 - `200 OK` - Success
 - `401 Unauthorized` - Not authenticated
 - `400 Bad Request` - Invalid pagination parameters
 
 **Business Logic:**
+
 1. Fetch queries for authenticated user (RLS policy enforces ownership)
 2. Order by `created_at DESC` by default
 3. Include summary of ratings (if any)
@@ -270,18 +287,21 @@ The PrawnikGPT REST API provides endpoints for:
 **Authentication:** Required (JWT, must own the query)
 
 **Path Parameters:**
+
 - `query_id`: UUID of the query
 
 **Response (204 No Content):**
 No body returned.
 
 **Status Codes:**
+
 - `204 No Content` - Query successfully deleted
 - `401 Unauthorized` - Not authenticated
 - `403 Forbidden` - Query belongs to another user
 - `404 Not Found` - Query does not exist
 
 **Business Logic:**
+
 1. Verify user owns the query (RLS policy)
 2. Delete from `query_history` table
 3. Cascade delete from `ratings` table (handled by database constraint `ON DELETE CASCADE`)
@@ -295,11 +315,13 @@ No body returned.
 **Authentication:** Required (JWT, must own the query)
 
 **Path Parameters:**
+
 - `query_id`: UUID of the query
 
 **Request Body:** Empty (no body required)
 
 **Response (202 Accepted):**
+
 ```json
 {
   "query_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -311,6 +333,7 @@ No body returned.
 ```
 
 **Response (after completion):**
+
 ```json
 {
   "query_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -332,6 +355,7 @@ No body returned.
 ```
 
 **Status Codes:**
+
 - `202 Accepted` - Request accepted, processing started
 - `401 Unauthorized` - Not authenticated
 - `403 Forbidden` - Query belongs to another user
@@ -341,6 +365,7 @@ No body returned.
 - `504 Gateway Timeout` - Generation exceeded 240s timeout
 
 **Business Logic:**
+
 1. Check if accurate response already exists (return 409 if yes)
 2. Retrieve cached RAG context (if expired, return 410)
 3. Construct prompt with same context as fast response
@@ -359,9 +384,11 @@ No body returned.
 **Authentication:** Required (JWT, must own the query)
 
 **Path Parameters:**
+
 - `query_id`: UUID of the query
 
 **Request Body:**
+
 ```json
 {
   "response_type": "fast",
@@ -370,10 +397,12 @@ No body returned.
 ```
 
 **Validation:**
+
 - `response_type`: string, required, enum=['fast', 'accurate']
 - `rating_value`: string, required, enum=['up', 'down']
 
 **Response (200 OK for update, 201 Created for new rating):**
+
 ```json
 {
   "rating_id": "rating-uuid-123",
@@ -386,6 +415,7 @@ No body returned.
 ```
 
 **Status Codes:**
+
 - `201 Created` - New rating created
 - `200 OK` - Existing rating updated
 - `400 Bad Request` - Invalid input (e.g., invalid enum value)
@@ -394,6 +424,7 @@ No body returned.
 - `404 Not Found` - Query does not exist
 
 **Business Logic:**
+
 1. Verify query exists and user owns it (RLS policy)
 2. Check if rating already exists for (query_id, user_id, response_type)
 3. If exists: UPDATE rating_value and updated_at
@@ -409,9 +440,11 @@ No body returned.
 **Authentication:** Required (JWT, must own the query)
 
 **Path Parameters:**
+
 - `query_id`: UUID of the query
 
 **Response (200 OK):**
+
 ```json
 {
   "query_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -435,6 +468,7 @@ No body returned.
 ```
 
 **Status Codes:**
+
 - `200 OK` - Success (may return empty array if no ratings)
 - `401 Unauthorized` - Not authenticated
 - `403 Forbidden` - Query belongs to another user
@@ -449,12 +483,14 @@ No body returned.
 **Authentication:** Required (JWT, must own the rating)
 
 **Path Parameters:**
+
 - `rating_id`: UUID of the rating
 
 **Response (204 No Content):**
 No body returned.
 
 **Status Codes:**
+
 - `204 No Content` - Rating successfully deleted
 - `401 Unauthorized` - Not authenticated
 - `403 Forbidden` - Rating belongs to another user
@@ -471,6 +507,7 @@ No body returned.
 **Authentication:** Optional (for personalization, not required for MVP)
 
 **Query Parameters:**
+
 - `page` (optional): integer, default=1, min=1
 - `per_page` (optional): integer, default=20, min=1, max=100
 - `search` (optional): string, full-text search on title (min 3 chars)
@@ -481,6 +518,7 @@ No body returned.
 - `order` (optional): string, enum=['desc', 'asc'], default='desc'
 
 **Response (200 OK):**
+
 ```json
 {
   "legal_acts": [
@@ -508,10 +546,12 @@ No body returned.
 ```
 
 **Status Codes:**
+
 - `200 OK` - Success
 - `400 Bad Request` - Invalid parameters (e.g., search string too short)
 
 **Business Logic:**
+
 1. Apply filters (status, publisher, year)
 2. If search query provided: use PostgreSQL full-text search on title (GIN index `idx_legal_acts_title_fts`)
 3. Order by specified field and direction
@@ -526,9 +566,11 @@ No body returned.
 **Authentication:** Optional
 
 **Path Parameters:**
+
 - `act_id`: UUID of the legal act
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "act-uuid-123",
@@ -551,6 +593,7 @@ No body returned.
 ```
 
 **Status Codes:**
+
 - `200 OK` - Success
 - `404 Not Found` - Legal act does not exist
 
@@ -563,13 +606,16 @@ No body returned.
 **Authentication:** Optional
 
 **Path Parameters:**
+
 - `act_id`: UUID of the legal act
 
 **Query Parameters:**
+
 - `depth` (optional): integer, default=1, min=1, max=2 (graph traversal depth)
 - `relation_type` (optional): string, enum=['modifies', 'repeals', 'implements', 'based_on', 'amends'] (filter by type)
 
 **Response (200 OK):**
+
 ```json
 {
   "act_id": "act-uuid-123",
@@ -612,11 +658,13 @@ No body returned.
 ```
 
 **Status Codes:**
+
 - `200 OK` - Success (may return empty arrays if no relations)
 - `400 Bad Request` - Invalid parameters (e.g., depth > 2)
 - `404 Not Found` - Legal act does not exist
 
 **Business Logic:**
+
 1. Fetch outgoing relations (source_act_id = act_id)
 2. Fetch incoming relations (target_act_id = act_id)
 3. If depth > 1: Recursively fetch relations for related acts (max depth 2 per DB plan)
@@ -634,6 +682,7 @@ No body returned.
 **Authentication:** Optional (can be called before login)
 
 **Response (200 OK):**
+
 ```json
 {
   "examples": [
@@ -662,9 +711,11 @@ No body returned.
 ```
 
 **Status Codes:**
+
 - `200 OK` - Success
 
 **Business Logic:**
+
 - Return hardcoded list of example questions (defined in code)
 - Can be extended with database storage in future versions
 
@@ -679,6 +730,7 @@ No body returned.
 **Token Location:** `Authorization` header with `Bearer` scheme
 
 **Example:**
+
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
@@ -703,17 +755,20 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### Authorization (Row-Level Security)
 
 **Database-Level Authorization:**
+
 - All user-owned tables (`query_history`, `ratings`) have RLS policies
 - Policies enforce `user_id = auth.uid()` for SELECT, INSERT, UPDATE, DELETE
 - Backend uses Supabase SDK with user's JWT token (not service role key for user queries)
 
 **API-Level Authorization:**
+
 - Middleware validates JWT on every protected endpoint
 - Extracts `user_id` from JWT
 - Passes user context to Supabase client
 - RLS policies automatically filter results
 
 **Public Endpoints (No Auth Required):**
+
 - `GET /health`
 - `GET /api/v1/onboarding/example-questions`
 - `GET /api/v1/legal-acts` (read-only reference data)
@@ -721,18 +776,21 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - `GET /api/v1/legal-acts/{act_id}/relations`
 
 **Protected Endpoints (Auth Required):**
+
 - All `/api/v1/queries/*` endpoints
 - All `/api/v1/ratings/*` endpoints
 
 ### Security Headers
 
 **Required Request Headers:**
+
 ```
 Authorization: Bearer {jwt_token}
 Content-Type: application/json
 ```
 
 **Response Security Headers:**
+
 ```
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
@@ -747,6 +805,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 ### Input Validation Rules
 
 #### Query Submission (`POST /api/v1/queries`)
+
 - **query_text:**
   - Type: string
   - Required: yes
@@ -756,6 +815,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
   - Error: `400 Bad Request` with message "Query text must be between 10 and 1000 characters"
 
 #### Rating Creation (`POST /api/v1/queries/{query_id}/ratings`)
+
 - **response_type:**
   - Type: string
   - Required: yes
@@ -769,6 +829,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
   - Error: `400 Bad Request` with message "Invalid rating_value. Must be 'up' or 'down'"
 
 #### Pagination Parameters (all list endpoints)
+
 - **page:**
   - Type: integer
   - Default: 1
@@ -787,6 +848,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 #### RAG Pipeline (Query Submission)
 
 **Step 1: Query Embedding Generation**
+
 ```python
 # Generate embedding using OLLAMA embedding model
 embedding = ollama.embeddings(
@@ -796,9 +858,10 @@ embedding = ollama.embeddings(
 ```
 
 **Step 2: Similarity Search**
+
 ```sql
 -- Find top 10 most similar chunks (cosine similarity)
-SELECT 
+SELECT
   lac.id, lac.content, lac.metadata,
   la.title, la.publisher, la.year, la.position,
   (lac.embedding <=> $1::vector) AS distance
@@ -810,11 +873,13 @@ LIMIT 10;
 ```
 
 **Step 3: Context Construction**
+
 - Combine retrieved chunks with metadata
 - Format as structured prompt for LLM
 - Include source references (act title, article number)
 
 **Step 4: Fast Response Generation**
+
 ```python
 # Generate fast response (7B-13B model)
 response = ollama.generate(
@@ -825,11 +890,13 @@ response = ollama.generate(
 ```
 
 **Step 5: Context Caching**
+
 - Cache RAG context (retrieved chunks) in Redis/memory for 5 minutes
 - Key: `rag_context:{query_id}`
 - Used for accurate response generation without re-searching
 
 **Step 6: Database Storage**
+
 ```python
 # Save to query_history table
 supabase.table('query_history').insert({
@@ -845,11 +912,13 @@ supabase.table('query_history').insert({
 #### Accurate Response Generation
 
 **Preconditions:**
+
 1. Fast response must already exist (query_id valid)
 2. RAG context must be cached (< 5 minutes old)
 3. No accurate response exists yet
 
 **Process:**
+
 ```python
 # 1. Retrieve cached context
 context = cache.get(f"rag_context:{query_id}")
@@ -874,6 +943,7 @@ supabase.table('query_history').update({
 #### Rating Upsert Logic
 
 **Idempotent Rating Creation/Update:**
+
 ```python
 # Check if rating exists
 existing_rating = supabase.table('ratings').select('*').match({
@@ -903,6 +973,7 @@ else:
 #### Query Deletion (Cascade)
 
 **Database Constraint Handles Cascade:**
+
 ```sql
 -- Defined in database schema (ON DELETE CASCADE)
 -- When query is deleted, all ratings are automatically deleted
@@ -913,6 +984,7 @@ DELETE FROM query_history WHERE id = $1 AND user_id = $2;
 #### Empty Results Handling
 
 **When RAG finds no relevant chunks:**
+
 ```python
 if similarity_results.distance > threshold:  # e.g., 0.8
     # Return predefined message
@@ -950,22 +1022,23 @@ All errors return consistent JSON structure:
 
 ### Error Codes and Status Codes
 
-| HTTP Status | Error Code | Description | Example |
-|-------------|------------|-------------|---------|
-| 400 | `VALIDATION_ERROR` | Invalid input data | Query text too short |
-| 401 | `UNAUTHORIZED` | Missing or invalid JWT token | No Authorization header |
-| 403 | `FORBIDDEN` | Insufficient permissions | Trying to access another user's query |
-| 404 | `NOT_FOUND` | Resource does not exist | Query ID not found |
-| 409 | `CONFLICT` | Resource state conflict | Accurate response already exists |
-| 410 | `GONE` | Resource expired | RAG context cache expired (>5 min) |
-| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests | 10 queries/min per user exceeded |
-| 500 | `INTERNAL_SERVER_ERROR` | Unexpected server error | Database connection failed |
-| 503 | `SERVICE_UNAVAILABLE` | External service unavailable | OLLAMA server down |
-| 504 | `GATEWAY_TIMEOUT` | Upstream timeout | LLM generation exceeded 240s |
+| HTTP Status | Error Code              | Description                  | Example                               |
+| ----------- | ----------------------- | ---------------------------- | ------------------------------------- |
+| 400         | `VALIDATION_ERROR`      | Invalid input data           | Query text too short                  |
+| 401         | `UNAUTHORIZED`          | Missing or invalid JWT token | No Authorization header               |
+| 403         | `FORBIDDEN`             | Insufficient permissions     | Trying to access another user's query |
+| 404         | `NOT_FOUND`             | Resource does not exist      | Query ID not found                    |
+| 409         | `CONFLICT`              | Resource state conflict      | Accurate response already exists      |
+| 410         | `GONE`                  | Resource expired             | RAG context cache expired (>5 min)    |
+| 429         | `RATE_LIMIT_EXCEEDED`   | Too many requests            | 10 queries/min per user exceeded      |
+| 500         | `INTERNAL_SERVER_ERROR` | Unexpected server error      | Database connection failed            |
+| 503         | `SERVICE_UNAVAILABLE`   | External service unavailable | OLLAMA server down                    |
+| 504         | `GATEWAY_TIMEOUT`       | Upstream timeout             | LLM generation exceeded 240s          |
 
 ### Error Handling for LLM Generation
 
 **Fast Response Timeout (15s):**
+
 ```json
 {
   "error": {
@@ -978,9 +1051,11 @@ All errors return consistent JSON structure:
   }
 }
 ```
+
 Status: `504 Gateway Timeout`
 
 **Accurate Response Timeout (240s):**
+
 ```json
 {
   "error": {
@@ -993,9 +1068,11 @@ Status: `504 Gateway Timeout`
   }
 }
 ```
+
 Status: `504 Gateway Timeout`
 
 **OLLAMA Service Unavailable:**
+
 ```json
 {
   "error": {
@@ -1008,11 +1085,13 @@ Status: `504 Gateway Timeout`
   }
 }
 ```
+
 Status: `503 Service Unavailable`
 
 ### Validation Error Details
 
 **Example: Query Text Too Short**
+
 ```json
 {
   "error": {
@@ -1030,6 +1109,7 @@ Status: `503 Service Unavailable`
   }
 }
 ```
+
 Status: `400 Bad Request`
 
 ---
@@ -1039,17 +1119,20 @@ Status: `400 Bad Request`
 ### Rate Limit Configuration
 
 **Per-User Limits (Authenticated):**
+
 - **Query submission:** 10 requests/minute per user
 - **Accurate response requests:** 5 requests/minute per user
 - **Other endpoints:** 60 requests/minute per user
 
 **Per-IP Limits (All Traffic):**
+
 - **Query submission:** 30 requests/minute per IP
 - **Other endpoints:** 100 requests/minute per IP
 
 ### Rate Limit Headers
 
 **Included in all responses:**
+
 ```
 X-RateLimit-Limit: 10
 X-RateLimit-Remaining: 7
@@ -1075,6 +1158,7 @@ X-RateLimit-Reset: 1637328000
 **Status:** `429 Too Many Requests`
 
 **Headers:**
+
 ```
 Retry-After: 45
 X-RateLimit-Limit: 10
@@ -1085,6 +1169,7 @@ X-RateLimit-Reset: 1637328045
 ### Implementation Strategy
 
 **Backend (FastAPI):**
+
 ```python
 from fastapi import FastAPI, Request
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -1109,31 +1194,34 @@ async def submit_query(request: Request, ...):
 
 ### Response Time SLAs
 
-| Endpoint | Target Latency (p95) | Timeout |
-|----------|---------------------|---------|
-| POST /api/v1/queries (fast) | <15 seconds | 15s |
-| POST /api/v1/queries/{id}/accurate-response | <240 seconds | 240s |
-| GET /api/v1/queries | <200ms | 5s |
-| GET /api/v1/queries/{id} | <100ms | 5s |
-| DELETE /api/v1/queries/{id} | <100ms | 5s |
-| POST /api/v1/queries/{id}/ratings | <100ms | 5s |
-| GET /api/v1/legal-acts | <200ms | 5s |
-| GET /api/v1/legal-acts/{id} | <100ms | 5s |
+| Endpoint                                    | Target Latency (p95) | Timeout |
+| ------------------------------------------- | -------------------- | ------- |
+| POST /api/v1/queries (fast)                 | <15 seconds          | 15s     |
+| POST /api/v1/queries/{id}/accurate-response | <240 seconds         | 240s    |
+| GET /api/v1/queries                         | <200ms               | 5s      |
+| GET /api/v1/queries/{id}                    | <100ms               | 5s      |
+| DELETE /api/v1/queries/{id}                 | <100ms               | 5s      |
+| POST /api/v1/queries/{id}/ratings           | <100ms               | 5s      |
+| GET /api/v1/legal-acts                      | <200ms               | 5s      |
+| GET /api/v1/legal-acts/{id}                 | <100ms               | 5s      |
 
 ### Caching Strategy
 
 **RAG Context Cache:**
+
 - **Key:** `rag_context:{query_id}`
 - **TTL:** 5 minutes
 - **Storage:** Redis or in-memory (for MVP)
 - **Purpose:** Reuse similarity search results for accurate response generation
 
 **Example Questions Cache:**
+
 - **Key:** `onboarding:example_questions`
 - **TTL:** 1 hour (static content)
 - **Storage:** Redis or in-memory
 
 **Legal Acts Metadata (Optional):**
+
 - **Key:** `legal_act:{act_id}`
 - **TTL:** 1 hour
 - **Storage:** Redis
@@ -1142,6 +1230,7 @@ async def submit_query(request: Request, ...):
 ### Database Query Optimization
 
 **Critical Indexes Used:**
+
 - `idx_query_history_user_id` - Fast user history queries
 - `idx_query_history_created_at` - Chronological sorting
 - `idx_legal_act_chunks_embedding_ivfflat` - Similarity search (RAG)
@@ -1149,6 +1238,7 @@ async def submit_query(request: Request, ...):
 - `idx_ratings_query_history_id` - Fast rating lookups
 
 **Connection Pooling:**
+
 - Use Supabase SDK connection pooling (default)
 - Max connections: 20-50 (configurable)
 - Connection timeout: 10 seconds
@@ -1156,10 +1246,12 @@ async def submit_query(request: Request, ...):
 ### Async Processing
 
 **Background Tasks (FastAPI):**
+
 - Use `BackgroundTasks` for non-critical operations
 - Example: Logging, analytics events
 
 **Async LLM Generation:**
+
 - Use `asyncio` for parallel processing
 - Prevents blocking FastAPI event loop
 - Timeout handling with `asyncio.wait_for()`
@@ -1171,11 +1263,13 @@ async def submit_query(request: Request, ...):
 ### Versioning Strategy
 
 **URL-Based Versioning:**
+
 - All endpoints prefixed with `/api/v1/`
 - Version is part of the URL path
 - Example: `http://localhost:8000/api/v1/queries`
 
 **Version Lifecycle:**
+
 - **v1 (current):** MVP version, stable API contract
 - **v2 (future):** Breaking changes will be released as new version
 - **Deprecation:** v1 will be maintained for at least 12 months after v2 release
@@ -1183,12 +1277,14 @@ async def submit_query(request: Request, ...):
 ### Breaking vs Non-Breaking Changes
 
 **Non-Breaking Changes (Allowed in v1):**
+
 - Adding new optional query parameters
 - Adding new fields to response bodies
 - Adding new endpoints
 - Adding new enum values (with backward compatibility)
 
 **Breaking Changes (Requires v2):**
+
 - Removing or renaming endpoints
 - Removing or renaming fields in request/response
 - Changing validation rules (stricter)
@@ -1198,9 +1294,11 @@ async def submit_query(request: Request, ...):
 ### Version Negotiation
 
 **Default Version:**
+
 - If no version specified in URL, redirect to latest stable (v1)
 
 **Deprecated Version Warning Header:**
+
 ```
 X-API-Deprecated: true
 X-API-Deprecated-Version: v1
@@ -1215,6 +1313,7 @@ X-API-Sunset-Date: 2026-12-31
 ### Auto-Generated Documentation
 
 **FastAPI Automatic Documentation:**
+
 - **Swagger UI:** `http://localhost:8000/docs`
 - **ReDoc:** `http://localhost:8000/redoc`
 - **OpenAPI JSON:** `http://localhost:8000/openapi.json`
@@ -1230,8 +1329,8 @@ from datetime import datetime
 
 class QuerySubmitRequest(BaseModel):
     query_text: str = Field(
-        ..., 
-        min_length=10, 
+        ...,
+        min_length=10,
         max_length=1000,
         description="User's legal question in natural language"
     )
@@ -1267,17 +1366,20 @@ class RatingCreateRequest(BaseModel):
 ### API Testing Strategy
 
 **Unit Tests (pytest):**
+
 - Test individual endpoint handlers
 - Mock Supabase and OLLAMA clients
 - Test validation logic
 
 **Integration Tests:**
+
 - Test with local Supabase (test database)
 - Test with local OLLAMA (test models)
 - Test rate limiting behavior
 - Test authentication flow
 
 **Load Tests:**
+
 - Use Locust or k6 for load testing
 - Target: 100 concurrent users
 - Monitor: response times, error rates, resource usage
@@ -1285,6 +1387,7 @@ class RatingCreateRequest(BaseModel):
 ### Monitoring & Logging
 
 **Key Metrics to Track:**
+
 - Request rate (requests/second)
 - Response time (p50, p95, p99)
 - Error rate (by endpoint, by error code)
@@ -1293,6 +1396,7 @@ class RatingCreateRequest(BaseModel):
 - Rate limit hits
 
 **Logging Format (JSON):**
+
 ```json
 {
   "timestamp": "2025-11-19T10:30:00Z",
@@ -1307,6 +1411,7 @@ class RatingCreateRequest(BaseModel):
 ```
 
 **Alerting Thresholds:**
+
 - Error rate > 5% (alert)
 - Response time p95 > 20s for fast queries (alert)
 - OLLAMA service unavailable (critical alert)

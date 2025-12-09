@@ -33,6 +33,7 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 ```
 
 **Uwagi:**
+
 - `vector` extension jest wymagany dla kolumn typu `VECTOR` i operatorów podobieństwa (`<=>`)
 - `unaccent` jest opcjonalny, ale zalecany dla lepszej tolerancji błędów ortograficznych
 - Supabase ma oba extensions zainstalowane domyślnie
@@ -68,6 +69,7 @@ CREATE TYPE legal_act_status_enum AS ENUM (
 ```
 
 **Uwagi:**
+
 - Wartości ENUM są case-sensitive
 - Dodawanie nowych wartości do ENUM w PostgreSQL jest możliwe, ale nie ma operacji DROP dla wartości
 - W przyszłości, jeśli ISAP API zwróci nowe typy relacji, można je dodać: `ALTER TYPE relation_type_enum ADD VALUE 'new_type';`
@@ -85,6 +87,7 @@ CREATE TYPE legal_act_status_enum AS ENUM (
 Ta tabela jest zarządzana automatycznie przez Supabase Auth. **Nie trzeba jej tworzyć ręcznie.**
 
 **Kluczowe kolumny:**
+
 - `id`: UUID PRIMARY KEY (używany jako `user_id` w innych tabelach)
 - `email`: VARCHAR(255) NOT NULL UNIQUE
 - `encrypted_password`: VARCHAR NOT NULL (hash bcrypt)
@@ -93,6 +96,7 @@ Ta tabela jest zarządzana automatycznie przez Supabase Auth. **Nie trzeba jej t
 - `last_sign_in_at`: TIMESTAMPTZ
 
 **Integracja z aplikacją:**
+
 - FastAPI używa `auth.uid()` do pobrania ID zalogowanego użytkownika
 - JWT token z Supabase Auth zawiera `user_id` w payload
 - RLS policies używają `auth.uid()` do weryfikacji własności danych
@@ -111,34 +115,35 @@ Przechowuje pytania użytkowników wraz z odpowiedziami (szybką i dokładną) w
 CREATE TABLE query_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  
+
   -- Zapytanie użytkownika (walidacja długości zgodna z PRD: 10-1000 znaków)
   query_text TEXT NOT NULL CHECK (length(query_text) BETWEEN 10 AND 1000),
-  
+
   -- Szybka odpowiedź (zawsze generowana, NOT NULL)
   fast_response_content TEXT NOT NULL CHECK (length(fast_response_content) > 0),
-  
+
   -- Dokładna odpowiedź (opcjonalna, generowana na żądanie użytkownika)
   accurate_response_content TEXT CHECK (length(accurate_response_content) > 0),
-  
+
   -- Źródła odpowiedzi: array of {act_title, article, link}
   -- Format: [{"act_title": "...", "article": "Art. 5", "link": "/acts/..."}]
   sources JSONB NOT NULL DEFAULT '[]',
-  
+
   -- Metadane modeli użytych do generowania odpowiedzi
   fast_model_name VARCHAR(100) NOT NULL,           -- np. 'mistral:7b'
   accurate_model_name VARCHAR(100),                -- np. 'gpt-oss:120b' (nullable)
-  
+
   -- Czas generowania odpowiedzi (w milisekundach)
   fast_generation_time_ms INTEGER NOT NULL CHECK (fast_generation_time_ms > 0),
   accurate_generation_time_ms INTEGER CHECK (accurate_generation_time_ms > 0),
-  
+
   -- Timestamp utworzenia
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
 **Example `sources` JSON:**
+
 ```json
 [
   {
@@ -157,6 +162,7 @@ CREATE TABLE query_history (
 ```
 
 **Indexes:**
+
 ```sql
 -- Szybki dostęp do historii użytkownika (SELECT WHERE user_id = ...)
 CREATE INDEX idx_query_history_user_id ON query_history(user_id);
@@ -166,6 +172,7 @@ CREATE INDEX idx_query_history_created_at ON query_history(created_at DESC);
 ```
 
 **RLS Policies:**
+
 ```sql
 -- Użytkownicy mogą odczytywać tylko swoje zapytania
 CREATE POLICY query_history_select_own
@@ -184,6 +191,7 @@ CREATE POLICY query_history_delete_own
 ```
 
 **Projektowe decyzje:**
+
 1. **Denormalizacja:** Obie odpowiedzi w jednej tabeli zamiast osobnej tabeli `responses` - upraszcza queries i jest wystarczające dla MVP
 2. **Walidacja długości:** `query_text` ograniczony do 1000 znaków zgodnie z US-003 i wymaganiami UX
 3. **JSONB sources:** Elastyczny format dla przechowywania źródeł bez osobnej tabeli (wystarczające dla MVP)
@@ -202,20 +210,20 @@ Przechowuje oceny użytkowników dla odpowiedzi (thumbs up/down). Powiązane z `
 ```sql
 CREATE TABLE ratings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
+
   -- Klucze obce
   query_history_id UUID NOT NULL REFERENCES query_history(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  
+
   -- Typ odpowiedzi (fast/accurate) - określa którą odpowiedź użytkownik ocenia
   response_type response_type_enum NOT NULL,
-  
+
   -- Wartość oceny (up/down)
   rating_value rating_value_enum NOT NULL,
-  
+
   -- Opcjonalny komentarz (przygotowane na przyszłość, poza zakresem MVP)
   comment TEXT,
-  
+
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -223,6 +231,7 @@ CREATE TABLE ratings (
 ```
 
 **Trigger:** Auto-update `updated_at` on UPDATE
+
 ```sql
 CREATE TRIGGER update_ratings_updated_at
   BEFORE UPDATE ON ratings
@@ -231,6 +240,7 @@ CREATE TRIGGER update_ratings_updated_at
 ```
 
 **Indexes:**
+
 ```sql
 -- Szybki dostęp do ocen dla konkretnego zapytania
 CREATE INDEX idx_ratings_query_history_id ON ratings(query_history_id);
@@ -243,6 +253,7 @@ CREATE INDEX idx_ratings_response_type ON ratings(response_type);
 ```
 
 **RLS Policies:**
+
 ```sql
 -- Użytkownicy mogą odczytywać tylko swoje oceny
 CREATE POLICY ratings_select_own
@@ -267,6 +278,7 @@ CREATE POLICY ratings_delete_own
 ```
 
 **Projektowe decyzje:**
+
 1. **Brak UNIQUE constraint:** Użytkownik może zmienić ocenę (logika UPSERT w aplikacji)
 2. **ON DELETE CASCADE:** Automatyczne usuwanie ocen przy usunięciu zapytania (US-007)
 3. **response_type:** Każda odpowiedź (fast/accurate) może mieć osobną ocenę
@@ -285,32 +297,33 @@ Przechowuje metadane aktów prawnych z ISAP. Tabela jest wypełniana przez jedno
 ```sql
 CREATE TABLE legal_acts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
+
   -- Unikalny identyfikator aktu w ISAP (triplet: publisher/year/position)
   publisher VARCHAR(50) NOT NULL,        -- np. 'dz-u', 'mp', 'wdu'
   year INTEGER NOT NULL CHECK (year BETWEEN 1918 AND 2100),
   position INTEGER NOT NULL CHECK (position > 0),
-  
+
   -- Metadane aktu
   title TEXT NOT NULL,                   -- Tytuł aktu (pełna nazwa)
   typ_aktu VARCHAR(255) NOT NULL,        -- 'ustawa', 'rozporządzenie', 'obwieszczenie', etc.
   status legal_act_status_enum NOT NULL, -- 'obowiązująca', 'uchylona', 'nieobowiązująca'
   organ_wydajacy TEXT,                   -- Organ wydający (Sejm, Prezydent, Minister, etc.)
-  
+
   -- Daty
   published_date DATE NOT NULL,          -- Data publikacji w dzienniku urzędowym
   effective_date DATE,                   -- Data wejścia w życie (nullable)
-  
+
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   -- Unikalny constraint dla identyfikacji aktu
   CONSTRAINT unique_legal_act UNIQUE(publisher, year, position)
 );
 ```
 
 **Trigger:** Auto-update `updated_at` on UPDATE
+
 ```sql
 CREATE TRIGGER update_legal_acts_updated_at
   BEFORE UPDATE ON legal_acts
@@ -319,25 +332,28 @@ CREATE TRIGGER update_legal_acts_updated_at
 ```
 
 **Indexes:**
+
 ```sql
 -- Unikalny indeks dla identyfikacji aktu (używany przy INSERT ... ON CONFLICT)
-CREATE UNIQUE INDEX idx_legal_acts_publisher_year_position 
+CREATE UNIQUE INDEX idx_legal_acts_publisher_year_position
   ON legal_acts(publisher, year, position);
 
 -- Sortowanie po dacie publikacji (dla przyszłych filtrowan)
-CREATE INDEX idx_legal_acts_published_date 
+CREATE INDEX idx_legal_acts_published_date
   ON legal_acts(published_date DESC);
 
 -- Full-text search na tytule (dla przyszłych wyszukiwarek)
-CREATE INDEX idx_legal_acts_title_fts 
+CREATE INDEX idx_legal_acts_title_fts
   ON legal_acts USING GIN (to_tsvector('polish', title));
 ```
 
 **RLS Policy:**
+
 - **Brak RLS** - akty prawne są publiczne i dostępne dla wszystkich użytkowników (read-only)
 - Zapis zarządzany przez admin service role key (backend)
 
 **Projektowe decyzje:**
+
 1. **Unikalny identyfikator:** (publisher, year, position) zamiast UUID jako business key
 2. **TEXT dla title:** Tytuły aktów mogą być długie (>255 znaków)
 3. **DATE zamiast TIMESTAMPTZ:** Daty publikacji nie zawierają godziny
@@ -356,39 +372,40 @@ Przechowuje fragmenty tekstowe aktów prawnych wraz z wektorowymi reprezentacjam
 ```sql
 CREATE TABLE legal_act_chunks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
+
   -- Klucz obcy do aktu prawnego
   legal_act_id UUID NOT NULL REFERENCES legal_acts(id) ON DELETE RESTRICT,
-  
+
   -- Kolejność fragmentu w akcie (0-indexed)
   chunk_index INTEGER NOT NULL CHECK (chunk_index >= 0),
-  
+
   -- Treść fragmentu (500-5000 znaków, per artykuł/paragraf)
   content TEXT NOT NULL CHECK (char_length(content) BETWEEN 50 AND 5000),
-  
+
   -- Embedding wektorowy (1024-dimensional vector)
   -- Wsparcie dla: nomic-embed-text (768-dim) i mxbai-embed-large (1024-dim)
   embedding VECTOR(1024) NOT NULL,
-  
+
   -- Nazwa modelu użytego do wygenerowania embeddingu
   embedding_model_name VARCHAR(100) NOT NULL,  -- np. 'nomic-embed-text'
-  
+
   -- Metadane fragmentu (lokalizacja w akcie)
   -- Format: {"type": "article", "number": "10a", "paragraph": "1"}
   metadata JSONB,
-  
+
   -- Kolumna tsvector dla full-text search (automatycznie aktualizowana)
   content_tsvector tsvector,
-  
+
   -- Timestamp utworzenia
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   -- Unikalny constraint dla fragmentu w akcie
   CONSTRAINT unique_chunk_in_act UNIQUE(legal_act_id, chunk_index)
 );
 ```
 
 **Trigger:** Auto-update `content_tsvector` on INSERT/UPDATE
+
 ```sql
 CREATE OR REPLACE FUNCTION update_legal_act_chunks_tsvector()
 RETURNS TRIGGER AS $$
@@ -405,6 +422,7 @@ CREATE TRIGGER update_legal_act_chunks_tsvector_trigger
 ```
 
 **Example `metadata` JSON:**
+
 ```json
 {
   "type": "article",
@@ -415,16 +433,17 @@ CREATE TRIGGER update_legal_act_chunks_tsvector_trigger
 ```
 
 **Indexes:**
+
 ```sql
 -- B-tree index dla JOIN z legal_acts
-CREATE INDEX idx_legal_act_chunks_legal_act_id 
+CREATE INDEX idx_legal_act_chunks_legal_act_id
   ON legal_act_chunks(legal_act_id);
 
 -- IVFFlat index dla similarity search (CRITICAL dla RAG performance)
 CREATE INDEX idx_legal_act_chunks_embedding_ivfflat
   ON legal_act_chunks
   USING ivfflat (embedding vector_cosine_ops)
-  WITH (lists = 100);  
+  WITH (lists = 100);
 -- Tune based on data size: lists = sqrt(total_rows)
 -- For 500k chunks: lists = 707 (~sqrt(500000))
 -- Start with 100 for MVP, tune after data ingestion
@@ -436,9 +455,11 @@ CREATE INDEX idx_legal_act_chunks_content_fts
 ```
 
 **RLS Policy:**
+
 - **Brak RLS** - fragmenty aktów są publiczne (read-only)
 
 **Projektowe decyzje:**
+
 1. **VECTOR(1024):** Elastyczność dla różnych modeli embeddingów bez zmiany schematu
 2. **ON DELETE RESTRICT:** Zapobiega przypadkowemu usunięciu aktu z powiązanymi fragmentami
 3. **content_tsvector:** Automatyczne generowanie przez trigger dla FTS
@@ -447,6 +468,7 @@ CREATE INDEX idx_legal_act_chunks_content_fts
 6. **embedding_model_name:** Umożliwia re-indeksację przy zmianie modelu w przyszłości
 
 **Similarity search example:**
+
 ```sql
 -- Find top 10 most similar chunks to query embedding
 SELECT id, content, metadata,
@@ -470,20 +492,20 @@ Przechowuje relacje między aktami prawnymi (modyfikuje, uchyla, implementuje, e
 ```sql
 CREATE TABLE legal_act_relations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
+
   -- Klucze obce (relacja kierunkowa: source -> target)
   source_act_id UUID NOT NULL REFERENCES legal_acts(id) ON DELETE RESTRICT,
   target_act_id UUID NOT NULL REFERENCES legal_acts(id) ON DELETE RESTRICT,
-  
+
   -- Typ relacji (z ISAP API)
   relation_type relation_type_enum NOT NULL,
-  
+
   -- Opcjonalny opis relacji (z ISAP API)
   description TEXT,
-  
+
   -- Timestamp utworzenia
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   -- Constraints
   CHECK (source_act_id != target_act_id),  -- Akt nie może odnosić się do samego siebie
   CONSTRAINT unique_relation UNIQUE(source_act_id, target_act_id, relation_type)
@@ -491,39 +513,43 @@ CREATE TABLE legal_act_relations (
 ```
 
 **Indexes:**
+
 ```sql
 -- Szybkie wyszukiwanie relacji od źródła (source -> targets)
-CREATE INDEX idx_legal_act_relations_source 
+CREATE INDEX idx_legal_act_relations_source
   ON legal_act_relations(source_act_id);
 
 -- Szybkie wyszukiwanie relacji do celu (target <- sources)
-CREATE INDEX idx_legal_act_relations_target 
+CREATE INDEX idx_legal_act_relations_target
   ON legal_act_relations(target_act_id);
 
 -- Filtrowanie po typie relacji
-CREATE INDEX idx_legal_act_relations_type 
+CREATE INDEX idx_legal_act_relations_type
   ON legal_act_relations(relation_type);
 ```
 
 **RLS Policy:**
+
 - **Brak RLS** - relacje są publiczne (read-only)
 
 **Projektowe decyzje:**
+
 1. **Kierunkowa relacja:** Przechowywanie jednej krotki na relację (source → target) zamiast dwukierunkowej
 2. **ON DELETE RESTRICT:** Zapobiega przypadkowemu usunięciu aktu z powiązanymi relacjami
 3. **Unique constraint:** Zapobiega duplikatom relacji (ten sam typ relacji między tymi samymi aktami)
 4. **CHECK constraint:** Akt nie może mieć relacji sam do siebie
 
 **Graph traversal example (max depth 2):**
+
 ```sql
 WITH RECURSIVE act_tree AS (
   -- Base case: starting act
   SELECT source_act_id, target_act_id, relation_type, 1 AS depth
   FROM legal_act_relations
   WHERE source_act_id = $1
-  
+
   UNION
-  
+
   -- Recursive case: related acts (max depth 2)
   SELECT lar.source_act_id, lar.target_act_id, lar.relation_type, at.depth + 1
   FROM legal_act_relations lar
@@ -553,6 +579,7 @@ legal_acts (1) ──< (M) legal_act_relations (target_act_id)
 ```
 
 **Cardinality:**
+
 - `auth.users` → `query_history`: One-to-Many (ON DELETE CASCADE)
 - `query_history` → `ratings`: One-to-Many (ON DELETE CASCADE)
 - `auth.users` → `ratings`: One-to-Many (ON DELETE CASCADE)
@@ -560,6 +587,7 @@ legal_acts (1) ──< (M) legal_act_relations (target_act_id)
 - `legal_acts` → `legal_act_relations`: One-to-Many (ON DELETE RESTRICT) - jako source i target
 
 **ON DELETE semantics:**
+
 - **CASCADE:** Dla danych użytkownika (RODO compliance) - automatyczne usuwanie historii i ocen
 - **RESTRICT:** Dla danych referencyjnych (akty prawne) - zapobiega przypadkowemu usunięciu
 
@@ -582,6 +610,7 @@ $$ LANGUAGE plpgsql;
 ```
 
 **Apply to tables:**
+
 ```sql
 CREATE TRIGGER update_legal_acts_updated_at
   BEFORE UPDATE ON legal_acts
@@ -614,6 +643,7 @@ CREATE TRIGGER update_legal_act_chunks_tsvector_trigger
 ```
 
 **Uwagi:**
+
 - Konfiguracja 'polish' zapewnia stemming dla polskich słów (np. "konsument" → "konsument", "konsumenta" → "konsument")
 - PostgreSQL w Supabase ma zainstalowany słownik języka polskiego domyślnie
 
@@ -686,6 +716,7 @@ CREATE POLICY ratings_delete_own
 ```
 
 **Uwagi:**
+
 - `auth.uid()` zwraca UUID zalogowanego użytkownika z JWT token (Supabase Auth)
 - Jeśli użytkownik nie jest zalogowany, `auth.uid()` zwraca NULL i wszystkie policies zwracają FALSE
 - Backend używa `service_role` key do operacji administracyjnych (omija RLS)
@@ -727,15 +758,15 @@ CREATE INDEX idx_ratings_response_type ON ratings(response_type);
 -- ==========================================
 
 -- Unikalny indeks dla identyfikacji aktu (INSERT ... ON CONFLICT)
-CREATE UNIQUE INDEX idx_legal_acts_publisher_year_position 
+CREATE UNIQUE INDEX idx_legal_acts_publisher_year_position
   ON legal_acts(publisher, year, position);
 
 -- Sortowanie po dacie publikacji (ORDER BY published_date DESC)
-CREATE INDEX idx_legal_acts_published_date 
+CREATE INDEX idx_legal_acts_published_date
   ON legal_acts(published_date DESC);
 
 -- Full-text search na tytule (WHERE to_tsvector('polish', title) @@ ...)
-CREATE INDEX idx_legal_acts_title_fts 
+CREATE INDEX idx_legal_acts_title_fts
   ON legal_acts USING GIN (to_tsvector('polish', title));
 
 -- ==========================================
@@ -743,7 +774,7 @@ CREATE INDEX idx_legal_acts_title_fts
 -- ==========================================
 
 -- B-tree index dla JOIN z legal_acts
-CREATE INDEX idx_legal_act_chunks_legal_act_id 
+CREATE INDEX idx_legal_act_chunks_legal_act_id
   ON legal_act_chunks(legal_act_id);
 
 -- IVFFlat index dla similarity search (ORDER BY embedding <=> ...)
@@ -768,19 +799,20 @@ CREATE INDEX idx_legal_act_chunks_content_fts
 -- ==========================================
 
 -- Wyszukiwanie relacji od źródła (WHERE source_act_id = ...)
-CREATE INDEX idx_legal_act_relations_source 
+CREATE INDEX idx_legal_act_relations_source
   ON legal_act_relations(source_act_id);
 
 -- Wyszukiwanie relacji do celu (WHERE target_act_id = ...)
-CREATE INDEX idx_legal_act_relations_target 
+CREATE INDEX idx_legal_act_relations_target
   ON legal_act_relations(target_act_id);
 
 -- Filtrowanie po typie relacji (WHERE relation_type = ...)
-CREATE INDEX idx_legal_act_relations_type 
+CREATE INDEX idx_legal_act_relations_type
   ON legal_act_relations(relation_type);
 ```
 
 **Uwagi dotyczące pgvector indexes:**
+
 - **IVFFlat:** Szybsza budowa, niższa pamięć, dobra dla MVP (approximate nearest neighbor)
 - **HNSW:** Lepsza accuracy, wyższa pamięć, rozważyć w przyszłości przy większej bazie danych
 - **vector_cosine_ops:** Cosine similarity (standard dla RAG z znormalizowanymi embeddingami)
@@ -804,24 +836,24 @@ SELECT
   qh.fast_generation_time_ms,
   qh.accurate_generation_time_ms,
   qh.created_at AS query_created_at,
-  
+
   -- Oceny dla szybkiej odpowiedzi
   r_fast.rating_value AS fast_rating,
-  
+
   -- Oceny dla dokładnej odpowiedzi
   r_accurate.rating_value AS accurate_rating
 FROM query_history qh
 
 -- LEFT JOIN dla oceny szybkiej odpowiedzi
-LEFT JOIN ratings r_fast 
-  ON r_fast.query_history_id = qh.id 
-  AND r_fast.response_type = 'fast' 
+LEFT JOIN ratings r_fast
+  ON r_fast.query_history_id = qh.id
+  AND r_fast.response_type = 'fast'
   AND r_fast.user_id = qh.user_id
 
 -- LEFT JOIN dla oceny dokładnej odpowiedzi
-LEFT JOIN ratings r_accurate 
-  ON r_accurate.query_history_id = qh.id 
-  AND r_accurate.response_type = 'accurate' 
+LEFT JOIN ratings r_accurate
+  ON r_accurate.query_history_id = qh.id
+  AND r_accurate.response_type = 'accurate'
   AND r_accurate.user_id = qh.user_id
 
 WHERE qh.user_id = $1  -- Parametr: user_id z auth.uid()
@@ -842,10 +874,10 @@ SELECT
   la.year,
   la.position,
   la.status,
-  
+
   -- Cosine distance (lower is better, 0 = identical, 2 = opposite)
   (lac.embedding <=> $1::vector) AS distance
-  
+
 FROM legal_act_chunks lac
 JOIN legal_acts la ON la.id = lac.legal_act_id
 
@@ -860,6 +892,7 @@ LIMIT 10;
 ```
 
 **Uwagi:**
+
 - `$1::vector` - parametr query embedding (vector[1024])
 - Operator `<=>` - cosine distance (pgvector)
 - Index `idx_legal_act_chunks_embedding_ivfflat` jest używany automatycznie
@@ -874,23 +907,23 @@ SELECT
   lac.id,
   lac.content,
   la.title AS act_title,
-  
+
   -- Semantic similarity score (lower is better)
   (lac.embedding <=> $1::vector) AS semantic_distance,
-  
+
   -- Full-text search rank (higher is better)
   ts_rank(lac.content_tsvector, plainto_tsquery('polish', $2)) AS fts_rank
-  
+
 FROM legal_act_chunks lac
 JOIN legal_acts la ON la.id = lac.legal_act_id
 
-WHERE 
+WHERE
   la.status = 'obowiązująca'
   -- Filtr FTS (tylko chunks zawierające słowa kluczowe)
   AND lac.content_tsvector @@ plainto_tsquery('polish', $2)
 
 -- Sortuj najpierw po semantic similarity, potem po FTS rank
-ORDER BY 
+ORDER BY
   (lac.embedding <=> $1::vector) ASC,
   ts_rank(lac.content_tsvector, plainto_tsquery('polish', $2)) DESC
 
@@ -898,6 +931,7 @@ LIMIT 10;
 ```
 
 **Parametry:**
+
 - `$1::vector` - query embedding (vector[1024])
 - `$2` - słowa kluczowe do FTS (string, np. 'konsument prawa')
 
@@ -915,9 +949,9 @@ WITH RECURSIVE act_tree AS (
     1 AS depth
   FROM legal_act_relations
   WHERE source_act_id = $1  -- Parametr: starting act UUID
-  
+
   UNION
-  
+
   -- Recursive case: related acts (depth 2)
   SELECT
     lar.source_act_id,
@@ -949,9 +983,11 @@ ORDER BY at.depth, la.title;
 ## 9. Migration Strategy (Strategia migracji)
 
 ### Migration file naming convention
+
 `YYYYMMDDHHmmss_description.sql`
 
 **Example:**
+
 - `20250118100000_create_extensions.sql`
 - `20250118100100_create_enums.sql`
 - `20250118100200_create_query_history_table.sql`
@@ -989,42 +1025,44 @@ ORDER BY at.depth, la.title;
 
 ### MVP (20k legal acts)
 
-| Table | Rows | Size per row | Total size |
-|-------|------|--------------|------------|
-| legal_acts | 20,000 | ~2 KB | ~40 MB |
-| legal_act_chunks | 500,000 | ~5 KB (with embedding 1024-dim) | ~2.5 GB |
-| legal_act_relations | 100,000 | ~0.5 KB | ~50 MB |
-| query_history | 10,000 (first month) | ~3 KB | ~30 MB |
-| ratings | 5,000 | ~0.5 KB | ~2.5 MB |
-| **Total data** | | | **~2.62 GB** |
+| Table               | Rows                 | Size per row                    | Total size   |
+| ------------------- | -------------------- | ------------------------------- | ------------ |
+| legal_acts          | 20,000               | ~2 KB                           | ~40 MB       |
+| legal_act_chunks    | 500,000              | ~5 KB (with embedding 1024-dim) | ~2.5 GB      |
+| legal_act_relations | 100,000              | ~0.5 KB                         | ~50 MB       |
+| query_history       | 10,000 (first month) | ~3 KB                           | ~30 MB       |
+| ratings             | 5,000                | ~0.5 KB                         | ~2.5 MB      |
+| **Total data**      |                      |                                 | **~2.62 GB** |
 
 ### Index sizes (estimates)
 
-| Index | Size estimate |
-|-------|---------------|
+| Index                  | Size estimate                      |
+| ---------------------- | ---------------------------------- |
 | pgvector IVFFlat index | ~1.5x embedding storage = ~3.75 GB |
-| FTS GIN indexes | ~0.1x content storage = ~50 MB |
-| B-tree indexes | ~100 MB |
-| **Total indexes** | **~3.9 GB** |
+| FTS GIN indexes        | ~0.1x content storage = ~50 MB     |
+| B-tree indexes         | ~100 MB                            |
+| **Total indexes**      | **~3.9 GB**                        |
 
 ### Total storage needed
 
 **MVP total:** ~6.5 GB (dane + indeksy)
 
 **Supabase plan recommendations:**
+
 - Free tier: 500 MB ❌ (niewystarczające)
 - Pro tier: 8 GB ✅ (wystarczające dla MVP)
 - Team tier: 100 GB (dla przyszłego skalowania)
 
 ### Scaling considerations (post-MVP)
 
-| Scenario | Legal acts | Chunks | Storage needed |
-|----------|------------|--------|----------------|
-| MVP | 20k | 500k | ~6.5 GB |
-| Full ISAP (basic) | 100k | 2.5M | ~30 GB |
-| Full ISAP (comprehensive) | 500k | 12.5M | ~150 GB |
+| Scenario                  | Legal acts | Chunks | Storage needed |
+| ------------------------- | ---------- | ------ | -------------- |
+| MVP                       | 20k        | 500k   | ~6.5 GB        |
+| Full ISAP (basic)         | 100k       | 2.5M   | ~30 GB         |
+| Full ISAP (comprehensive) | 500k       | 12.5M  | ~150 GB        |
 
 **Recommendations:**
+
 - Start with Pro tier ($25/mo) dla MVP
 - Monitor storage usage z Supabase dashboard
 - Rozważ archiwizację starych queries (>6 miesięcy) jeśli storage stanie się problemem
@@ -1037,11 +1075,13 @@ ORDER BY at.depth, la.title;
 ### Backup strategy
 
 **Automatyczne backupy (Supabase):**
+
 - Daily backups (included w Pro tier)
 - 7-day retention (Pro tier)
 - 30-day retention (Team tier)
 
 **Manualne backupy:**
+
 ```bash
 # Full database dump (przed migracjami)
 pg_dump -h db.xxx.supabase.co -U postgres -d postgres > backup_$(date +%Y%m%d).sql
@@ -1054,6 +1094,7 @@ pg_dump -h db.xxx.supabase.co -U postgres -d postgres --data-only > data.sql
 ```
 
 **Restore:**
+
 ```bash
 psql -h db.xxx.supabase.co -U postgres -d postgres < backup_20250118.sql
 ```
@@ -1061,11 +1102,13 @@ psql -h db.xxx.supabase.co -U postgres -d postgres < backup_20250118.sql
 ### Maintenance tasks
 
 **Weekly:**
+
 - `VACUUM ANALYZE` (automatyczne w Supabase)
 - Monitor slow queries z `pg_stat_statements`
 - Check storage usage (Supabase dashboard)
 
 **Monthly:**
+
 - Rebuild pgvector index jeśli dane zmieniają się znacząco:
   ```sql
   REINDEX INDEX idx_legal_act_chunks_embedding_ivfflat;
@@ -1074,6 +1117,7 @@ psql -h db.xxx.supabase.co -U postgres -d postgres < backup_20250118.sql
 - Analyze query performance metrics (Supabase dashboard)
 
 **Ad-hoc:**
+
 - Po dużych zmianach w danych (re-ingecja aktów):
   ```sql
   VACUUM ANALYZE legal_acts;
@@ -1088,23 +1132,25 @@ psql -h db.xxx.supabase.co -U postgres -d postgres < backup_20250118.sql
 ### 12.1. pgvector performance tuning
 
 **IVFFlat index parameters:**
+
 - **lists:** Liczba clusterów dla IVFFlat index
   - Formuła: `lists = sqrt(total_rows)`
   - Dla 500k chunks: `lists = 707`
   - Dla 100k chunks: `lists = 316`
   - Start z `lists = 100` dla MVP, dostrojenie po ingecji danych
-  
 - **probes:** Liczba clusterów do przeszukania podczas query (runtime parameter)
   - Default: 1 (najszybszy, niższa accuracy)
   - Recommended: `probes = lists / 10` (dobry kompromis)
   - Set w zapytaniu: `SET ivfflat.probes = 10;`
 
 **IVFFlat vs HNSW:**
+
 - **IVFFlat:** Szybsza budowa (~10 min dla 500k), niższa pamięć (~3.75 GB), ~95% recall@10
 - **HNSW:** Wolniejsza budowa (~1h dla 500k), wyższa pamięć (~6 GB), ~99% recall@10
 - **Recommendation:** Rozpocznij z IVFFlat dla MVP, przejdź na HNSW w przyszłości jeśli accuracy jest problemem
 
 **Cosine similarity operators:**
+
 - `<=>` - cosine distance (used in ORDER BY, lower is better)
 - `<#>` - negative inner product (alternative)
 - `<->` - L2 distance (not recommended dla znormalizowanych embeddingów)
@@ -1112,6 +1158,7 @@ psql -h db.xxx.supabase.co -U postgres -d postgres < backup_20250118.sql
 ### 12.2. Embedding dimension
 
 **VECTOR(1024) - elastyczność dla różnych modeli:**
+
 - **nomic-embed-text:** 768 dimensions
   - Pad with zeros: `[...embedding, 0, 0, ..., 0]` (256 zeros)
   - Or use first 768 dims: `embedding[:768]`
@@ -1119,6 +1166,7 @@ psql -h db.xxx.supabase.co -U postgres -d postgres < backup_20250118.sql
 - **all-MiniLM-L6-v2:** 384 dimensions (pad with 640 zeros)
 
 **Trade-offs:**
+
 - Większy wymiar = lepsza accuracy, ale większe storage i wolniejsze queries
 - 1024-dim optimal dla MVP (flexibilność bez znaczącego performance hit)
 - Przechowuj `embedding_model_name` dla przyszłej re-indeksacji
@@ -1126,11 +1174,13 @@ psql -h db.xxx.supabase.co -U postgres -d postgres < backup_20250118.sql
 ### 12.3. Polish language support
 
 **Full-text search configuration:**
+
 - `to_tsvector('polish', ...)` - stemming dla polskich słów
 - Przykład: "konsumenta" → "konsument", "prawach" → "prawo"
 - PostgreSQL w Supabase ma słownik polski zainstalowany domyślnie
 
 **Unaccent extension (opcjonalne):**
+
 ```sql
 CREATE EXTENSION unaccent;
 
@@ -1142,10 +1192,12 @@ WHERE unaccent(title) ILIKE unaccent('%prawo%');
 ### 12.4. Idempotency and data import
 
 **Unique identifier dla aktów:**
+
 - `(publisher, year, position)` - business key z ISAP
 - `UNIQUE` constraint zapobiega duplikatom
 
 **Idempotent import strategy:**
+
 ```sql
 -- 1. Insert legal acts (idempotent dzięki ON CONFLICT)
 INSERT INTO legal_acts (publisher, year, position, title, ...)
@@ -1153,7 +1205,7 @@ VALUES ('dz-u', 2023, 1234, 'Ustawa o...', ...)
 ON CONFLICT (publisher, year, position) DO NOTHING;
 
 -- 2. Get legal_act_id dla kolejnych operacji
-SELECT id FROM legal_acts 
+SELECT id FROM legal_acts
 WHERE publisher = 'dz-u' AND year = 2023 AND position = 1234;
 
 -- 3. Delete existing chunks dla tego aktu (jeśli re-import)
@@ -1170,6 +1222,7 @@ ON CONFLICT (source_act_id, target_act_id, relation_type) DO NOTHING;
 ```
 
 **Best practices:**
+
 - Użyj transaction dla całego procesu importu jednego aktu
 - Log errors i continue z następnym aktem (resilience)
 - Track progress w osobnej tabeli (opcjonalnie)
@@ -1177,20 +1230,22 @@ ON CONFLICT (source_act_id, target_act_id, relation_type) DO NOTHING;
 ### 12.5. Security considerations
 
 **ON DELETE strategies:**
+
 - **CASCADE:** Dla danych użytkownika (query_history, ratings)
   - Automatyczne usuwanie historii przy usunięciu użytkownika (RODO compliance)
   - Automatyczne usuwanie ocen przy usunięciu zapytania (US-007)
-  
 - **RESTRICT:** Dla danych referencyjnych (legal_acts, chunks, relations)
   - Zapobiega przypadkowemu usunięciu aktu z powiązanymi fragmentami
   - Usuwanie zarządzane przez aplikację jako proces wieloetapowy
 
 **RLS policies:**
+
 - Ścisła izolacja danych między użytkownikami (`user_id = auth.uid()`)
 - Backend używa `service_role` key do operacji administracyjnych (omija RLS)
 - Wszystkie user-facing tables używają UUID primary keys (no information leakage)
 
 **Rate limiting (aplikacja):**
+
 - 10 queries/minute per user (backend FastAPI)
 - 30 queries/minute per IP (backend FastAPI)
 - Protection against abuse i DoS attacks
@@ -1208,11 +1263,12 @@ ON CONFLICT (source_act_id, target_act_id, relation_type) DO NOTHING;
    - Przydatne dla zaawansowanego onboardingu (poza MVP)
 
 3. **Partycjonowanie po dacie:** Dla query_history przy dużych wolumenach
+
    ```sql
    CREATE TABLE query_history (
      ...
    ) PARTITION BY RANGE (created_at);
-   
+
    CREATE TABLE query_history_2025_01 PARTITION OF query_history
      FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
    ```
@@ -1233,12 +1289,14 @@ ON CONFLICT (source_act_id, target_act_id, relation_type) DO NOTHING;
 ### ✅ Checklist dla implementacji schematu
 
 **Phase 1: Setup (przed migracjami)**
+
 - [ ] Setup lokalnego Supabase (`supabase start`)
 - [ ] Verify PostgreSQL version (15+)
 - [ ] Verify pgvector extension availability
 - [ ] Configure Supabase Auth (email/password, no verification)
 
 **Phase 2: Migrations**
+
 - [ ] Migrate 1: Enable extensions (vector, unaccent)
 - [ ] Migrate 2: Create ENUM types
 - [ ] Migrate 3: Create legal_acts table
@@ -1251,6 +1309,7 @@ ON CONFLICT (source_act_id, target_act_id, relation_type) DO NOTHING;
 - [ ] Migrate 10: Enable RLS and create policies
 
 **Phase 3: Data ingestion**
+
 - [ ] Develop ingestion script (Crawl4AI + ISAP API)
 - [ ] Test ingestion on 100 acts (sanity check)
 - [ ] Run full ingestion (20k acts)
@@ -1259,6 +1318,7 @@ ON CONFLICT (source_act_id, target_act_id, relation_type) DO NOTHING;
 - [ ] Rebuild indexes jeśli potrzeba
 
 **Phase 4: Testing**
+
 - [ ] Test semantic search (similarity queries)
 - [ ] Test FTS (full-text search)
 - [ ] Test hybrid search (semantic + FTS)
@@ -1268,6 +1328,7 @@ ON CONFLICT (source_act_id, target_act_id, relation_type) DO NOTHING;
 - [ ] Monitor query performance (pg_stat_statements)
 
 **Phase 5: Documentation**
+
 - [ ] Document migration procedures
 - [ ] Document backup/restore procedures
 - [ ] Document maintenance tasks

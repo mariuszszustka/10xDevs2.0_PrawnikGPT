@@ -1,4 +1,5 @@
 # Mapa Relacji Prawnych w Systemie ISAP/ELI
+
 ## Kompleksowy Przewodnik do Indeksowania Aktów Prawnych
 
 ---
@@ -37,68 +38,68 @@ API ELI dostępne jest pod adresem: **https://api.sejm.gov.pl/eli**
 
 #### 1. Identyfikatory i Adresy
 
-| Pole | Opis | Przykład |
-|------|------|---------|
-| `address` | Adres publikacji (format: publisher+rok+tom+pozycja) | `WDU20170002196` |
-| `ELI` | Europejski Identyfikator Prawodawstwa | `DU/2017/2196` |
-| `displayAddress` | Adres wyświetlany | `Dz.U. 2017 poz. 2196` |
-| `pos` | Pozycja w roku (lub tomie) | `2196` |
-| `volume` | Tom publikacji (0 po 2012 roku) | `1` |
-| `year` | Rok publikacji | `2017` |
+| Pole             | Opis                                                 | Przykład               |
+| ---------------- | ---------------------------------------------------- | ---------------------- |
+| `address`        | Adres publikacji (format: publisher+rok+tom+pozycja) | `WDU20170002196`       |
+| `ELI`            | Europejski Identyfikator Prawodawstwa                | `DU/2017/2196`         |
+| `displayAddress` | Adres wyświetlany                                    | `Dz.U. 2017 poz. 2196` |
+| `pos`            | Pozycja w roku (lub tomie)                           | `2196`                 |
+| `volume`         | Tom publikacji (0 po 2012 roku)                      | `1`                    |
+| `year`           | Rok publikacji                                       | `2017`                 |
 
 #### 2. Informacje Podstawowe
 
-| Pole | Opis | Rodzaj Danych |
-|------|------|---------------|
-| `title` | Pełny tytuł aktu | String |
-| `type` | Typ aktu (Ustawa, Rozporządzenie, Obwieszczenie, itp.) | String |
-| `publisher` | Kod wydawcy (DU, MP, WDU, itd.) | String |
+| Pole        | Opis                                                   | Rodzaj Danych |
+| ----------- | ------------------------------------------------------ | ------------- |
+| `title`     | Pełny tytuł aktu                                       | String        |
+| `type`      | Typ aktu (Ustawa, Rozporządzenie, Obwieszczenie, itp.) | String        |
+| `publisher` | Kod wydawcy (DU, MP, WDU, itd.)                        | String        |
 
 #### 3. Daty Krytyczne
 
-| Pole | Opis | Znaczenie |
-|------|------|----------|
+| Pole               | Opis                        | Znaczenie                                |
+| ------------------ | --------------------------- | ---------------------------------------- |
 | `announcementDate` | Data ogłoszenia w dzienniku | Kiedy akt został opublikowany oficjalnie |
-| `promulgation` | Data promulgacji | Kiedy został ogłoszony przez organ |
-| `entryIntoForce` | Data wejścia w życie | Kiedy akt zaczął obowiązywać |
-| `validFrom` | Data wiążącości | Kiedy akt jest obowiązujący |
-| `repealDate` | Data uchylenia | Kiedy akt został uchylony |
-| `expirationDate` | Data wygaśnięcia | Kiedy akt naturalnie wygasł |
-| `legalStatusDate` | Data stanu prawnego | Do kiedy metadane są aktualne |
-| `changeDate` | Ostatnia zmiana w systemie | Timestamp zmian w ISAP |
+| `promulgation`     | Data promulgacji            | Kiedy został ogłoszony przez organ       |
+| `entryIntoForce`   | Data wejścia w życie        | Kiedy akt zaczął obowiązywać             |
+| `validFrom`        | Data wiążącości             | Kiedy akt jest obowiązujący              |
+| `repealDate`       | Data uchylenia              | Kiedy akt został uchylony                |
+| `expirationDate`   | Data wygaśnięcia            | Kiedy akt naturalnie wygasł              |
+| `legalStatusDate`  | Data stanu prawnego         | Do kiedy metadane są aktualne            |
+| `changeDate`       | Ostatnia zmiana w systemie  | Timestamp zmian w ISAP                   |
 
 #### 4. Status i Obowiązywanie
 
-| Pole | Wartości | Opis |
-|------|----------|------|
-| `status` | obowiązujący, uchylony, wygaśnięcie, itp. | Wyszczególniony status |
-| `inForce` | IN_FORCE, NOT_IN_FORCE, UNKNOWN | Czy akt obowiązuje |
+| Pole      | Wartości                                  | Opis                   |
+| --------- | ----------------------------------------- | ---------------------- |
+| `status`  | obowiązujący, uchylony, wygaśnięcie, itp. | Wyszczególniony status |
+| `inForce` | IN_FORCE, NOT_IN_FORCE, UNKNOWN           | Czy akt obowiązuje     |
 
 #### 5. Organy i Instytucje
 
-| Pole | Opis |
-|------|------|
-| `releasedBy` | Organ wydający akt (np. Sejm, Rada Ministrów, Minister) |
-| `authorizedBody` | Organ uprawniony do działania |
-| `obligated` | Organ zobowiązany do wykonania |
+| Pole             | Opis                                                    |
+| ---------------- | ------------------------------------------------------- |
+| `releasedBy`     | Organ wydający akt (np. Sejm, Rada Ministrów, Minister) |
+| `authorizedBody` | Organ uprawniony do działania                           |
+| `obligated`      | Organ zobowiązany do wykonania                          |
 
 #### 6. Zawartość i Słowa Kluczowe
 
-| Pole | Opis |
-|------|------|
-| `keywords` | Słowa kluczowe do kategoryzacji (np. "celne prawo") |
-| `keywordsNames` | Nazwy własne wymieniiane w akcie |
-| `comments` | Dodatkowe komentarze |
+| Pole            | Opis                                                |
+| --------------- | --------------------------------------------------- |
+| `keywords`      | Słowa kluczowe do kategoryzacji (np. "celne prawo") |
+| `keywordsNames` | Nazwy własne wymieniiane w akcie                    |
+| `comments`      | Dodatkowe komentarze                                |
 
 #### 7. Teksty Dostępne
 
-| Kod | Typ | Opis |
-|-----|------|------|
-| `O` | Ogłoszony | Tekst w postaci ogłoszonej w dzienniku |
-| `T` | Jednolity | Tekst jednolity (bez zmian, początkowy) |
-| `U` | Ujednolicony | Tekst z wszymi zmianami (bez mocy prawnej) |
-| `H` | HTML | Format HTML |
-| `I` | Interpretacyjny | Tekst z interpretacją |
+| Kod | Typ             | Opis                                       |
+| --- | --------------- | ------------------------------------------ |
+| `O` | Ogłoszony       | Tekst w postaci ogłoszonej w dzienniku     |
+| `T` | Jednolity       | Tekst jednolity (bez zmian, początkowy)    |
+| `U` | Ujednolicony    | Tekst z wszymi zmianami (bez mocy prawnej) |
+| `H` | HTML            | Format HTML                                |
+| `I` | Interpretacyjny | Tekst z interpretacją                      |
 
 Flagi `textPDF` i `textHTML` wskazują dostępne formaty.
 
@@ -109,6 +110,7 @@ Flagi `textPDF` i `textHTML` wskazują dostępne formaty.
 ### 1. Relacje Modyfikacyjne (Zmiana Treści)
 
 #### `Akty zmieniające` (kierunek: czynny)
+
 - **Definicja**: Akty, które modyfikują dany akt
 - **Zastosowanie**: Nowelizacje, zmiany, sprostowania
 - **Typy zmian**:
@@ -119,6 +121,7 @@ Flagi `textPDF` i `textHTML` wskazują dostępne formaty.
   - Uzupełnienie (dodanie nowych regulacji)
 
 #### `Akty zmieniane` (kierunek: bierny)
+
 - **Definicja**: Akt, który jest modyfikowany
 - **Zastosowanie**: Akt pierwotny, który uległ zmianom
 - **Informacje Dodatkowe**: Data zmiany, nr artykułu (opcjonalnie)
@@ -126,6 +129,7 @@ Flagi `textPDF` i `textHTML` wskazują dostępne formaty.
 ### 2. Relacje Uchyleniowe (Wycofanie z Obrotu)
 
 #### `Akty uchylające` (kierunek: czynny)
+
 - **Definicja**: Akty, które wycofują inny akt z obrotu
 - **Typy uchylenia**:
   - Uchylenie wyraźne (bezpośrednie wskazanie)
@@ -134,6 +138,7 @@ Flagi `textPDF` i `textHTML` wskazują dostępne formaty.
 - **Metadane**: Data uchylenia
 
 #### `Akty uznane za uchylone` (kierunek: bierny)
+
 - **Definicja**: Akt, który został uchylony
 - **Skutek**: Akt traci moc obowiązującą
 - **Pole `repealDate`**: Data, kiedy akt został uchylony
@@ -141,47 +146,56 @@ Flagi `textPDF` i `textHTML` wskazują dostępne formaty.
 ### 3. Relacje Wykonawcze (Akty Podustawowe)
 
 #### `Akty wykonawcze` (kierunek: czynny)
+
 - **Definicja**: Rozporządzenia, zarządzenia, obwieszczenia wydane na podstawie ustawy
-- **Charakterystyka**: 
+- **Charakterystyka**:
   - Zwykle rozporządzenia Rady Ministrów lub ministrów
   - Wydawane na upoważnienie zawarte w ustawie
   - Konkretyzują przepisy ustawy
 - **Przykłady**: Rozporządzenie Ministra Edukacji, Zarządzenie MZ
 
 #### `Akty wykonywane` (kierunek: bierny)
+
 - **Definicja**: Ustawa, która stanowi podstawę do wydania aktów wykonawczych
 - **Charakterystyka**: Zawiera upoważnienia dla organów administracyjnych
 
 ### 4. Relacje Wprowadzające
 
 #### `Akty wprowadzające` (kierunek: czynny)
+
 - **Definicja**: Pierwszy akt wdrażający daną regulację
 - **Zastosowanie**: Zwykle dla nowych systemów prawnych
 
 #### `Akty wprowadzane` (kierunek: bierny)
+
 - **Definicja**: Akt wprowadzany przez inne akty
 
 ### 5. Relacje Interpretacyjne
 
 #### `Akty interpretujące` (kierunek: czynny)
+
 - **Definicja**: Akty wydane w celu interpretacji norm
 - **Przykłady**: Uchwały Sejmu, interpretacje organów
 
 #### `Akty interpretowane` (kierunek: bierny)
+
 - **Definicja**: Akt, którego normy są interpretowane
 
 ### 6. Relacje Implementacyjne (Prawo UE)
 
 #### `Akty implementujące` (kierunek: czynny)
+
 - **Definicja**: Polskie akty (ustawa, rozporządzenie) implementujące dyrektywę UE
 - **Zastosowanie**: Wdrażanie unijnego prawa do porządku krajowego
 - **Powiązanie**: Z polem `directives`
 
 #### `Akty implementowane` (kierunek: bierny)
+
 - **Definicja**: Dyrektywy UE implementowane przez polskie akty
 - **Polje**: `directives` (lista powiązanych dyrektyw)
 
 Metadane dotyczące dyrektyw:
+
 ```
 {
   "address": "32013R0952",
@@ -193,25 +207,29 @@ Metadane dotyczące dyrektyw:
 ### 7. Relacje Zastępcze (Następstwo Prawne)
 
 #### `Akty zastępujące` (kierunek: czynny)
+
 - **Definicja**: Nowy akt będący następcą prawnym
 - **Warunki**: Brak wyraźnego uchylenia, ale utrata mocy poprzednika
 - **Zastosowanie**: Tylko dla aktów podustawowych
 - **Charakterystyka**: Całkowita zmiana regulacji w danym obszarze
 
 #### `Akty zastępowane` (kierunek: bierny)
+
 - **Definicja**: Akt utrácił moc na skutek wejścia nowego aktu
 - **Warunki**: Brak wyraźnego uchylenia (pośrednie)
 
 ### 8. Relacje Informacyjne
 
 #### `Podstawa prawna` (kierunek: informacyjny)
+
 - **Definicja**: Akty stanowiące upoważnienie do wydania danego aktu
 - **Zastosowanie**: Dla aktów wykonawczych
 - **Metadane**: Może zawierać nr artykułu (np. "art. 19 ust. 1")
 
 #### `Tekst jednolity dla aktu` (kierunek: informacyjny)
+
 - **Definicja**: Tekst jednolity wydany dla danego aktu
-- **Charakterystyka**: 
+- **Charakterystyka**:
   - Zawiera wszystkie zmany do daty publikacji
   - Wydawany przez Marszałka Sejmu (dla ustaw) lub ministra (dla rozporządzeń)
   - Tekst ma moc prawną
@@ -345,15 +363,15 @@ Zwraca kompletny obiekt `Act`:
   "expirationDate": null,
   "legalStatusDate": "2017-11-10",
   "changeDate": "2023-11-15T10:30:45",
-  
+
   "releasedBy": ["SEJM"],
   "authorizedBody": [],
   "obligated": ["MINISTERSTWO ROLNICTWA"],
-  
+
   "keywords": ["rolnictwo", "ustrój"],
   "keywordsNames": ["Rzecznik Praw Pacjenta"],
   "comments": "",
-  
+
   "textPDF": true,
   "textHTML": false,
   "texts": [
@@ -362,7 +380,7 @@ Zwraca kompletny obiekt `Act`:
       "type": "O"  // Ogłoszony
     }
   ],
-  
+
   "previousTitle": [],
   "prints": [
     {
@@ -373,7 +391,7 @@ Zwraca kompletny obiekt `Act`:
       "linkProcessAPI": "https://api.sejm.gov.pl/sejm/term8/processes/1234"
     }
   ],
-  
+
   "directives": [
     {
       "address": "32015L1535",
@@ -381,7 +399,7 @@ Zwraca kompletny obiekt `Act`:
       "date": "2015-09-09"
     }
   ],
-  
+
   "references": {
     "Akty zmieniające": [...],
     "Akty zmieniane": [...],
@@ -715,16 +733,19 @@ Query 5: Jakie akty ogółem zmieniają regulację dotyczącą X?
 ## Zasoby i Linki
 
 ### Dokumentacja API
+
 - Dokumentacja OpenAPI: https://api.sejm.gov.pl/eli/openapi/
 - ELI Ontologia: http://eli.gov.pl/resource/ontology/elipl#
 - Sejm API: https://api.sejm.gov.pl/
 
 ### Portale
+
 - ISAP: https://isap.sejm.gov.pl/
 - ELI: https://eli.gov.pl/
 - Publiczny Portal Informacji o Prawie: https://ppiop.rcl.gov.pl/
 
 ### Standardy
+
 - ELI Best Practices: https://op.europa.eu/en/publication-detail/-/publication/d99a4fcb-4cd1-11e9-a8ed-01aa75ed71a1
 - RDF/Turtle: https://www.w3.org/TeamSubmission/turtle/
 - JSON-LD: https://www.w3.org/TR/json-ld/
@@ -742,6 +763,7 @@ System ISAP/ELI dostarcza kompleksowej struktury do mapowania powiązań między
 5. **Powiązania z dyrektywami UE** dla międzynarodowej interoperacyjności
 
 To czyni ISAP idealnym źródłem do budowy knowledge grafu i indeksowania do lokalnych LLM lub publicznych modeli dla:
+
 - Analizy prawnej
 - Weryikacji aktów
 - Śledzenia zmian legislacyjnych

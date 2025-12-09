@@ -13,6 +13,7 @@
 Zwraca przykładowe pytania dla nowych użytkowników. Statyczna zawartość (hardcoded w MVP).
 
 **Charakterystyka:**
+
 - Publiczny endpoint
 - Bez bazy danych
 - Instant response (<50ms)
@@ -127,10 +128,10 @@ EXAMPLE_QUESTIONS = [
 async def get_example_questions():
     """
     Get example questions for new users.
-    
+
     Returns a curated list of example legal questions to help users
     get started with the system.
-    
+
     **Categories:**
     - consumer_rights: Prawa konsumenta
     - civil_law: Prawo cywilne
@@ -158,13 +159,14 @@ CREATE TABLE example_questions (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_example_questions_active_order 
+CREATE INDEX idx_example_questions_active_order
     ON example_questions(is_active, display_order);
 ```
 
 ### Personalization
 
 Można dodać personalizację na podstawie profilu użytkownika:
+
 - Częściej używane kategorie
 - Historia zapytań
 - Lokalizacja (różne regiony Polski)
@@ -172,6 +174,7 @@ Można dodać personalizację na podstawie profilu użytkownika:
 ### A/B Testing
 
 Testowanie różnych zestawów pytań:
+
 - Tracking click-through rate
 - Analiza konwersji (kliknięcie → submitted query)
 
@@ -200,20 +203,20 @@ async def test_get_example_questions():
     """Test example questions endpoint."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         response = await client.get("/api/v1/onboarding/example-questions")
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify structure
     assert "examples" in data
     assert len(data["examples"]) > 0
-    
+
     # Verify first question
     first_question = data["examples"][0]
     assert "id" in first_question
     assert "question" in first_question
     assert "category" in first_question
-    
+
     # Verify categories are valid
     valid_categories = {"consumer_rights", "civil_law", "labor_law", "criminal_law"}
     for question in data["examples"]:
@@ -267,4 +270,3 @@ export function ExampleQuestions() {
 ---
 
 **Powrót do:** [Index](../api-implementation-index.md)
-

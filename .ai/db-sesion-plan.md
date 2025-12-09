@@ -107,11 +107,13 @@ Schemat bazy danych dla PrawnikGPT MVP został zaprojektowany w oparciu o trzy s
 ### Architektura danych
 
 **Tabele użytkowników i zapytań:**
+
 - `auth.users` - zarządzana przez Supabase Auth (UUID jako PK)
 - `query_history` (alternatywnie `queries`) - przechowuje pytania użytkowników z kolumnami `fast_response_content` (NOT NULL) i `accurate_response_content` (NULLABLE)
 - `ratings` - oceny odpowiedzi powiązane z `query_history_id` i `response_type` (ENUM: 'fast', 'accurate')
 
 **Tabele aktów prawnych:**
+
 - `legal_acts` - metadane aktów z unikalnym identyfikatorem `(publisher, year, position)`
 - `legal_act_chunks` - fragmenty tekstowe z embeddingami `vector(1024)`, kolumną `metadata` (JSONB) i `embedding_model_name`
 - `legal_act_relations` - relacje między aktami z unikalnym constraint na `(source_act_id, target_act_id, relation_type)`
@@ -119,12 +121,14 @@ Schemat bazy danych dla PrawnikGPT MVP został zaprojektowany w oparciu o trzy s
 ### Kluczowe encje i ich relacje
 
 **Relacje jeden-do-wielu:**
+
 - `auth.users` → `query_history` (ON DELETE CASCADE)
 - `query_history` → `ratings` (ON DELETE CASCADE)
 - `legal_acts` → `legal_act_chunks` (ON DELETE RESTRICT)
 - `legal_acts` → `legal_act_relations` jako source i target (ON DELETE RESTRICT)
 
 **Integralność danych:**
+
 - Wszystkie klucze główne to UUID
 - Wszystkie klucze obce mają odpowiednie reguły ON DELETE (CASCADE dla danych użytkownika, RESTRICT dla aktów)
 - Unikalne constrainty zapobiegają duplikatom (aktów, relacji)
@@ -133,15 +137,18 @@ Schemat bazy danych dla PrawnikGPT MVP został zaprojektowany w oparciu o trzy s
 ### Ważne kwestie dotyczące bezpieczeństwa
 
 **Row-Level Security (RLS):**
+
 - Polityki RLS dla `query_history` i `ratings` z regułami opartymi na `auth.uid()`
 - Użytkownicy mają dostęp wyłącznie do swoich danych (SELECT, INSERT, UPDATE, DELETE)
 - Tabele aktów prawnych są publiczne (brak RLS) - read-only w MVP
 
 **Ochrona przed przypadkowym usunięciem:**
+
 - `ON DELETE RESTRICT` dla aktów prawnych zapobiega usunięciu przy istniejących fragmentach/relacjach
 - `ON DELETE CASCADE` dla danych użytkownika zapewnia zgodność z RODO (automatyczne usuwanie historii)
 
 **Walidacja danych:**
+
 - CHECK constraints na długość tekstu (query_text, response_content)
 - ENUM types zapewniają integralność wartości (response_type, rating_value, relation_type)
 - NOT NULL dla pól kluczowych po weryfikacji dostępności w API ISAP
@@ -149,17 +156,20 @@ Schemat bazy danych dla PrawnikGPT MVP został zaprojektowany w oparciu o trzy s
 ### Skalowalność i wydajność
 
 **Indeksy:**
+
 - B-tree indeksy na wszystkich kluczach obcych
 - Indeks na `created_at DESC` w `query_history` dla sortowania chronologicznego
 - Indeks IVFFlat na `embedding` w `legal_act_chunks` z `vector_cosine_ops` i parametrem `lists = sqrt(total_rows)`
 - Indeks GIN na `tsvector` dla wyszukiwania pełnotekstowego (FTS) z konfiguracją 'polish'
 
 **Optymalizacje:**
+
 - Vector(1024) dla embeddingów umożliwia użycie różnych modeli bez zmiany schematu
 - JSONB dla metadanych zapewnia elastyczność bez konieczności zmian schematu
 - TIMESTAMPTZ dla dat umożliwia przyszłe partycjonowanie (nie w MVP)
 
 **Szacunki wolumenu danych (MVP):**
+
 - `legal_acts`: ~20,000 wierszy (~40 MB)
 - `legal_act_chunks`: ~500,000 wierszy (~2 GB z embeddingami)
 - `legal_act_relations`: ~100,000 wierszy (~50 MB)
@@ -170,16 +180,19 @@ Schemat bazy danych dla PrawnikGPT MVP został zaprojektowany w oparciu o trzy s
 ### Funkcjonalności RAG
 
 **Wyszukiwanie semantyczne:**
+
 - Embeddingi w `legal_act_chunks` z indeksem IVFFlat
 - Metryka podobieństwa kosinusowego (`vector_cosine_ops`)
 - Wsparcie dla modeli 768-dim (nomic-embed-text) i 1024-dim (mxbai-embed-large)
 
 **Wyszukiwanie pełnotekstowe:**
+
 - Kolumna `tsvector` z indeksem GIN
 - Konfiguracja języka 'polish' z obsługą stemmingu
 - Możliwość zapytań hybrydowych (semantyczne + słowa kluczowe)
 
 **Idempotencja importu:**
+
 - Unikalny identyfikator aktów: `(publisher, year, position)`
 - `INSERT ... ON CONFLICT DO NOTHING` dla bezpiecznego wielokrotnego importu
 - Skrypt importujący usuwa istniejące chunks przed ponownym wstawieniem
@@ -187,13 +200,16 @@ Schemat bazy danych dla PrawnikGPT MVP został zaprojektowany w oparciu o trzy s
 ### Automatyzacja i konserwacja
 
 **Triggers:**
+
 - Automatyczna aktualizacja `updated_at` na `now()` przy UPDATE w `legal_acts` i `ratings`
 - Reusable function `update_updated_at_column()` dla spójności
 
 **Nazewnictwo:**
+
 - Konsekwentne użycie snake_case dla tabel i kolumn (standard PostgreSQL)
 
 **Przyszłe rozszerzenia:**
+
 - Kolumna `comment` (NULLABLE) w `ratings` przygotowana na przyszłość
 - Kolumna `embedding_model_name` umożliwia re-indeksację przy zmianie modelu
 - Rozważenie tabeli `llm_requests_log` dla szczegółowego logowania zapytań LLM
@@ -225,4 +241,3 @@ Schemat bazy danych dla PrawnikGPT MVP został zaprojektowany w oparciu o trzy s
 </unresolved_issues>
 
 </conversation_summary>
-

@@ -23,6 +23,7 @@ Idempotentny endpoint - tworzy nową ocenę lub aktualizuje istniejącą.
 **Path Params:** `query_id` (UUID)
 
 **Body:**
+
 ```json
 {
   "response_type": "fast" | "accurate",
@@ -31,6 +32,7 @@ Idempotentny endpoint - tworzy nową ocenę lub aktualizuje istniejącą.
 ```
 
 **Validation:**
+
 - `response_type`: enum ['fast', 'accurate']
 - `rating_value`: enum ['up', 'down']
 
@@ -39,6 +41,7 @@ Idempotentny endpoint - tworzy nową ocenę lub aktualizuje istniejącą.
 ## Response
 
 ### 201 Created (New Rating)
+
 ```json
 {
   "rating_id": "uuid",
@@ -51,6 +54,7 @@ Idempotentny endpoint - tworzy nową ocenę lub aktualizuje istniejącą.
 ```
 
 ### 200 OK (Updated)
+
 Same format as 201.
 
 ---
@@ -71,7 +75,7 @@ async def create_or_update_rating(
         user_id=user_id,
         response_type=request.response_type
     )
-    
+
     if existing:
         # UPDATE
         rating = await repo.update_rating(
@@ -88,7 +92,7 @@ async def create_or_update_rating(
             rating_value=request.rating_value
         )
         status_code = 201
-    
+
     return Response(
         status_code=status_code,
         content=rating.model_dump_json()
@@ -100,6 +104,7 @@ async def create_or_update_rating(
 ## Database
 
 ### Unique Constraint
+
 ```sql
 -- Allow only one rating per (query, user, response_type)
 CREATE UNIQUE INDEX idx_ratings_unique
@@ -107,6 +112,7 @@ CREATE UNIQUE INDEX idx_ratings_unique
 ```
 
 ### Updated_at Trigger
+
 ```sql
 CREATE TRIGGER update_ratings_updated_at
     BEFORE UPDATE ON ratings
@@ -179,10 +185,10 @@ async def get_ratings(
     query = await query_repo.get_query(query_id, user_id)
     if not query:
         raise HTTPException(404, "Query not found")
-    
+
     # Get all ratings
     ratings = await repo.get_ratings_for_query(query_id, user_id)
-    
+
     return {
         "query_id": query_id,
         "ratings": ratings
@@ -223,13 +229,12 @@ async def delete_rating(
     exists = await repo.rating_exists(rating_id, user_id)
     if not exists:
         raise HTTPException(404, "Rating not found")
-    
+
     await repo.delete_rating(rating_id)
-    
+
     return Response(status_code=204)
 ```
 
 ---
 
 **Powrót do:** [Index](../api-implementation-index.md)
-

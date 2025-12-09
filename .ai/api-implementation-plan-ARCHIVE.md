@@ -32,6 +32,7 @@
 Endpoint monitorujący dostępność i stan systemu. Sprawdza połączenia z kluczowymi serwisami (Supabase, OLLAMA, Supabase Auth) i zwraca ich status. Używany przez systemy monitoringu, load balancery i DevOps do health checks.
 
 **Charakterystyka:**
+
 - **Publiczny** (bez autentykacji)
 - **Wysoka dostępność** (musi działać nawet przy częściowej awarii)
 - **Szybki** (<100ms)
@@ -50,6 +51,7 @@ Endpoint monitorujący dostępność i stan systemu. Sprawdza połączenia z klu
 - **Headers:** Brak wymaganych
 
 **Przykład wywołania:**
+
 ```bash
 curl http://localhost:8000/health
 ```
@@ -148,6 +150,7 @@ export interface HealthResponse {
 ```
 
 **Status codes:**
+
 - `200 OK` - System działa (ok lub degraded)
 - `503 Service Unavailable` - System nie działa (down)
 
@@ -161,26 +164,26 @@ graph TD
     B --> C{Check Database}
     B --> D{Check OLLAMA}
     B --> E{Check Supabase Auth}
-    
+
     C -->|SELECT 1| F[Supabase PostgreSQL]
     F -->|Success| C
     F -->|Timeout/Error| C
-    
+
     D -->|GET /api/version| G[OLLAMA Service]
     G -->|200 OK| D
     G -->|Timeout/Error| D
-    
+
     E -->|Validate JWT secret| E
-    
+
     C --> H[Aggregate Results]
     D --> H
     E --> H
-    
+
     H --> I{All OK?}
     I -->|Yes| J[Return 200 OK]
     I -->|Partial| K[Return 200 degraded]
     I -->|All Down| L[Return 503 down]
-    
+
     J --> A
     K --> A
     L --> A
@@ -205,6 +208,7 @@ graph TD
 ## 1.6. Względy bezpieczeństwa
 
 ### Autentykacja i Autoryzacja
+
 - **Brak autentykacji** - endpoint publiczny
 - **Uzasadnienie:** Health checks muszą działać bez logowania dla load balancerów
 
@@ -212,7 +216,7 @@ graph TD
 
 1. **Information Disclosure:**
    - **Zagrożenie:** Ujawnienie szczegółów infrastruktury (wersje, nazwy serwisów)
-   - **Mitygacja:** 
+   - **Mitygacja:**
      - Nie zwracaj szczegółowych wersji serwisów
      - Nie ujawniaj adresów IP/hostów
      - Ogranicz informacje w środowisku produkcyjnym
@@ -252,13 +256,13 @@ if settings.environment == "production":
 
 ### Scenariusze błędów
 
-| Scenariusz | Status Code | Response | Akcja |
-|------------|-------------|----------|-------|
-| Wszystkie serwisy działają | 200 OK | status: "ok" | Brak akcji |
-| OLLAMA nie odpowiada | 200 OK | status: "degraded", ollama: "down" | Alert dla DevOps |
-| Database timeout | 200 OK | status: "degraded", database: "down" | Alert CRITICAL |
-| Wszystkie serwisy down | 503 Service Unavailable | status: "down" | Alert CRITICAL + Incident |
-| Nieoczekiwany błąd wewnętrzny | 500 Internal Server Error | Standard error response | Log błędu + Alert |
+| Scenariusz                    | Status Code               | Response                             | Akcja                     |
+| ----------------------------- | ------------------------- | ------------------------------------ | ------------------------- |
+| Wszystkie serwisy działają    | 200 OK                    | status: "ok"                         | Brak akcji                |
+| OLLAMA nie odpowiada          | 200 OK                    | status: "degraded", ollama: "down"   | Alert dla DevOps          |
+| Database timeout              | 200 OK                    | status: "degraded", database: "down" | Alert CRITICAL            |
+| Wszystkie serwisy down        | 503 Service Unavailable   | status: "down"                       | Alert CRITICAL + Incident |
+| Nieoczekiwany błąd wewnętrzny | 500 Internal Server Error | Standard error response              | Log błędu + Alert         |
 
 ### Implementacja obsługi błędów
 
@@ -270,12 +274,12 @@ async def check_service_health(
 ) -> ServiceStatus:
     """
     Generic service health checker with timeout.
-    
+
     Args:
         service_name: Name for logging
         check_func: Async function to check service
         timeout: Timeout in seconds
-        
+
     Returns:
         ServiceStatus: "ok" or "down"
     """
@@ -296,6 +300,7 @@ async def check_service_health(
 ## 1.8. Wydajność
 
 ### Cele wydajnościowe
+
 - **Response time:** <100ms (p95)
 - **Timeout:** 2s per service check
 - **Throughput:** 100 req/s
@@ -304,6 +309,7 @@ async def check_service_health(
 ### Optymalizacje
 
 1. **Parallel Checks:**
+
 ```python
 # Wszystkie checki równolegle (asyncio.gather)
 results = await asyncio.gather(
@@ -315,6 +321,7 @@ results = await asyncio.gather(
 ```
 
 2. **Response Caching:**
+
 ```python
 # Cache wyników na 5 sekund (Redis lub in-memory)
 @cache(ttl=5)
@@ -323,12 +330,14 @@ async def get_health_status() -> HealthResponse:
 ```
 
 3. **Short Timeouts:**
+
 ```python
 # Krótkie timeouty zapobiegają blokowaniu
 HEALTH_CHECK_TIMEOUT = 2.0  # sekundy
 ```
 
 4. **Connection Pooling:**
+
 ```python
 # Używaj istniejących connection pools (Supabase SDK)
 # Nie twórz nowych połączeń przy każdym checku
@@ -370,7 +379,7 @@ class HealthResponse(BaseModel):
     version: str
     timestamp: datetime
     services: ServiceHealthStatus
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -405,13 +414,13 @@ async def check_database(supabase_url: str, supabase_key: str) -> ServiceStatus:
     try:
         from supabase import create_client
         supabase = create_client(supabase_url, supabase_key)
-        
+
         # Simple query: SELECT 1
         result = await asyncio.wait_for(
             supabase.rpc("health_check").execute(),
             timeout=2.0
         )
-        
+
         return "ok"
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
@@ -422,7 +431,7 @@ async def check_ollama(ollama_host: str) -> ServiceStatus:
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
             response = await client.get(f"{ollama_host}/api/version")
-            
+
             if response.status_code == 200:
                 return "ok"
             else:
@@ -437,7 +446,7 @@ async def check_supabase_auth(jwt_secret: str) -> ServiceStatus:
         # Validate JWT secret is set
         if not jwt_secret or len(jwt_secret) < 32:
             return "down"
-        
+
         return "ok"
     except Exception as e:
         logger.error(f"Supabase Auth check failed: {e}")
@@ -450,7 +459,7 @@ async def aggregate_health_status(
 ) -> Literal["ok", "degraded", "down"]:
     """Determine overall system health."""
     statuses = [db_status, ollama_status, auth_status]
-    
+
     if all(s == "ok" for s in statuses):
         return "ok"
     elif all(s == "down" for s in statuses):
@@ -510,15 +519,15 @@ app = FastAPI()
 async def health_check():
     """
     Check system health and service availability.
-    
+
     Verifies connectivity to:
     - Supabase PostgreSQL database
     - OLLAMA LLM service
     - Supabase Auth configuration
-    
+
     Returns overall system status (ok/degraded/down) and individual service statuses.
     """
-    
+
     # Parallel health checks (asyncio.gather)
     db_status, ollama_status, auth_status = await asyncio.gather(
         check_database(settings.supabase_url, settings.supabase_service_key),
@@ -526,12 +535,12 @@ async def health_check():
         check_supabase_auth(settings.supabase_jwt_secret),
         return_exceptions=False  # We handle exceptions in check functions
     )
-    
+
     # Aggregate overall status
     overall_status = await aggregate_health_status(
         db_status, ollama_status, auth_status
     )
-    
+
     # Prepare response
     response = HealthResponse(
         status=overall_status,
@@ -543,14 +552,14 @@ async def health_check():
             supabase_auth=auth_status
         )
     )
-    
+
     # Return 503 if system is down
     if overall_status == "down":
         return JSONResponse(
             status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
             content=response.model_dump()
         )
-    
+
     return response
 ```
 
@@ -585,7 +594,7 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str
     ollama_host: str
     environment: str = "development"  # production/development
-    
+
     class Config:
         env_file = ".env"
 
@@ -608,10 +617,10 @@ async def test_health_check_all_services_ok():
     with patch("services.health_check.check_database", new=AsyncMock(return_value="ok")), \
          patch("services.health_check.check_ollama", new=AsyncMock(return_value="ok")), \
          patch("services.health_check.check_supabase_auth", new=AsyncMock(return_value="ok")):
-        
+
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
@@ -625,10 +634,10 @@ async def test_health_check_degraded():
     with patch("services.health_check.check_database", new=AsyncMock(return_value="ok")), \
          patch("services.health_check.check_ollama", new=AsyncMock(return_value="down")), \
          patch("services.health_check.check_supabase_auth", new=AsyncMock(return_value="ok")):
-        
+
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "degraded"
@@ -640,10 +649,10 @@ async def test_health_check_all_down():
     with patch("services.health_check.check_database", new=AsyncMock(return_value="down")), \
          patch("services.health_check.check_ollama", new=AsyncMock(return_value="down")), \
          patch("services.health_check.check_supabase_auth", new=AsyncMock(return_value="down")):
-        
+
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/health")
-        
+
         assert response.status_code == 503
         data = response.json()
         assert data["status"] == "down"
@@ -652,6 +661,7 @@ async def test_health_check_all_down():
 ### Krok 7: Dokumentacja OpenAPI
 
 FastAPI automatycznie generuje dokumentację OpenAPI. Sprawdź w:
+
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
@@ -714,6 +724,7 @@ async def send_health_alert(service_name: str, status: str):
 **Najbardziej złożony endpoint w systemie** - implementuje pełny pipeline RAG (Retrieval-Augmented Generation) do przetwarzania pytań prawnych. Przyjmuje pytanie użytkownika, generuje embedding, wyszukuje podobne fragmenty ustaw, konstruuje prompt i generuje szybką odpowiedź przy użyciu mniejszego modelu LLM (mistral:7b).
 
 **Charakterystyka:**
+
 - **Wymaga autentykacji** (JWT token)
 - **Asynchroniczny** (202 Accepted, przetwarzanie w tle)
 - **Złożony** (8 kroków pipeline'u)
@@ -721,6 +732,7 @@ async def send_health_alert(service_name: str, status: str):
 - **Rate limited** (10 zapytań/min per user)
 
 **Kluczowe komponenty:**
+
 - Embedding generation (OLLAMA)
 - Similarity search (pgvector)
 - Graph traversal (related acts)
@@ -749,11 +761,13 @@ async def send_health_alert(service_name: str, status: str):
   - `Content-Type: application/json` (wymagane)
 
 **Walidacja:**
+
 - `query_text`: string, required, 10-1000 characters
 - Whitespace trimming (automatyczne)
 - Empty string rejection
 
 **Przykład wywołania:**
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/queries \
   -H "Authorization: Bearer eyJhbGc..." \
@@ -789,18 +803,18 @@ class QuerySubmitRequest(BaseModel):
         max_length=1000,
         description="User's legal question in natural language"
     )
-    
+
     @validator('query_text')
     def validate_query_text(cls, v):
         # Trim whitespace
         v = v.strip()
-        
+
         # Check length after trimming
         if len(v) < 10:
             raise ValueError("Query text must be at least 10 characters")
         if len(v) > 1000:
             raise ValueError("Query text must be at most 1000 characters")
-        
+
         return v
 
 class QueryProcessingStatus(str, Enum):
@@ -821,7 +835,7 @@ class QuerySubmitResponse(BaseModel):
     status: QueryProcessingStatus
     created_at: datetime
     fast_response: FastResponseStatus
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -996,6 +1010,7 @@ export interface QuerySubmitResponse {
 ```
 
 **Status codes:**
+
 - `202 Accepted` - Query submitted, processing started
 - `400 Bad Request` - Invalid input (e.g., text too short/long)
 - `401 Unauthorized` - Missing or invalid JWT token
@@ -1019,37 +1034,37 @@ graph TD
     E -->|OK| G{Validate Input}
     G -->|Invalid| H[400 Bad Request]
     G -->|Valid| I[Create Query Record]
-    
+
     I --> J[Background Task: RAG Pipeline]
     I --> K[Return 202 Accepted]
     K --> A
-    
+
     J --> L[1. Generate Embedding]
     L -->|POST /api/embeddings| M[OLLAMA]
     M --> N[Embedding Vector 768-dim]
-    
+
     N --> O[2. Similarity Search]
     O -->|SELECT ... ORDER BY embedding| P[(Supabase pgvector)]
     P --> Q[Top 10 Chunks]
-    
+
     Q --> R[3. Fetch Related Acts]
     R -->|Recursive CTE| P
     P --> S[Related Acts Graph]
-    
+
     S --> T[4. Construct Prompt]
     T --> U[Context + Question]
-    
+
     U --> V[5. Generate LLM Response]
     V -->|POST /api/generate| M
     M --> W[Fast Response Text]
-    
+
     W --> X[6. Parse Sources]
     X --> Y[7. Store in Database]
     Y --> P
-    
+
     Y --> Z[8. Cache Context]
     Z --> AA[(Redis)]
-    
+
     AA --> AB[Response Complete]
     AB -->|Polling/WS| A
 ```
@@ -1057,6 +1072,7 @@ graph TD
 **Szczegółowy przepływ (8 kroków):**
 
 ### 1. **Request Validation & Auth**
+
 ```python
 # Validate JWT token
 user_id = await get_current_user(token)
@@ -1071,6 +1087,7 @@ if await rate_limiter.is_exceeded(user_id):
 ```
 
 ### 2. **Create Query Record**
+
 ```python
 # Insert into database immediately (status: "processing")
 query_id = await db.insert_query(
@@ -1092,6 +1109,7 @@ return QuerySubmitResponse(
 ### 3. **Background RAG Pipeline**
 
 **Step 1: Generate Query Embedding**
+
 ```python
 # OLLAMA embeddings API
 embedding = await ollama.generate_embedding(
@@ -1103,10 +1121,11 @@ embedding = await ollama.generate_embedding(
 ```
 
 **Step 2: Similarity Search (pgvector)**
+
 ```python
 # PostgreSQL query with pgvector
 chunks = await db.execute("""
-    SELECT 
+    SELECT
         lac.id, lac.content, lac.metadata,
         la.title, la.publisher, la.year, la.position,
         (lac.embedding <=> $1::vector) AS distance
@@ -1123,6 +1142,7 @@ if not chunks or chunks[0]["distance"] > 0.5:
 ```
 
 **Step 3: Fetch Related Acts (Graph Traversal)**
+
 ```python
 act_ids = list(set(chunk["legal_act_id"] for chunk in chunks))
 
@@ -1132,9 +1152,9 @@ related_acts = await db.execute("""
         SELECT source_act_id, target_act_id, relation_type, 1 AS depth
         FROM legal_act_relations
         WHERE source_act_id = ANY($1)
-        
+
         UNION
-        
+
         SELECT lar.source_act_id, lar.target_act_id, lar.relation_type, at.depth + 1
         FROM legal_act_relations lar
         JOIN act_tree at ON lar.source_act_id = at.target_act_id
@@ -1145,6 +1165,7 @@ related_acts = await db.execute("""
 ```
 
 **Step 4: Construct Prompt**
+
 ```python
 context = format_chunks_as_context(chunks, related_acts)
 
@@ -1162,6 +1183,7 @@ Odpowiedź (w języku polskim, zwięźle, cytuj konkretne artykuły):
 ```
 
 **Step 5: Generate LLM Response**
+
 ```python
 # OLLAMA generation API (timeout 15s)
 response = await ollama.generate(
@@ -1176,6 +1198,7 @@ response = await ollama.generate(
 ```
 
 **Step 6: Parse Sources**
+
 ```python
 # Extract source references from chunks
 sources = [
@@ -1190,6 +1213,7 @@ sources = [
 ```
 
 **Step 7: Store in Database**
+
 ```python
 await db.update_query(
     query_id=query_id,
@@ -1202,6 +1226,7 @@ await db.update_query(
 ```
 
 **Step 8: Cache RAG Context (5 min TTL)**
+
 ```python
 # Cache for potential accurate response request
 await redis.setex(
@@ -1222,6 +1247,7 @@ await redis.setex(
 ### Autentykacja i Autoryzacja
 
 **JWT Token Validation:**
+
 ```python
 from fastapi.security import HTTPBearer
 from jose import jwt, JWTError
@@ -1231,7 +1257,7 @@ security = HTTPBearer()
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     """Extract and validate JWT token."""
     token = credentials.credentials
-    
+
     try:
         payload = jwt.decode(
             token,
@@ -1251,10 +1277,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 1. **SQL Injection:**
    - **Zagrożenie:** User input w SQL queries
    - **Mitygacja:** Parametryzowane zapytania (ZAWSZE)
+
    ```python
    # ❌ NIGDY tak nie rób
    query = f"SELECT * FROM queries WHERE text = '{user_input}'"
-   
+
    # ✅ ZAWSZE używaj parametrów
    query = "SELECT * FROM queries WHERE text = $1"
    result = await db.execute(query, user_input)
@@ -1266,20 +1293,21 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
      - Walidacja długości (10-1000 znaków)
      - Sanityzacja: usuwanie kontrolnych znaków
      - Prompt structure: jasne oddzielenie kontekstu od pytania
+
    ```python
    # Escape special characters
    safe_query = query_text.replace("\\n\\n", " ").strip()
-   
+
    # Clear prompt structure
    prompt = f"""
    SYSTEM: You are a legal assistant. Answer based ONLY on provided context.
-   
+
    CONTEXT:
    {context}
-   
+
    USER QUESTION:
    {safe_query}
-   
+
    ANSWER:
    """
    ```
@@ -1291,11 +1319,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
      - Timeouts: 15s for fast response
      - Queue depth limiting
      - Resource quotas per user
+
    ```python
    from slowapi import Limiter
-   
+
    limiter = Limiter(key_func=get_remote_address)
-   
+
    @app.post("/api/v1/queries")
    @limiter.limit("10/minute")  # Per user
    async def submit_query(...):
@@ -1304,6 +1333,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 4. **Data Leakage:**
    - **Zagrożenie:** Ujawnienie pytań innych użytkowników
    - **Mitygacja:** RLS policies w Supabase
+
    ```sql
    CREATE POLICY query_history_select_own
        ON query_history FOR SELECT
@@ -1333,18 +1363,18 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 ### Scenariusze błędów i response codes
 
-| Scenariusz | Status Code | Error Code | Akcja |
-|------------|-------------|------------|-------|
-| Query text < 10 chars | 400 | VALIDATION_ERROR | Reject with details |
-| Query text > 1000 chars | 400 | VALIDATION_ERROR | Reject with details |
-| Missing JWT token | 401 | UNAUTHORIZED | Request login |
-| Invalid JWT token | 401 | UNAUTHORIZED | Request login |
-| Rate limit exceeded | 429 | RATE_LIMIT_EXCEEDED | Retry after X seconds |
-| No relevant acts found | 404 | NOT_FOUND | Friendly message |
-| OLLAMA service down | 503 | SERVICE_UNAVAILABLE | Alert + Retry |
-| OLLAMA timeout (>15s) | 504 | GATEWAY_TIMEOUT | Retry |
-| Database connection error | 500 | INTERNAL_SERVER_ERROR | Alert + Log |
-| Unexpected error | 500 | INTERNAL_SERVER_ERROR | Alert + Log |
+| Scenariusz                | Status Code | Error Code            | Akcja                 |
+| ------------------------- | ----------- | --------------------- | --------------------- |
+| Query text < 10 chars     | 400         | VALIDATION_ERROR      | Reject with details   |
+| Query text > 1000 chars   | 400         | VALIDATION_ERROR      | Reject with details   |
+| Missing JWT token         | 401         | UNAUTHORIZED          | Request login         |
+| Invalid JWT token         | 401         | UNAUTHORIZED          | Request login         |
+| Rate limit exceeded       | 429         | RATE_LIMIT_EXCEEDED   | Retry after X seconds |
+| No relevant acts found    | 404         | NOT_FOUND             | Friendly message      |
+| OLLAMA service down       | 503         | SERVICE_UNAVAILABLE   | Alert + Retry         |
+| OLLAMA timeout (>15s)     | 504         | GATEWAY_TIMEOUT       | Retry                 |
+| Database connection error | 500         | INTERNAL_SERVER_ERROR | Alert + Log           |
+| Unexpected error          | 500         | INTERNAL_SERVER_ERROR | Alert + Log           |
 
 ### Implementacja Custom Exceptions
 
@@ -1404,7 +1434,7 @@ async def no_relevant_acts_handler(request: Request, exc: NoRelevantActsError):
 @app.exception_handler(OLLAMATimeoutError)
 async def ollama_timeout_handler(request: Request, exc: OLLAMATimeoutError):
     logger.error(f"OLLAMA timeout: {exc.model} after {exc.timeout}s")
-    
+
     return JSONResponse(
         status_code=504,
         content=ErrorResponse(
@@ -1424,7 +1454,7 @@ async def ollama_timeout_handler(request: Request, exc: OLLAMATimeoutError):
 async def generic_exception_handler(request: Request, exc: Exception):
     # Log full traceback
     logger.exception("Unhandled exception")
-    
+
     # Return generic error to user
     return JSONResponse(
         status_code=500,
@@ -1443,6 +1473,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 ## 2.8. Wydajność
 
 ### Cele wydajnościowe
+
 - **Response time (initial):** <200ms (p95) - dla 202 Accepted
 - **Processing time (fast response):** <15s (p95)
 - **Embedding generation:** <2s
@@ -1453,46 +1484,53 @@ async def generic_exception_handler(request: Request, exc: Exception):
 ### Wąskie gardła i optymalizacje
 
 **1. Embedding Generation (OLLAMA)**
+
 - **Bottleneck:** Network roundtrip + model inference
 - **Optymalizacja:**
+
   ```python
   # Connection pooling
   async with httpx.AsyncClient(
       limits=httpx.Limits(max_connections=100, max_keepalive_connections=20)
   ) as client:
       response = await client.post(...)
-  
+
   # Batch embeddings (if multiple queries)
   embeddings = await asyncio.gather(*[generate_embedding(q) for q in queries])
   ```
 
 **2. Similarity Search (pgvector)**
+
 - **Bottleneck:** Vector index scan
 - **Optymalizacja:**
+
   ```sql
   -- IVFFlat index tuning
   CREATE INDEX idx_legal_act_chunks_embedding_ivfflat
       ON legal_act_chunks
       USING ivfflat (embedding vector_cosine_ops)
       WITH (lists = 100);
-  
+
   -- Runtime parameter tuning
   SET ivfflat.probes = 10;  -- Balance accuracy vs speed
   ```
 
 **3. LLM Generation (OLLAMA)**
+
 - **Bottleneck:** Model inference time
 - **Optymalizacja:**
+
   ```python
   # Streaming response (future enhancement)
   async for chunk in ollama.generate_stream(...):
       await websocket.send(chunk)
-  
+
   # Model caching (OLLAMA keeps model in memory)
   # Ensure mistral:7b is preloaded
   ```
 
 **4. Database Queries**
+
 - **Bottleneck:** Multiple sequential queries
 - **Optymalizacja:**
   ```python
@@ -1586,7 +1624,7 @@ class SourceReference(BaseModel):
 
 class QuerySubmitRequest(BaseModel):
     query_text: str = Field(..., min_length=10, max_length=1000)
-    
+
     @validator('query_text')
     def validate_query_text(cls, v):
         v = v.strip()
@@ -1672,18 +1710,18 @@ class EmbeddingService:
     def __init__(self, ollama_host: str):
         self.ollama_host = ollama_host
         self.model = "nomic-embed-text"
-    
+
     async def generate_embedding(self, text: str, timeout: float = 60.0) -> List[float]:
         """
         Generate embedding vector for text using OLLAMA.
-        
+
         Args:
             text: Input text to embed
             timeout: Request timeout in seconds
-            
+
         Returns:
             List of floats (768 dimensions for nomic-embed-text)
-            
+
         Raises:
             EmbeddingGenerationError: If embedding generation fails
             asyncio.TimeoutError: If request times out
@@ -1698,13 +1736,13 @@ class EmbeddingService:
                     }
                 )
                 response.raise_for_status()
-                
+
                 data = response.json()
                 embedding = data["embedding"]
-                
+
                 logger.info(f"Generated embedding: {len(embedding)} dimensions")
                 return embedding
-                
+
         except httpx.TimeoutException:
             logger.error(f"Embedding generation timeout after {timeout}s")
             raise asyncio.TimeoutError()
@@ -1726,7 +1764,7 @@ logger = logging.getLogger(__name__)
 class LLMService:
     def __init__(self, ollama_host: str):
         self.ollama_host = ollama_host
-    
+
     async def generate(
         self,
         prompt: str,
@@ -1736,22 +1774,22 @@ class LLMService:
     ) -> Dict:
         """
         Generate text completion using OLLAMA.
-        
+
         Args:
             prompt: Input prompt
             model: Model name (mistral:7b, gpt-oss:120b)
             timeout: Request timeout
             temperature: Generation temperature
-            
+
         Returns:
             Dict with 'text' and 'generation_time' keys
-            
+
         Raises:
             OLLAMATimeoutError: If generation times out
         """
         import time
         start_time = time.time()
-        
+
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(
@@ -1767,17 +1805,17 @@ class LLMService:
                     }
                 )
                 response.raise_for_status()
-                
+
                 data = response.json()
                 generation_time = int((time.time() - start_time) * 1000)
-                
+
                 logger.info(f"Generated response in {generation_time}ms")
-                
+
                 return {
                     "text": data["response"],
                     "generation_time": generation_time
                 }
-                
+
         except httpx.TimeoutException:
             logger.error(f"LLM generation timeout after {timeout}s")
             raise OLLAMATimeoutError(model, int(timeout))
@@ -1800,7 +1838,7 @@ logger = logging.getLogger(__name__)
 class VectorSearchService:
     def __init__(self, supabase: Client):
         self.supabase = supabase
-    
+
     async def semantic_search(
         self,
         query_embedding: List[float],
@@ -1809,15 +1847,15 @@ class VectorSearchService:
     ) -> List[Dict]:
         """
         Perform similarity search using pgvector.
-        
+
         Args:
             query_embedding: Query vector (768-dim)
             top_k: Number of results to return
             similarity_threshold: Max cosine distance (0-2)
-            
+
         Returns:
             List of chunks with metadata
-            
+
         Raises:
             NoRelevantActsError: If no relevant chunks found
         """
@@ -1830,16 +1868,16 @@ class VectorSearchService:
                 "similarity_threshold": similarity_threshold
             }
         ).execute()
-        
+
         chunks = response.data
-        
+
         # Check if results are relevant
         if not chunks or chunks[0]["distance"] > similarity_threshold:
             raise NoRelevantActsError()
-        
+
         logger.info(f"Found {len(chunks)} relevant chunks")
         return chunks
-    
+
     async def fetch_related_acts(
         self,
         act_ids: List[str],
@@ -1847,11 +1885,11 @@ class VectorSearchService:
     ) -> List[Dict]:
         """
         Fetch related acts using graph traversal.
-        
+
         Args:
             act_ids: Source act IDs
             max_depth: Max traversal depth (1 or 2)
-            
+
         Returns:
             List of related acts with relation types
         """
@@ -1862,7 +1900,7 @@ class VectorSearchService:
                 "max_depth": max_depth
             }
         ).execute()
-        
+
         return response.data
 ```
 
@@ -1902,7 +1940,7 @@ BEGIN
         la.position
     FROM legal_act_chunks lac
     JOIN legal_acts la ON la.id = lac.legal_act_id
-    WHERE 
+    WHERE
         la.status = 'obowiązująca'
         AND (lac.embedding <=> query_embedding) <= similarity_threshold
     ORDER BY lac.embedding <=> query_embedding
@@ -1927,7 +1965,7 @@ BEGIN
     RETURN QUERY
     WITH RECURSIVE act_tree AS (
         -- Base case
-        SELECT 
+        SELECT
             lar.id AS relation_id,
             lar.source_act_id,
             lar.target_act_id,
@@ -1935,11 +1973,11 @@ BEGIN
             1 AS depth
         FROM legal_act_relations lar
         WHERE lar.source_act_id = ANY(act_ids)
-        
+
         UNION
-        
+
         -- Recursive case
-        SELECT 
+        SELECT
             lar.id,
             lar.source_act_id,
             lar.target_act_id,
@@ -1949,7 +1987,7 @@ BEGIN
         JOIN act_tree at ON lar.source_act_id = at.target_act_id
         WHERE at.depth < max_depth
     )
-    SELECT 
+    SELECT
         at.relation_id,
         at.source_act_id,
         at.target_act_id,
@@ -1992,7 +2030,7 @@ class RAGPipeline:
         self.llm_service = llm_service
         self.vector_search = vector_search
         self.cache = cache_client
-    
+
     async def generate_fast_response(
         self,
         query_text: str,
@@ -2000,23 +2038,23 @@ class RAGPipeline:
     ) -> Dict:
         """
         Full RAG pipeline for fast response generation.
-        
+
         Returns:
             Dict with response content, sources, generation time
         """
         start_time = time.time()
-        
+
         # Step 1: Generate query embedding
         logger.info(f"[{query_id}] Step 1: Generating embedding...")
         embedding = await self.embedding_service.generate_embedding(query_text)
-        
+
         # Step 2: Similarity search
         logger.info(f"[{query_id}] Step 2: Similarity search...")
         chunks = await self.vector_search.semantic_search(
             query_embedding=embedding,
             top_k=10
         )
-        
+
         # Step 3: Fetch related acts
         logger.info(f"[{query_id}] Step 3: Fetching related acts...")
         act_ids = list(set(chunk["legal_act_id"] for chunk in chunks))
@@ -2024,11 +2062,11 @@ class RAGPipeline:
             act_ids=act_ids,
             max_depth=2
         )
-        
+
         # Step 4: Construct prompt
         logger.info(f"[{query_id}] Step 4: Constructing prompt...")
         prompt = self._construct_prompt(query_text, chunks, related_acts)
-        
+
         # Step 5: Generate LLM response
         logger.info(f"[{query_id}] Step 5: Generating LLM response...")
         llm_response = await self.llm_service.generate(
@@ -2037,23 +2075,23 @@ class RAGPipeline:
             timeout=15.0,
             temperature=0.3
         )
-        
+
         # Step 6: Parse sources
         sources = self._extract_sources(chunks)
-        
+
         # Step 7: Cache RAG context (5 min TTL)
         await self._cache_context(query_id, chunks, related_acts, prompt)
-        
+
         total_time = int((time.time() - start_time) * 1000)
         logger.info(f"[{query_id}] Pipeline completed in {total_time}ms")
-        
+
         return {
             "content": llm_response["text"],
             "model_name": "mistral:7b",
             "generation_time_ms": total_time,
             "sources": sources
         }
-    
+
     def _construct_prompt(
         self,
         query_text: str,
@@ -2061,7 +2099,7 @@ class RAGPipeline:
         related_acts: List[Dict]
     ) -> str:
         """Construct RAG prompt with context."""
-        
+
         # Format chunks as context
         context_parts = []
         for i, chunk in enumerate(chunks, 1):
@@ -2071,9 +2109,9 @@ Akt: {chunk['act_title']}
 Artykuł: {chunk['metadata'].get('article', 'N/A')}
 Treść: {chunk['content']}
 """)
-        
+
         context = "\\n".join(context_parts)
-        
+
         prompt = f"""Jesteś asystentem prawnym specjalizującym się w polskim prawie.
 Odpowiadaj TYLKO na podstawie poniższego kontekstu (fragmentów aktów prawnych).
 Cytuj konkretne artykuły w odpowiedzi.
@@ -2086,9 +2124,9 @@ PYTANIE UŻYTKOWNIKA:
 
 ODPOWIEDŹ (po polsku, zwięźle, z cytatami artykułów):
 """
-        
+
         return prompt
-    
+
     def _extract_sources(self, chunks: List[Dict]) -> List[Dict]:
         """Extract source references from chunks."""
         sources = []
@@ -2100,7 +2138,7 @@ ODPOWIEDŹ (po polsku, zwięźle, z cytatami artykułów):
                 "chunk_id": str(chunk["id"])
             })
         return sources
-    
+
     async def _cache_context(
         self,
         query_id: UUID,
@@ -2114,14 +2152,14 @@ ODPOWIEDŹ (po polsku, zwięźle, z cytatami artykułów):
             "related_acts": related_acts,
             "prompt": prompt
         }
-        
+
         # 5 minute TTL
         await self.cache.setex(
             f"rag_context:{query_id}",
             300,
             json.dumps(cache_data, default=str)  # default=str for UUID serialization
         )
-        
+
         logger.info(f"Cached RAG context for query {query_id}")
 ```
 
@@ -2138,7 +2176,7 @@ from supabase import Client
 class QueryRepository:
     def __init__(self, supabase: Client):
         self.supabase = supabase
-    
+
     async def create_query(
         self,
         user_id: str,
@@ -2146,7 +2184,7 @@ class QueryRepository:
     ) -> UUID:
         """
         Create initial query record.
-        
+
         Returns:
             query_id (UUID)
         """
@@ -2158,9 +2196,9 @@ class QueryRepository:
             "fast_generation_time_ms": 0,
             "sources": []
         }).execute()
-        
+
         return response.data[0]["id"]
-    
+
     async def update_fast_response(
         self,
         query_id: UUID,
@@ -2174,7 +2212,7 @@ class QueryRepository:
             "sources": sources,
             "fast_generation_time_ms": generation_time_ms
         }).eq("id", str(query_id)).execute()
-    
+
     async def get_query(self, query_id: UUID, user_id: str) -> Dict:
         """Fetch query by ID (with RLS check)."""
         response = await self.supabase.table("query_history") \\
@@ -2183,10 +2221,10 @@ class QueryRepository:
             .eq("user_id", user_id) \\
             .single() \\
             .execute()
-        
+
         if not response.data:
             raise HTTPException(404, "Query not found")
-        
+
         return response.data
 ```
 
@@ -2207,12 +2245,12 @@ async def get_current_user(
 ) -> str:
     """
     Extract and validate JWT token, return user_id.
-    
+
     Raises:
         HTTPException: 401 if token invalid or expired
     """
     token = credentials.credentials
-    
+
     try:
         payload = jwt.decode(
             token,
@@ -2298,12 +2336,12 @@ async def submit_query(
 ):
     """
     Submit a new legal query and generate fast response.
-    
+
     The query is processed asynchronously in the background.
     Returns immediately with 202 Accepted and query_id.
-    
+
     **Rate Limit:** 10 requests per minute per user
-    
+
     **Processing Steps:**
     1. Generate query embedding (OLLAMA)
     2. Similarity search (pgvector)
@@ -2314,13 +2352,13 @@ async def submit_query(
     7. Cache context for accurate response (5 min TTL)
     """
     from datetime import datetime
-    
+
     # Create query record in database
     query_id = await query_repo.create_query(
         user_id=user_id,
         query_text=request.query_text
     )
-    
+
     # Schedule background task for RAG pipeline
     background_tasks.add_task(
         process_query_background,
@@ -2329,7 +2367,7 @@ async def submit_query(
         rag_pipeline=rag_pipeline,
         query_repo=query_repo
     )
-    
+
     # Return 202 Accepted immediately
     return QuerySubmitResponse(
         query_id=query_id,
@@ -2353,14 +2391,14 @@ async def process_query_background(
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     try:
         # Run RAG pipeline
         response_data = await rag_pipeline.generate_fast_response(
             query_text=query_text,
             query_id=query_id
         )
-        
+
         # Update database with response
         await query_repo.update_fast_response(
             query_id=query_id,
@@ -2368,9 +2406,9 @@ async def process_query_background(
             sources=response_data["sources"],
             generation_time_ms=response_data["generation_time_ms"]
         )
-        
+
         logger.info(f"Query {query_id} processed successfully")
-        
+
     except NoRelevantActsError as e:
         logger.warning(f"Query {query_id}: No relevant acts found")
         await query_repo.update_fast_response(
@@ -2402,17 +2440,17 @@ async def test_submit_query_success():
     """Test successful query submission."""
     mock_user_id = "user-123"
     mock_query_id = uuid4()
-    
+
     with patch("middleware.auth.get_current_user", return_value=mock_user_id), \\
          patch("db.queries.QueryRepository.create_query", return_value=mock_query_id):
-        
+
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/queries",
                 json={"query_text": "Jakie są prawa konsumenta?"},
                 headers={"Authorization": "Bearer fake-token"}
             )
-        
+
         assert response.status_code == 202
         data = response.json()
         assert data["query_id"] == str(mock_query_id)
@@ -2427,7 +2465,7 @@ async def test_submit_query_validation_error_too_short():
             json={"query_text": "Short"},
             headers={"Authorization": "Bearer fake-token"}
         )
-    
+
     assert response.status_code == 400
     data = response.json()
     assert "VALIDATION_ERROR" in data["error"]["code"]
@@ -2440,7 +2478,7 @@ async def test_submit_query_unauthorized():
             "/api/v1/queries",
             json={"query_text": "Jakie są prawa konsumenta?"}
         )
-    
+
     assert response.status_code == 401
 
 @pytest.mark.asyncio
@@ -2448,19 +2486,19 @@ async def test_rag_pipeline_no_relevant_acts():
     """Test RAG pipeline when no relevant acts found."""
     from services.rag_pipeline import RAGPipeline
     from services.exceptions import NoRelevantActsError
-    
+
     # Mock services
     embedding_service = MagicMock()
     embedding_service.generate_embedding = AsyncMock(return_value=[0.1] * 768)
-    
+
     llm_service = MagicMock()
     vector_search = MagicMock()
     vector_search.semantic_search = AsyncMock(side_effect=NoRelevantActsError())
-    
+
     cache_client = MagicMock()
-    
+
     pipeline = RAGPipeline(embedding_service, llm_service, vector_search, cache_client)
-    
+
     with pytest.raises(NoRelevantActsError):
         await pipeline.generate_fast_response("Test question", uuid4())
 ```
@@ -2562,12 +2600,14 @@ Endpoint zwracający historię zapytań użytkownika w porządku chronologicznym
 **Charakterystyka:** Wymaga autentykacji, Read-only, Paginowany (default: 20/page), Szybki (<200ms), RLS enforced
 
 ## 3.2. Request
+
 - **Method:** GET
 - **URL:** `/api/v1/queries`
 - **Params:** `page` (default=1), `per_page` (default=20, max=100), `order` (desc/asc)
 - **Headers:** `Authorization: Bearer <JWT>`
 
 ## 3.3. Response (200 OK)
+
 ```json
 {
   "queries": [
@@ -2575,7 +2615,13 @@ Endpoint zwracający historię zapytań użytkownika w porządku chronologicznym
       "query_id": "uuid",
       "query_text": "...",
       "created_at": "2025-11-19T10:30:00Z",
-      "fast_response": { "content": "...", "model_name": "mistral:7b", "generation_time_ms": 8500, "sources_count": 3, "rating": {"value": "up"} },
+      "fast_response": {
+        "content": "...",
+        "model_name": "mistral:7b",
+        "generation_time_ms": 8500,
+        "sources_count": 3,
+        "rating": { "value": "up" }
+      },
       "accurate_response": { "exists": true, "model_name": "gpt-oss:120b", "rating": null }
     }
   ],
@@ -2584,6 +2630,7 @@ Endpoint zwracający historię zapytań użytkownika w porządku chronologicznym
 ```
 
 ## 3.4. Implementation Steps
+
 1. Extend Pydantic models (QueryListItem, PaginationMetadata)
 2. Create DB query with JOINs (ratings)
 3. Add RPC function in Supabase
@@ -2604,12 +2651,14 @@ Endpoint zwracający szczegóły pojedynczego zapytania z pełnymi odpowiedziami
 **Charakterystyka:** Wymaga autentykacji, Read-only, Szybki (<100ms), RLS enforced
 
 ## 4.2. Request
+
 - **Method:** GET
 - **URL:** `/api/v1/queries/{query_id}`
 - **Path Params:** `query_id` (UUID, required)
 - **Headers:** `Authorization: Bearer <JWT>`
 
 ## 4.3. Response (200 OK)
+
 ```json
 {
   "query_id": "uuid",
@@ -2622,11 +2671,13 @@ Endpoint zwracający szczegóły pojedynczego zapytania z pełnymi odpowiedziami
 ```
 
 ## 4.4. Error Responses
+
 - 401 Unauthorized - Invalid JWT
 - 403 Forbidden - Query belongs to another user
 - 404 Not Found - Query does not exist
 
 ## 4.5. Implementation
+
 Simple SELECT by ID with RLS check. Include LEFT JOINs for ratings.
 
 ---
@@ -2638,20 +2689,24 @@ Simple SELECT by ID with RLS check. Include LEFT JOINs for ratings.
 Endpoint usuwający zapytanie z historii użytkownika. Kaskadowo usuwa powiązane ratings (ON DELETE CASCADE).
 
 ## 5.2. Request
+
 - **Method:** DELETE
 - **URL:** `/api/v1/queries/{query_id}`
 - **Path Params:** `query_id` (UUID, required)
 - **Headers:** `Authorization: Bearer <JWT>`
 
 ## 5.3. Response (204 No Content)
+
 No body returned.
 
 ## 5.4. Error Responses
+
 - 401 Unauthorized
 - 403 Forbidden - Not owner
 - 404 Not Found
 
 ## 5.5. Implementation
+
 ```python
 @router.delete("/{query_id}", status_code=204)
 async def delete_query(query_id: UUID, user_id: str = Depends(get_current_user)):
@@ -2659,10 +2714,10 @@ async def delete_query(query_id: UUID, user_id: str = Depends(get_current_user))
     exists = await db.query_exists(query_id, user_id)
     if not exists:
         raise HTTPException(404)
-    
+
     # Delete (cascade to ratings)
     await db.delete_query(query_id)
-    
+
     return Response(status_code=204)
 ```
 
@@ -2677,6 +2732,7 @@ Endpoint generujący dokładną odpowiedź używając większego modelu (gpt-oss
 **Charakterystyka:** Wymaga autentykacji, Asynchroniczny (202), Długi (<240s), Używa cache
 
 ## 6.2. Request
+
 - **Method:** POST
 - **URL:** `/api/v1/queries/{query_id}/accurate-response`
 - **Path Params:** `query_id` (UUID)
@@ -2684,6 +2740,7 @@ Endpoint generujący dokładną odpowiedź używając większego modelu (gpt-oss
 - **Headers:** `Authorization: Bearer <JWT>`
 
 ## 6.3. Response (202 Accepted)
+
 ```json
 {
   "query_id": "uuid",
@@ -2692,11 +2749,13 @@ Endpoint generujący dokładną odpowiedź używając większego modelu (gpt-oss
 ```
 
 ## 6.4. Error Responses
+
 - 409 Conflict - Accurate response already exists
 - 410 Gone - RAG context expired (>5 min since query)
 - 504 Gateway Timeout - Generation exceeded 240s
 
 ## 6.5. Implementation Flow
+
 1. Check if accurate response exists (409)
 2. Retrieve cached RAG context from Redis (410 if expired)
 3. Generate response with gpt-oss:120b (timeout 240s)
@@ -2714,9 +2773,11 @@ Endpoint tworzący lub aktualizujący ocenę odpowiedzi (thumbs up/down). Idempo
 **Charakterystyka:** Wymaga autentykacji, Idempotentny, Szybki (<100ms)
 
 ## 7.2. Request
+
 - **Method:** POST
 - **URL:** `/api/v1/queries/{query_id}/ratings`
 - **Body:**
+
 ```json
 {
   "response_type": "fast" or "accurate",
@@ -2725,6 +2786,7 @@ Endpoint tworzący lub aktualizujący ocenę odpowiedzi (thumbs up/down). Idempo
 ```
 
 ## 7.3. Response
+
 - 201 Created - New rating
 - 200 OK - Existing rating updated
 
@@ -2740,6 +2802,7 @@ Endpoint tworzący lub aktualizujący ocenę odpowiedzi (thumbs up/down). Idempo
 ```
 
 ## 7.4. Implementation (Upsert Logic)
+
 ```python
 # Check if rating exists
 existing = await db.find_rating(query_id, user_id, response_type)
@@ -2763,10 +2826,12 @@ else:
 Endpoint zwracający wszystkie oceny dla zapytania (fast + accurate).
 
 ## 8.2. Request
+
 - **Method:** GET
 - **URL:** `/api/v1/queries/{query_id}/ratings`
 
 ## 8.3. Response (200 OK)
+
 ```json
 {
   "query_id": "uuid",
@@ -2786,6 +2851,7 @@ Endpoint zwracający wszystkie oceny dla zapytania (fast + accurate).
 Endpoint usuwający pojedynczą ocenę. Opcjonalny w MVP UI.
 
 ## 9.2. Request
+
 - **Method:** DELETE
 - **URL:** `/api/v1/ratings/{rating_id}`
 
@@ -2802,11 +2868,13 @@ Endpoint listujący akty prawne z filtrowaniem i wyszukiwaniem. Publiczny (optio
 **Charakterystyka:** Publiczny, Read-only, Paginowany, Full-text search, Filtry (status, publisher, year)
 
 ## 10.2. Request
+
 - **Method:** GET
 - **URL:** `/api/v1/legal-acts`
 - **Params:** `page`, `per_page`, `search` (min 3 chars), `status`, `publisher`, `year`, `order_by`, `order`
 
 ## 10.3. Response (200 OK)
+
 ```json
 {
   "legal_acts": [
@@ -2829,6 +2897,7 @@ Endpoint listujący akty prawne z filtrowaniem i wyszukiwaniem. Publiczny (optio
 ```
 
 ## 10.4. Implementation
+
 Use PostgreSQL full-text search (GIN index on title) + filters. RPC function for performance.
 
 ---
@@ -2840,6 +2909,7 @@ Use PostgreSQL full-text search (GIN index on title) + filters. RPC function for
 Endpoint zwracający szczegóły aktu prawnego z statystykami.
 
 ## 11.2. Response (200 OK)
+
 ```json
 {
   "id": "uuid",
@@ -2859,9 +2929,11 @@ Endpoint zwracający relacje między aktami (modifies, repeals, etc.). Graph tra
 **Charakterystyka:** Publiczny, Recursive CTE, Max depth 2
 
 ## 12.2. Request
+
 - **Params:** `depth` (1 or 2), `relation_type` (optional filter)
 
 ## 12.3. Response (200 OK)
+
 ```json
 {
   "act_id": "uuid",
@@ -2881,6 +2953,7 @@ Endpoint zwracający relacje między aktami (modifies, repeals, etc.). Graph tra
 ```
 
 ## 12.4. Implementation
+
 Use recursive CTE (WITH RECURSIVE) for graph traversal. Limit depth to prevent performance issues.
 
 ---
@@ -2894,6 +2967,7 @@ Endpoint zwracający przykładowe pytania dla nowych użytkowników. Statyczna z
 **Charakterystyka:** Publiczny, Statyczny, Bez bazy danych, Szybki (<50ms)
 
 ## 13.2. Response (200 OK)
+
 ```json
 {
   "examples": [
@@ -2906,6 +2980,7 @@ Endpoint zwracający przykładowe pytania dla nowych użytkowników. Statyczna z
 ```
 
 ## 13.3. Implementation
+
 ```python
 EXAMPLE_QUESTIONS = [
     {"id": 1, "question": "...", "category": "consumer_rights"},
@@ -2932,20 +3007,15 @@ Utworzono kompleksowy plan implementacji dla wszystkich 13 endpointów API Prawn
 ## Priorytety implementacji
 
 **Faza 1 (Kluczowe):**
+
 1. GET /health
 2. POST /api/v1/queries (RAG pipeline)
 3. GET /api/v1/queries (lista historii)
 4. GET /api/v1/queries/{id} (szczegóły)
 
-**Faza 2 (Ważne):**
-5. POST /api/v1/queries/{id}/accurate-response
-6. POST /api/v1/queries/{id}/ratings
-7. DELETE /api/v1/queries/{id}
+**Faza 2 (Ważne):** 5. POST /api/v1/queries/{id}/accurate-response 6. POST /api/v1/queries/{id}/ratings 7. DELETE /api/v1/queries/{id}
 
-**Faza 3 (Uzupełniające):**
-8. GET /api/v1/legal-acts (przeglądanie aktów)
-9. GET /api/v1/onboarding/example-questions
-10. Pozostałe endpointy
+**Faza 3 (Uzupełniające):** 8. GET /api/v1/legal-acts (przeglądanie aktów) 9. GET /api/v1/onboarding/example-questions 10. Pozostałe endpointy
 
 ## Następne kroki
 
@@ -2956,4 +3026,3 @@ Utworzono kompleksowy plan implementacji dla wszystkich 13 endpointów API Prawn
 5. Testuj każdy endpoint przed przejściem do kolejnego
 
 **Good luck with implementation! 🚀**
-

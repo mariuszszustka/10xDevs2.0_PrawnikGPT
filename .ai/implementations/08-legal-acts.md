@@ -20,6 +20,7 @@ Lista aktów prawnych z filtrowaniem, wyszukiwaniem full-text i paginacją.
 ## Request
 
 **Params:**
+
 - `page` (default=1)
 - `per_page` (default=20, max=100)
 - `search` (min 3 chars) - full-text search na title
@@ -64,9 +65,10 @@ Lista aktów prawnych z filtrowaniem, wyszukiwaniem full-text i paginacją.
 ## Implementacja
 
 ### Full-Text Search (GIN Index)
+
 ```sql
 -- Index na title
-CREATE INDEX idx_legal_acts_title_fts 
+CREATE INDEX idx_legal_acts_title_fts
     ON legal_acts USING GIN (to_tsvector('polish', title));
 
 -- Query
@@ -77,6 +79,7 @@ ORDER BY published_date DESC;
 ```
 
 ### Filters
+
 ```python
 query = supabase.table("legal_acts").select("*")
 
@@ -159,18 +162,18 @@ async def get_legal_act_details(act_id: UUID) -> Dict:
         .eq("id", act_id) \
         .single() \
         .execute()
-    
+
     if not act.data:
         raise HTTPException(404, "Legal act not found")
-    
+
     # Calculate stats
     chunks_count = await supabase.table("legal_act_chunks") \
         .select("id", count="exact") \
         .eq("legal_act_id", act_id) \
         .execute()
-    
+
     relations_count = await supabase.rpc("count_relations", {"act_id": act_id}).execute()
-    
+
     return {
         **act.data,
         "stats": {
@@ -198,6 +201,7 @@ Graf relacji między aktami (modifies, repeals, etc.) z recursive CTE.
 ## Request
 
 **Params:**
+
 - `depth` (1 or 2, default=1) - max graph traversal depth
 - `relation_type` (optional) - filter by type
 
@@ -270,9 +274,9 @@ BEGIN
         FROM legal_act_relations lar
         WHERE lar.source_act_id = p_act_id
         AND (p_relation_type IS NULL OR lar.relation_type = p_relation_type)
-        
+
         UNION
-        
+
         -- Incoming relations
         SELECT
             lar.id,
@@ -285,9 +289,9 @@ BEGIN
         FROM legal_act_relations lar
         WHERE lar.target_act_id = p_act_id
         AND (p_relation_type IS NULL OR lar.relation_type = p_relation_type)
-        
+
         UNION
-        
+
         -- Recursive case: traverse graph
         SELECT
             lar.id,
@@ -310,7 +314,7 @@ BEGIN
             'incoming', (SELECT json_agg(...) FROM act_tree WHERE direction = 'incoming')
         )
     ) INTO result;
-    
+
     RETURN result;
 END;
 $$ LANGUAGE plpgsql;
@@ -330,4 +334,3 @@ $$ LANGUAGE plpgsql;
 ---
 
 **Powrót do:** [Index](../api-implementation-index.md)
-

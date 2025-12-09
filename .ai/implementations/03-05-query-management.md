@@ -18,6 +18,7 @@ Historia zapytań użytkownika z paginacją i ocenami.
 ## Request
 
 **Params:**
+
 - `page` (default=1)
 - `per_page` (default=20, max=100)
 - `order` (desc/asc, default=desc)
@@ -36,7 +37,7 @@ Historia zapytań użytkownika z paginacją i ocenami.
         "model_name": "mistral:7b",
         "generation_time_ms": 8500,
         "sources_count": 3,
-        "rating": {"value": "up"}
+        "rating": { "value": "up" }
       },
       "accurate_response": {
         "exists": true,
@@ -57,6 +58,7 @@ Historia zapytań użytkownika z paginacją i ocenami.
 ## Implementacja
 
 ### Database Query
+
 ```python
 # Single query with JOINs (avoid N+1)
 # Use window function for COUNT
@@ -64,6 +66,7 @@ Historia zapytań użytkownika z paginacją i ocenami.
 ```
 
 ### RPC Function
+
 ```sql
 CREATE OR REPLACE FUNCTION list_user_queries(
     p_user_id uuid,
@@ -74,12 +77,14 @@ CREATE OR REPLACE FUNCTION list_user_queries(
 ```
 
 ### Indexes
+
 ```sql
-CREATE INDEX idx_query_history_user_id_created_at 
+CREATE INDEX idx_query_history_user_id_created_at
     ON query_history(user_id, created_at DESC);
 ```
 
 ## Checklist
+
 - [ ] Extend Pydantic models (QueryListItem, PaginationMetadata)
 - [ ] Implement RPC function
 - [ ] Implement repository method
@@ -124,6 +129,7 @@ Szczegóły pojedynczego zapytania z pełnymi odpowiedziami.
 ```
 
 ## Error Responses
+
 - 401 Unauthorized
 - 403 Forbidden - Not owner
 - 404 Not Found
@@ -131,6 +137,7 @@ Szczegóły pojedynczego zapytania z pełnymi odpowiedziami.
 ## Implementacja
 
 ### Simple SELECT with RLS
+
 ```python
 async def get_query(query_id: UUID, user_id: str) -> Dict:
     result = await supabase.table("query_history") \
@@ -139,14 +146,15 @@ async def get_query(query_id: UUID, user_id: str) -> Dict:
         .eq("user_id", user_id) \
         .single() \
         .execute()
-    
+
     if not result.data:
         raise HTTPException(404, "Query not found")
-    
+
     return result.data
 ```
 
 ## Checklist
+
 - [ ] Pydantic model (QueryDetailResponse)
 - [ ] Repository method
 - [ ] Router endpoint
@@ -174,6 +182,7 @@ Usuwa zapytanie z historii. Kaskadowo usuwa ratings (ON DELETE CASCADE).
 Brak body.
 
 ## Error Responses
+
 - 401 Unauthorized
 - 403 Forbidden
 - 404 Not Found
@@ -191,14 +200,15 @@ async def delete_query(
     exists = await repo.query_exists(query_id, user_id)
     if not exists:
         raise HTTPException(404, "Query not found")
-    
+
     # Delete (cascade to ratings handled by DB)
     await repo.delete_query(query_id)
-    
+
     return Response(status_code=204)
 ```
 
 ## Checklist
+
 - [ ] Repository method (delete_query)
 - [ ] Router endpoint
 - [ ] Tests (including cascade check)
@@ -206,4 +216,3 @@ async def delete_query(
 ---
 
 **Powrót do:** [Index](../api-implementation-index.md)
-
