@@ -1,6 +1,5 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
-import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
 import node from '@astrojs/node';
 
@@ -10,9 +9,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   integrations: [
     react(),
-    tailwind({
-      applyBaseStyles: false, // Używamy własnych stylów w globals.css
-    }),
+    // tailwind() - USUNIĘTO, używamy Vite plugin dla Tailwind 4
     sitemap(), // Automatyczna generacja sitemap.xml dla SEO
   ],
   output: 'server', // SSR dla dynamicznych stron (chat, history)
@@ -27,7 +24,6 @@ export default defineConfig({
     ssr: {
       noExternal: ['@supabase/supabase-js'], // Supabase client dla SSR
     },
-
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss()], // Tailwind CSS 4 via Vite plugin
   },
 });

@@ -379,3 +379,6 @@ export async function deleteQuery(queryId: string): Promise<void> {
   return apiDelete<void>(`/api/v1/queries/${queryId}`);
 }
 
+
+// Re-export ApiError for convenience
+export { ApiError } from "./types";
