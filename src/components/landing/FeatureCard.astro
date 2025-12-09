@@ -1,0 +1,23 @@
+---
+// FeatureCard.astro - Reużywalna karta prezentująca pojedynczą funkcjonalność
+interface Props {
+  icon: string; // Emoji lub SVG
+  title: string;
+  description: string;
+}
+
+const { icon, title, description } = Astro.props;
+---
+
+<div class="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+  <div class="text-5xl mb-4" role="img" aria-label={`Ikona dla ${title}`}>
+    {icon}
+  </div>
+  <h3 class="text-xl font-bold text-gray-900 mb-3">
+    {title}
+  </h3>
+  <p class="text-gray-600 leading-relaxed">
+    {description}
+  </p>
+</div>
+

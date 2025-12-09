@@ -1,0 +1,79 @@
+---
+// ExampleQuestionsPreview.astro - Sekcja z przykładowymi pytaniami
+// Wariant statyczny (hardcoded) - pytania są bezpośrednio w komponencie
+// W przyszłości można zamienić na interaktywny widget z API
+
+// Statyczne przykładowe pytania (reprezentatywne dla różnych kategorii)
+const exampleQuestions = [
+  {
+    id: 1,
+    question: "Jakie mam prawa jako konsument przy zakupie wadliwego produktu?",
+    category: "consumer_rights"
+  },
+  {
+    id: 2,
+    question: "Jakie są warunki ważności umowy sprzedaży nieruchomości?",
+    category: "civil_law"
+  },
+  {
+    id: 3,
+    question: "Jakie są okresy wypowiedzenia umowy o pracę na czas nieokreślony?",
+    category: "labor_law"
+  },
+  {
+    id: 4,
+    question: "Jakie są granice obrony koniecznej w prawie karnym?",
+    category: "criminal_law"
+  },
+  {
+    id: 5,
+    question: "Czy mogę odstąpić od umowy zakupu online w ciągu 14 dni?",
+    category: "consumer_rights"
+  },
+  {
+    id: 6,
+    question: "Jak długo trwa przedawnienie roszczeń z tytułu umowy?",
+    category: "civil_law"
+  }
+];
+---
+
+<section aria-label="Przykładowe pytania" class="py-16 md:py-24 bg-gray-50">
+  <div class="container mx-auto px-4">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-4">
+        Przykładowe pytania
+      </h2>
+      <p class="text-center text-lg text-gray-600 mb-4">
+        Zobacz, jakie pytania możesz zadać naszemu asystentowi prawnemu
+      </p>
+      <p class="text-center text-sm text-gray-500 mb-12">
+        Aktualnie 20 000 najnowszych ustaw
+      </p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {exampleQuestions.map((question) => (
+          <div
+            key={question.id}
+            class="p-6 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+          >
+            <p class="text-gray-900 leading-relaxed">
+              {question.question}
+            </p>
+          </div>
+        ))}
+      </div>
+      
+      <div class="mt-12 text-center">
+        <a
+          href="/register"
+          class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+          aria-label="Zarejestruj się, aby zadać pytanie"
+        >
+          Zadaj swoje pytanie
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+

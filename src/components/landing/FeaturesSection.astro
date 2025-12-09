@@ -1,0 +1,33 @@
+---
+// FeaturesSection.astro - Sekcja prezentująca trzy główne funkcjonalności
+import FeatureCard from './FeatureCard.astro';
+---
+
+<section aria-label="Funkcjonalności produktu" class="py-16 md:py-24 bg-white">
+  <div class="container mx-auto px-4">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12">
+        Dlaczego PrawnikGPT?
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <FeatureCard
+          icon="⚡"
+          title="Szybko"
+          description="Odpowiedzi w &lt;15 sekund dzięki zaawansowanym modelom AI."
+        />
+        <FeatureCard
+          icon="🎯"
+          title="Dokładnie"
+          description="Opcjonalna szczegółowa odpowiedź z modelu 120B dla kompleksowej analizy."
+        />
+        <FeatureCard
+          icon="📚"
+          title="Wiarygodnie"
+          description="Źródła z 20 000 najnowszych polskich ustaw i rozporządzeń."
+        />
+      </div>
+    </div>
+  </div>
+</section>
+

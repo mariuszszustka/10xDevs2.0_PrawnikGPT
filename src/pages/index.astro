@@ -1,37 +1,21 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroSection from '../components/landing/HeroSection.astro';
+import FeaturesSection from '../components/landing/FeaturesSection.astro';
+import ExampleQuestionsPreview from '../components/landing/ExampleQuestionsPreview.astro';
+import Footer from '../components/layout/Footer.astro';
 ---
 
-<BaseLayout title="PrawnikGPT - AI Assistant for Polish Legal Acts">
-  <main class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-    <div class="container mx-auto px-4 py-16">
-      <div class="max-w-4xl mx-auto text-center">
-        <h1 class="text-5xl font-bold text-gray-900 mb-6">
-          PrawnikGPT
-        </h1>
-        <p class="text-xl text-gray-600 mb-8">
-          Inteligentny asystent do analizy polskich aktów prawnych
-        </p>
-        <p class="text-lg text-gray-500 mb-12">
-          Zadawaj pytania w języku naturalnym i otrzymuj precyzyjne odpowiedzi oparte na 20 000 najnowszych ustaw.
-        </p>
-        
-        <div class="flex gap-4 justify-center">
-          <a
-            href="/login"
-            class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Zaloguj się
-          </a>
-          <a
-            href="/register"
-            class="px-6 py-3 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-          >
-            Zarejestruj się
-          </a>
-        </div>
-      </div>
-    </div>
+<BaseLayout 
+  title="PrawnikGPT - Inteligentny asystent prawny oparty na AI"
+  description="Zadawaj pytania w języku naturalnym o polskie akty prawne. Otrzymuj precyzyjne odpowiedzi oparte na 20 000 najnowszych ustaw i rozporządzeń."
+  ogImage="/og-image.png"
+>
+  <main>
+    <HeroSection />
+    <FeaturesSection />
+    <ExampleQuestionsPreview />
+    <Footer />
   </main>
 </BaseLayout>
 
