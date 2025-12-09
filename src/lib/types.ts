@@ -555,3 +555,38 @@ export interface LoginFormProps {
   showExpiredMessage?: boolean;
 }
 
+/**
+ * Register form data DTO
+ * Used for user registration via Supabase Auth
+ */
+export interface RegisterFormData {
+  email: string;
+  password: string;
+  passwordConfirm: string;
+  acceptTerms: boolean;
+}
+
+/**
+ * Register form validation errors
+ * ViewModel for displaying validation errors in UI
+ */
+export interface RegisterFormErrors {
+  email?: string;
+  password?: string;
+  passwordConfirm?: string;
+  acceptTerms?: string;
+  general?: string;
+}
+
+/**
+ * Register form component props
+ */
+export interface RegisterFormProps {
+  redirectTo?: string;
+}
+
+/**
+ * Password strength type for password strength indicator
+ */
+export type PasswordStrength = 'weak' | 'medium' | 'strong';
+
