@@ -1,55 +1,26 @@
 ---
-/**
- * Settings View - Astro page
- * 
- * Widok ustawień użytkownika z sekcjami:
- * - Profil: Email (read-only) i formularz zmiany hasła
- * - Konto: Przycisk usuwania konta
- * 
- * @see settings-view-implementation-plan.md
- */
-
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SettingsLayout from '../../components/settings/SettingsLayout.astro';
-import { supabaseClient } from '../../lib/supabase';
-
-// Check authentication and get user data
-const {
-  data: { session },
-} = await supabaseClient.auth.getSession();
-
-// Redirect to login if not authenticated
-if (!session) {
-  return Astro.redirect('/login?redirect_to=/app/settings');
-}
-
-// Get user email from session
-const {
-  data: { user },
-} = await supabaseClient.auth.getUser();
-
-if (!user || !user.email) {
-  return Astro.redirect('/login?redirect_to=/app/settings');
-}
+import ChangePasswordForm from '../../components/settings/ChangePasswordForm.tsx';
+import DeleteAccountButton from '../../components/settings/DeleteAccountButton.tsx';
 ---
 
-<BaseLayout title="Ustawienia - PrawnikGPT" description="Zarządzaj kontem i preferencjami">
-  <main class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
-      <div class="max-w-4xl mx-auto">
-        <!-- Page Header -->
-        <header class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">
-            Ustawienia
-          </h1>
-          <p class="text-muted-foreground mt-2">
-            Zarządzaj kontem i preferencjami aplikacji
-          </p>
-        </header>
-
-        <!-- Settings Layout -->
-        <SettingsLayout userEmail={user.email} />
-      </div>
+<BaseLayout title=Ustawienia - PrawnikGPT>
+  <SettingsLayout>
+    <!-- Change password form (React island) -->
+    <div class=mb-8>
+      <h2 class=text-xl font-semibold text-gray-900 mb-4>
+        Zmiana hasła
+      </h2>
+      <ChangePasswordForm client:load />
     </div>
-  </main>
+
+    <!-- Delete account (React island) -->
+    <div class=mb-8>
+      <h2 class=text-xl font-semibold text-gray-900 mb-4>
+        Usunięcie konta
+      </h2>
+      <DeleteAccountButton client:load />
+    </div>
+  </SettingsLayout>
 </BaseLayout>

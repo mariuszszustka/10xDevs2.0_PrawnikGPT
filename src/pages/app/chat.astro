@@ -1,24 +1,29 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-// TODO: Dodać middleware do sprawdzania autoryzacji
+import ChatMessagesContainer from '../../components/chat/ChatMessagesContainer.tsx';
+import ChatInput from '../../components/chat/ChatInput.tsx';
+import WelcomeMessage from '../../components/chat/WelcomeMessage.astro';
+import ExampleQuestions from '../../components/chat/ExampleQuestions.astro';
 ---
 
-<BaseLayout title="Chat - PrawnikGPT">
-  <main class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-8">
-        Zadaj pytanie
+<BaseLayout title=Chat - PrawnikGPT>
+  <main class=min-h-screen bg-gray-50>
+    <div class=container mx-auto px-4 py-8 max-w-4xl>
+      <h1 class=text-3xl font-bold text-gray-900 mb-8>
+        Zadaj pytanie prawne
       </h1>
-      
-      <!-- TODO: Dodać React island dla interfejsu czatu -->
-      <div class="max-w-4xl mx-auto">
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <p class="text-gray-600">
-            Interfejs czatu będzie tutaj (React island)
-          </p>
-        </div>
-      </div>
+
+      <!-- Welcome message (static Astro component) -->
+      <WelcomeMessage />
+
+      <!-- Example questions (static Astro component) -->
+      <ExampleQuestions />
+
+      <!-- Chat messages container (React island - hydrated on load) -->
+      <ChatMessagesContainer client:load />
+
+      <!-- Chat input (React island - hydrated on load) -->
+      <ChatInput client:load />
     </div>
   </main>
 </BaseLayout>
-
