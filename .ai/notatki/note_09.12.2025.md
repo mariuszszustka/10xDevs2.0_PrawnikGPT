@@ -899,3 +899,185 @@ settings.astro (Astro SSR page)
 
 ---
 
+## 📋 Reorganizacja Reguł Frontendowych
+
+**Data rozpoczęcia:** 2025-12-09  
+**Status:** UKOŃCZONY
+
+### Kontekst
+- **Problem:** Jeden plik `astro-react.mdc` zawierał wszystkie reguły frontendowe (Astro + React + Tailwind + Shadcn/ui)
+- **Cel:** Podział na osobne, bardziej skoncentrowane pliki reguł dla lepszej organizacji i łatwiejszego utrzymania
+- **Wzorzec:** Podobny do struktury backendowej (osobne pliki dla różnych aspektów)
+
+### Zakres pracy
+- [x] Analiza obecnej struktury reguł (`.cursor/rules/astro-react.mdc`)
+- [x] Podział zawartości na logiczne sekcje
+- [x] Utworzenie `frontend.mdc` - główny plik z regułami frontendowymi
+- [x] Utworzenie `astro.mdc` - reguły specyficzne dla Astro
+- [x] Utworzenie `react.mdc` - reguły specyficzne dla React islands
+- [x] Utworzenie `ui-shadcn-helper.mdc` - pomocne reguły dla Shadcn/ui i Tailwind CSS
+- [x] Zaktualizowanie `astro-react.mdc` jako deprecated z referencjami do nowych plików
+
+---
+
+## 📝 Szczegóły reorganizacji
+
+### Nowa struktura plików reguł frontendowych
+
+```
+.cursor/rules/
+├── frontend.mdc          ← Główny plik (architektura, API, TypeScript, Testing, Accessibility)
+├── astro.mdc             ← Reguły Astro (komponenty, data fetching, view transitions, images)
+├── react.mdc              ← Reguły React (islands, hydration, hooks, performance, state)
+├── ui-shadcn-helper.mdc   ← Shadcn/ui + Tailwind CSS (komponenty, styling, customization)
+├── astro-react.mdc        ← Deprecated (referencje do nowych plików)
+├── code-quality.mdc       ← ESLint + Prettier (bez zmian)
+├── shared.mdc             ← Wspólne reguły (bez zmian)
+└── ...
+```
+
+### Podział zawartości
+
+**`frontend.mdc` (276 linii):**
+- General Architecture (kiedy używać Astro vs React)
+- API Integration (environment variables, fetch patterns, error handling)
+- TypeScript Best Practices (prop types, shared types)
+- Accessibility (WCAG AA - semantic HTML, ARIA, keyboard navigation)
+- Testing (Vitest - React components testing)
+- Common Pitfalls to Avoid (7 głównych błędów)
+- Performance Checklist (8 punktów kontrolnych)
+- Related Rules (referencje do innych plików)
+
+**`astro.mdc` (215 linii):**
+- When to Use Astro Components
+- Best Practices from 10x-rules
+- Component Props (interfejsy, destructuring)
+- Fetching Data in Astro (top-level await, best practices)
+- View Transitions API (smooth page transitions)
+- Image Optimization (Astro Image component)
+- Server Endpoints (API routes)
+- Middleware (request/response modification)
+- Environment Variables (PUBLIC_* vs server-only)
+- Content Collections (structured content with type safety)
+
+**`react.mdc` (281 linii):**
+- When to Use React Components (islands)
+- Hydration Directives (client:visible, client:idle, client:load, etc.)
+- React Component Best Practices:
+  - Functional Components with Hooks
+  - Never Use Next.js Directives
+  - Extract Logic into Custom Hooks
+  - Performance Optimizations (memo, useCallback, useMemo, lazy, Suspense, useTransition)
+  - Use useId() for Accessibility
+  - Optimistic UI with useOptimistic (React 19)
+- React 19 Features (useOptimistic, useFormStatus, useFormState)
+- Error Boundaries (react-error-boundary)
+- State Management (useState, nanostores)
+
+**`ui-shadcn-helper.mdc` (271 linii):**
+- Shadcn/ui Integration (instalacja, użycie w React i Astro)
+- Tailwind CSS Best Practices (utility classes, @layer, JIT mode, arbitrary values)
+- Conditional Classes with `cn()` Utility
+- Responsive Design (breakpoints)
+- Dark Mode (preparation for future)
+- Common Shadcn/ui Components (Button, Input, Card, Alert, Dialog)
+- Customizing Shadcn/ui Components (theme, variants)
+- Tailwind Configuration (custom colors, spacing)
+- Performance Tips
+- Accessibility with Shadcn/ui
+
+**`astro-react.mdc` (53 linie - deprecated):**
+- Oznaczenie jako deprecated
+- Referencje do nowych plików
+- Quick Reference guide
+- Informacja o przyszłym usunięciu
+
+---
+
+## ✅ Zatwierdzone Decyzje (2025-12-09)
+
+### 1. Struktura plików
+- ✅ **4 osobne pliki** - frontend.mdc, astro.mdc, react.mdc, ui-shadcn-helper.mdc
+- ✅ **Logiczny podział** - każdy plik skupiony na jednym aspekcie
+- ✅ **Zachowanie kompatybilności** - astro-react.mdc jako deprecated z referencjami
+
+### 2. Organizacja zawartości
+- ✅ **frontend.mdc** - ogólne reguły architektury, API, TypeScript, Testing, Accessibility
+- ✅ **astro.mdc** - wszystko związane z Astro (komponenty, data fetching, view transitions)
+- ✅ **react.mdc** - wszystko związane z React islands (hydration, hooks, performance)
+- ✅ **ui-shadcn-helper.mdc** - Shadcn/ui i Tailwind CSS (komponenty, styling, customization)
+
+### 3. Referencje między plikami
+- ✅ **Related Rules** - każdy plik zawiera sekcję z referencjami do powiązanych plików
+- ✅ **Spójność** - wszystkie pliki używają tego samego formatu i stylu
+- ✅ **Deprecated handling** - astro-react.mdc wskazuje na nowe pliki
+
+---
+
+## ✅ Postęp pracy
+
+### Zrealizowane:
+- ✅ Analiza obecnej struktury reguł (astro-react.mdc - 597 linii)
+- ✅ Podział zawartości na logiczne sekcje
+- ✅ Utworzenie 4 nowych plików reguł (1043 linie łącznie)
+- ✅ Zaktualizowanie astro-react.mdc jako deprecated
+- ✅ Weryfikacja braku błędów lintowania
+
+### Dokumentacja:
+
+**Nowe pliki:**
+- `.cursor/rules/frontend.mdc` - Główny plik z regułami frontendowymi (276 linii)
+- `.cursor/rules/astro.mdc` - Reguły specyficzne dla Astro (215 linii)
+- `.cursor/rules/react.mdc` - Reguły specyficzne dla React islands (281 linii)
+- `.cursor/rules/ui-shadcn-helper.mdc` - Pomocne reguły dla Shadcn/ui i Tailwind CSS (271 linii)
+
+**Zaktualizowane pliki:**
+- `.cursor/rules/astro-react.mdc` - Oznaczony jako deprecated z referencjami do nowych plików (53 linie)
+
+**Korzyści:**
+1. **Lepsza organizacja** - każdy plik skupiony na jednym aspekcie
+2. **Łatwiejsze utrzymanie** - łatwiej znaleźć i zaktualizować konkretne reguły
+3. **Czytelność** - mniejsze, bardziej skoncentrowane pliki
+4. **Skalowalność** - łatwiej dodawać nowe reguły do odpowiednich plików
+5. **Kompatybilność** - zachowana przez deprecated astro-react.mdc
+
+---
+
+## 🔗 Powiązane dokumenty
+
+- `.cursor/rules/frontend.mdc` - **NOWY** - Główny plik z regułami frontendowymi
+- `.cursor/rules/astro.mdc` - **NOWY** - Reguły specyficzne dla Astro
+- `.cursor/rules/react.mdc` - **NOWY** - Reguły specyficzne dla React islands
+- `.cursor/rules/ui-shadcn-helper.mdc` - **NOWY** - Pomocne reguły dla Shadcn/ui i Tailwind CSS
+- `.cursor/rules/astro-react.mdc` - **DEPRECATED** - Referencje do nowych plików
+- `.cursor/rules/code-quality.mdc` - ESLint i Prettier (bez zmian)
+- `.cursor/rules/shared.mdc` - Wspólne reguły (bez zmian)
+
+---
+
+## 📋 Podsumowanie Reorganizacji Reguł Frontendowych (2025-12-09)
+
+### Status: ✅ ZAKOŃCZONE
+
+**Data zakończenia:** 2025-12-09  
+**Czas trwania:** 1 sesja  
+**Wynik:** 4 nowe pliki reguł frontendowych (1043 linie łącznie) + deprecated astro-react.mdc
+
+### Kluczowe Osiągnięcia:
+
+1. **Lepsza organizacja** - podział jednego dużego pliku na 4 logiczne pliki
+2. **Skupienie na aspektach** - każdy plik odpowiada za jeden aspekt frontendu
+3. **Zachowana kompatybilność** - deprecated plik z referencjami do nowych
+4. **Gotowość do użycia** - wszystkie pliki gotowe i zweryfikowane
+5. **Dokumentacja** - 1043 linie dobrze zorganizowanych reguł
+
+### Następne Kroki:
+
+1. **Użycie nowych plików** - Cursor AI będzie automatycznie używać nowych plików reguł
+2. **Aktualizacja referencji** - jeśli gdzieś są bezpośrednie referencje do astro-react.mdc
+3. **Usunięcie deprecated** - w przyszłości można usunąć astro-react.mdc po aktualizacji wszystkich referencji
+
+**Reguły frontendowe są teraz lepiej zorganizowane i łatwiejsze w utrzymaniu!** 🚀
+
+---
+

@@ -1,0 +1,275 @@
+---
+description: Main frontend rules and architecture guidelines for PrawnikGPT
+globs: *.astro,*.tsx,*.ts,*.jsx,*.js
+alwaysApply: false
+---
+
+# Frontend Guidelines (Main)
+
+## General Architecture
+
+- **Use Astro components** (.astro) for static content and layout
+- **Use React islands** (.tsx) for interactivity ONLY when needed
+- **Minimize JavaScript:** Astro ships zero JS by default; keep it that way for static parts
+- **Partial hydration:** Use `client:*` directives strategically
+
+See `astro.mdc` for Astro-specific guidelines and `react.mdc` for React-specific guidelines.
+
+---
+
+## API Integration
+
+**IMPORTANT:** Frontend (Astro) is **deployment-agnostic** and connects to services via environment variables.
+
+**Architecture:**
+- Frontend (Astro) runs on port 4321 (configurable)
+- Backend (FastAPI) URL configured via `PUBLIC_API_BASE_URL`
+- Supabase URL configured via `PUBLIC_SUPABASE_URL`
+- All URLs defined in `.env` file (see `.env.example` for deployment scenarios)
+
+### Environment Variables
+
+**Example for all-in-one deployment:**
+```bash
+# .env (Frontend - Astro)
+PUBLIC_API_BASE_URL=http://localhost:8000
+PUBLIC_SUPABASE_URL=http://localhost:8444
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+**Example for distributed deployment:**
+```bash
+# .env (Frontend - Astro)
+PUBLIC_API_BASE_URL=http://localhost:8000        # Backend on same machine
+PUBLIC_SUPABASE_URL=http://192.168.0.11:8444     # Supabase on remote server
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+**Example for cloud deployment:**
+```bash
+# .env (Frontend - Astro)
+PUBLIC_API_BASE_URL=https://api.your-domain.com
+PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+### Use Fetch with Error Handling
+```tsx
+// Get API base URL from environment (defaults to localhost:8000)
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+async function fetchQuery(queryId: number) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/queries/${queryId}`, {
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch query:', error);
+    throw error; // Re-throw for component to handle
+  }
+}
+```
+
+### Loading States
+```tsx
+function ChatInput() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(text: string) {
+    setIsSubmitting(true);
+    try {
+      await fetch('/api/queries', { method: 'POST', body: JSON.stringify({ question: text }) });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <button disabled={isSubmitting}>
+      {isSubmitting ? 'Wysyłanie...' : 'Wyślij'}
+    </button>
+  );
+}
+```
+
+---
+
+## TypeScript Best Practices
+
+### Define Prop Types
+```tsx
+interface ResponseCardProps {
+  response: {
+    id: number;
+    content: string;
+    sources: Array<{ act_title: string; article: string; link: string }>;
+    model_name: string;
+    generation_time_ms: number;
+  };
+  onRate?: (rating: 'up' | 'down') => void;
+}
+
+export function ResponseCard({ response, onRate }: ResponseCardProps) {
+  // ...
+}
+```
+
+### Use Shared Types
+```ts
+// src/lib/types.ts
+export interface Query {
+  id: number;
+  question: string;
+  created_at: string;
+  responses: Response[];
+}
+
+export interface Response {
+  id: number;
+  response_type: 'fast' | 'detailed';
+  content: string;
+  sources: Source[];
+  model_name: string;
+  generation_time_ms: number;
+}
+
+// Import in components
+import type { Query, Response } from '@/lib/types';
+```
+
+---
+
+## Accessibility (WCAG AA)
+
+### Semantic HTML
+```tsx
+// Good
+<button onClick={handleClick}>Delete</button>
+<nav><a href="/app">Dashboard</a></nav>
+
+// Bad (never do this)
+<div onClick={handleClick}>Delete</div>
+<div><div onClick={goTo}>Dashboard</div></div>
+```
+
+### ARIA Attributes
+```tsx
+// For icon buttons without visible text
+<button aria-label="Delete query" onClick={handleDelete}>
+  <TrashIcon />
+</button>
+
+// For expandable content
+<button
+  aria-expanded={isOpen}
+  aria-controls="dropdown-menu"
+  onClick={toggle}
+>
+  User Menu
+</button>
+
+// For live regions (chat messages)
+<div aria-live="polite" aria-atomic="true">
+  {newMessage}
+</div>
+```
+
+### Keyboard Navigation
+```tsx
+function Modal({ isOpen, onClose }: Props) {
+  useEffect(() => {
+    if (isOpen) {
+      // Trap focus in modal
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
+  return <dialog aria-modal="true">{/* ... */}</dialog>;
+}
+```
+
+---
+
+## Testing (Vitest)
+
+### Test React Components
+```tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { ChatInput } from './ChatInput';
+
+describe('ChatInput', () => {
+  it('calls onSubmit when text is valid', async () => {
+    const onSubmit = vi.fn();
+    render(<ChatInput onSubmit={onSubmit} />);
+
+    const input = screen.getByRole('textbox');
+    const button = screen.getByRole('button', { name: /wyślij/i });
+
+    fireEvent.change(input, { target: { value: 'Valid question text' } });
+    fireEvent.click(button);
+
+    expect(onSubmit).toHaveBeenCalledWith('Valid question text');
+  });
+
+  it('disables submit when text is too short', () => {
+    render(<ChatInput onSubmit={vi.fn()} />);
+
+    const input = screen.getByRole('textbox');
+    const button = screen.getByRole('button');
+
+    fireEvent.change(input, { target: { value: 'Short' } });
+
+    expect(button).toBeDisabled();
+  });
+});
+```
+
+**Coverage target:** >50% for frontend (MVP)
+
+---
+
+## Common Pitfalls to Avoid
+
+1. **Don't use Astro components for interactivity** - Use React islands instead
+2. **Don't hydrate everything** - Only interactive parts need client-side JS
+3. **Don't forget client: directives** - React components won't work without them
+4. **Don't use large libraries** - Keep bundle size small (<50KB)
+5. **Don't skip accessibility** - Always add aria-labels and keyboard nav
+6. **Don't hardcode API URLs** - Use environment variables
+7. **Don't forget error boundaries** - Wrap React islands in error boundaries
+
+---
+
+## Performance Checklist
+
+- [ ] Static content uses Astro components (no React)
+- [ ] React islands use appropriate `client:*` directive
+- [ ] Expensive components wrapped in `memo()`
+- [ ] Event handlers use `useCallback()`
+- [ ] Heavy calculations use `useMemo()`
+- [ ] Large components use `lazy()` + `Suspense`
+- [ ] Images optimized with Astro `<Image />` component
+- [ ] Bundle size checked (should be <50KB for main)
+
+---
+
+## Related Rules
+
+- `astro.mdc` - Astro-specific guidelines
+- `react.mdc` - React-specific guidelines
+- `ui-shadcn-helper.mdc` - Shadcn/ui and Tailwind CSS guidelines
+- `code-quality.mdc` - ESLint and Prettier configuration

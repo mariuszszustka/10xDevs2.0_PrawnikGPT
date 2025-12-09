@@ -1,0 +1,280 @@
+---
+description: React-specific rules and best practices for React islands in PrawnikGPT
+globs: *.tsx,*.jsx
+alwaysApply: false
+---
+
+# React Islands Guidelines
+
+## When to Use React Components
+
+- Forms (login, register, chat input)
+- Interactive UI (rating buttons, delete confirmations)
+- State management (chat messages, user menu)
+- Real-time updates (loading states, optimistic UI)
+
+**Remember:** Only use React when you need interactivity. Use Astro for static content.
+
+---
+
+## Hydration Directives (Best Practices from 10x-rules)
+
+- `client:visible` - **Hydrate when visible in viewport** (use for below-fold components)
+- `client:idle` - Hydrate when main thread is idle (default for most islands)
+- `client:load` - Hydrate immediately on page load (use sparingly for critical components)
+- `client:only="react"` - No SSR, client-only render (avoid if possible)
+- `client:media` - Hydrate only at specific breakpoints (responsive hydration)
+- **Use shared state with nanostores** instead of prop drilling between islands
+- **Use content collections** for type-safe content management of structured content
+- **Implement partial hydration strategies** to minimize JavaScript sent to the client
+- **Use Astro's transition:* directives** for view transitions between pages
+- **Leverage props** for passing data from Astro to framework components
+
+**Example:**
+```astro
+---
+import ChatInput from '../components/chat/ChatInput.tsx';
+import HistoryList from '../components/history/HistoryList.tsx';
+---
+
+<!-- Critical: hydrate immediately -->
+<ChatInput client:load />
+
+<!-- Below fold: hydrate when visible -->
+<HistoryList client:visible />
+```
+
+---
+
+## React Component Best Practices
+
+### 1. Functional Components with Hooks
+```tsx
+import { useState, useCallback } from 'react';
+
+export function ChatInput({ onSubmit }: { onSubmit: (text: string) => void }) {
+  const [text, setText] = useState('');
+
+  const handleSubmit = useCallback(() => {
+    if (text.trim().length >= 10) {
+      onSubmit(text);
+      setText('');
+    }
+  }, [text, onSubmit]);
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* ... */}
+    </form>
+  );
+}
+```
+
+### 2. Never Use Next.js Directives
+- **NO** `"use client"` (we're using Astro, not Next.js)
+- **NO** `"use server"` (not applicable)
+
+### 3. Extract Logic into Custom Hooks
+```tsx
+// src/components/hooks/useAuth.ts
+export function useAuth() {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch user from Supabase
+  }, []);
+
+  return { user, isLoading };
+}
+
+// Usage in component
+function UserMenu() {
+  const { user, isLoading } = useAuth();
+  // ...
+}
+```
+
+### 4. Performance Optimizations (Best Practices from 10x-rules)
+```tsx
+import { memo, useCallback, useMemo, lazy, Suspense } from 'react';
+
+// Use React.memo() for expensive components that render often with the same props
+export const ResponseCard = memo(({ response }: { response: Response }) => {
+  // Component only re-renders if `response` changes
+  return <div>{response.content}</div>;
+});
+
+// Use useCallback for event handlers passed to child components
+function ChatContainer() {
+  const handleRate = useCallback((responseId: number, rating: string) => {
+    // This function won't be recreated on every render
+  }, []);
+
+  return <RatingButtons onRate={handleRate} />;
+}
+
+// Prefer useMemo for expensive calculations to avoid recomputation on every render
+function QueryCard({ query }: { query: Query }) {
+  const formattedDate = useMemo(() => {
+    return new Intl.DateTimeFormat('pl-PL').format(new Date(query.created_at));
+  }, [query.created_at]);
+
+  return <time>{formattedDate}</time>;
+}
+
+// Utilize React.lazy() and Suspense for code-splitting and performance optimization
+const HistoryList = lazy(() => import('./HistoryList'));
+
+function HistoryView() {
+  return (
+    <Suspense fallback={<div>Ładowanie...</div>}>
+      <HistoryList />
+    </Suspense>
+  );
+}
+
+// Use useTransition for non-urgent state updates to keep the UI responsive
+import { useTransition } from 'react';
+
+function SearchComponent() {
+  const [isPending, startTransition] = useTransition();
+  
+  const handleSearch = (query: string) => {
+    startTransition(() => {
+      setSearchResults(filterResults(query));
+    });
+  };
+}
+```
+
+### 5. Use Suspense for Code Splitting
+```tsx
+import { lazy, Suspense } from 'react';
+
+const HistoryList = lazy(() => import('./HistoryList'));
+
+export function HistoryView() {
+  return (
+    <Suspense fallback={<div>Ładowanie...</div>}>
+      <HistoryList />
+    </Suspense>
+  );
+}
+```
+
+### 6. Use useId() for Accessibility
+```tsx
+import { useId } from 'react';
+
+export function InputField({ label }: { label: string }) {
+  const id = useId(); // Generates unique ID
+
+  return (
+    <div>
+      <label htmlFor={id}>{label}</label>
+      <input id={id} />
+    </div>
+  );
+}
+```
+
+### 7. Optimistic UI with useOptimistic (React 19)
+```tsx
+import { useOptimistic } from 'react';
+
+export function RatingButtons({ responseId, initialRating }: Props) {
+  const [optimisticRating, setOptimisticRating] = useOptimistic(initialRating);
+
+  async function handleRate(rating: 'up' | 'down') {
+    // Update UI immediately
+    setOptimisticRating(rating);
+
+    // Send to server (might fail)
+    await fetch(`/api/responses/${responseId}/ratings`, {
+      method: 'POST',
+      body: JSON.stringify({ rating })
+    });
+  }
+
+  return (
+    <div>
+      <button onClick={() => handleRate('up')}>👍</button>
+      <button onClick={() => handleRate('down')}>👎</button>
+    </div>
+  );
+}
+```
+
+---
+
+## React 19 Features
+
+### useOptimistic Hook
+Use for optimistic UI updates that can be reverted if the server request fails.
+
+### useFormStatus Hook
+Access form submission status from child components.
+
+### useFormState Hook
+Manage form state with server actions.
+
+### Server Components (Not Applicable)
+We use Astro for server-side rendering, not React Server Components.
+
+---
+
+## Error Boundaries
+
+```tsx
+import { ErrorBoundary } from 'react-error-boundary';
+
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div role="alert">
+      <h2>Coś poszło nie tak:</h2>
+      <pre>{error.message}</pre>
+      <button onClick={resetErrorBoundary}>Spróbuj ponownie</button>
+    </div>
+  );
+}
+
+// Wrap React islands in error boundaries
+<ErrorBoundary FallbackComponent={ErrorFallback}>
+  <ChatInput client:load />
+</ErrorBoundary>
+```
+
+---
+
+## State Management
+
+### Local State (useState)
+Use for component-specific state.
+
+### Shared State (nanostores)
+Use for state shared between multiple React islands.
+
+```tsx
+// src/lib/stores.ts
+import { atom } from 'nanostores';
+
+export const userStore = atom(null);
+
+// In component
+import { useStore } from '@nanostores/react';
+import { userStore } from '@/lib/stores';
+
+function UserMenu() {
+  const user = useStore(userStore);
+  // ...
+}
+```
+
+---
+
+## Related Rules
+
+- `frontend.mdc` - General frontend architecture
+- `astro.mdc` - Astro-specific guidelines
+- `ui-shadcn-helper.mdc` - Shadcn/ui and styling guidelines

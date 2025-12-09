@@ -1,0 +1,270 @@
+---
+description: Shadcn/ui and Tailwind CSS helper rules for PrawnikGPT
+globs: *.tsx,*.ts,*.astro
+alwaysApply: false
+---
+
+# Shadcn/ui & Tailwind CSS Helper
+
+## Shadcn/ui Integration
+
+### Install Components
+```bash
+npx shadcn-ui@latest add button input textarea card alert dialog dropdown-menu
+```
+
+### Component Location
+All Shadcn/ui components are located in `src/components/ui/` directory.
+
+### Use in React Components
+```tsx
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+
+export function LoginForm() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Zaloguj się</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form>
+          <Input type="email" placeholder="Email" />
+          <Input type="password" placeholder="Hasło" />
+          <Button type="submit">Zaloguj</Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### Use in Astro Components
+```astro
+---
+import { Button } from '@/components/ui/button';
+---
+
+<Button client:load>Click me</Button>
+```
+
+---
+
+## Tailwind CSS Best Practices (from 10x-rules)
+
+### Use Utility Classes
+```tsx
+<div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+    {title}
+  </h2>
+</div>
+```
+
+### Best Practices
+- **Use the @layer directive** to organize styles into components, utilities, and base layers
+- **Implement Just-in-Time (JIT) mode** for development efficiency and smaller CSS bundles
+- **Use arbitrary values** with square brackets (e.g., `w-[123px]`) for precise one-off designs
+- **Leverage the @apply directive** in component classes to reuse utility combinations
+- **Implement the Tailwind configuration file** for customizing theme, plugins, and variants
+- **Use component extraction** for repeated UI patterns instead of copying utility classes
+- **Leverage the theme() function** in CSS for accessing Tailwind theme values
+- **Implement dark mode** with the `dark:` variant
+- **Use responsive variants** (sm:, md:, lg:, etc.) for adaptive designs
+- **Leverage state variants** (hover:, focus:, active:, etc.) for interactive elements
+
+### Conditional Classes with `cn()` Utility
+```tsx
+import { cn } from '@/lib/utils';
+
+<button
+  className={cn(
+    "px-4 py-2 rounded-md font-medium",
+    isActive && "bg-blue-600 text-white",
+    !isActive && "bg-gray-200 text-gray-700",
+    disabled && "opacity-50 cursor-not-allowed"
+  )}
+>
+  Click me
+</button>
+```
+
+### Responsive Design
+```tsx
+<div className="flex flex-col md:flex-row gap-4">
+  {/* Stacks vertically on mobile, horizontally on desktop */}
+</div>
+```
+
+### Dark Mode (Prepare for Future)
+```tsx
+<div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+  {/* Automatically switches based on system preference */}
+</div>
+```
+
+---
+
+## Common Shadcn/ui Components
+
+### Button
+```tsx
+import { Button } from '@/components/ui/button';
+
+<Button variant="default">Default</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="link">Link</Button>
+<Button size="sm">Small</Button>
+<Button size="lg">Large</Button>
+<Button disabled>Disabled</Button>
+```
+
+### Input
+```tsx
+import { Input } from '@/components/ui/input';
+
+<Input type="email" placeholder="Email" />
+<Input type="password" placeholder="Hasło" />
+<Input disabled />
+<Input className="w-full" />
+```
+
+### Card
+```tsx
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+
+<Card>
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+    <CardDescription>Description</CardDescription>
+  </CardHeader>
+  <CardContent>
+    Content here
+  </CardContent>
+  <CardFooter>
+    Footer content
+  </CardFooter>
+</Card>
+```
+
+### Alert
+```tsx
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+<Alert>
+  <AlertTitle>Heads up!</AlertTitle>
+  <AlertDescription>
+    This is an alert message.
+  </AlertDescription>
+</Alert>
+```
+
+### Dialog
+```tsx
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+<Dialog>
+  <DialogTrigger>Open</DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Are you sure?</DialogTitle>
+      <DialogDescription>
+        This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+  </DialogContent>
+</Dialog>
+```
+
+---
+
+## Customizing Shadcn/ui Components
+
+### Theme Configuration
+Edit `tailwind.config.mjs` to customize colors, fonts, and other design tokens.
+
+### Component Customization
+Shadcn/ui components are copied to your project, so you can modify them directly in `src/components/ui/`.
+
+### Adding Custom Variants
+```tsx
+// In component file
+const buttonVariants = cva(
+  "inline-flex items-center justify-center rounded-md",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground",
+        custom: "bg-purple-600 text-white", // Your custom variant
+      },
+    },
+  }
+);
+```
+
+---
+
+## Tailwind Configuration
+
+### Custom Colors
+```js
+// tailwind.config.mjs
+export default {
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          50: '#f0f9ff',
+          500: '#0ea5e9',
+          900: '#0c4a6e',
+        },
+      },
+    },
+  },
+};
+```
+
+### Custom Spacing
+```js
+theme: {
+  extend: {
+    spacing: {
+      '18': '4.5rem',
+      '88': '22rem',
+    },
+  },
+}
+```
+
+---
+
+## Performance Tips
+
+- Use JIT mode (enabled by default in Tailwind 3+)
+- Purge unused styles in production
+- Use `@apply` sparingly (prefer utility classes)
+- Avoid deeply nested selectors
+- Use arbitrary values only when necessary
+
+---
+
+## Accessibility with Shadcn/ui
+
+Shadcn/ui components are built with accessibility in mind:
+- Proper ARIA attributes
+- Keyboard navigation support
+- Focus management
+- Screen reader support
+
+Always test with keyboard navigation and screen readers.
+
+---
+
+## Related Rules
+
+- `frontend.mdc` - General frontend architecture
+- `react.mdc` - React component guidelines
+- `astro.mdc` - Astro component guidelines

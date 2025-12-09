@@ -1,0 +1,214 @@
+---
+description: Astro-specific rules and best practices for PrawnikGPT
+globs: *.astro
+alwaysApply: false
+---
+
+# Astro Guidelines
+
+## When to Use Astro Components
+
+- Layouts (BaseLayout, AppLayout)
+- Static pages (landing page, legal texts)
+- Headers, footers, navigation (no interactivity)
+- Content-heavy sections (welcome message, example questions)
+
+**Remember:** Use Astro for static content. Use React islands (`.tsx`) for interactivity.
+
+---
+
+## Best Practices from 10x-rules
+
+- **Use Astro components (.astro) for static content and layout** - Minimize JavaScript by default
+- **Leverage View Transitions API** for smooth page transitions
+- **Use content collections with type safety** for blog posts, documentation, etc.
+- **Implement middleware** for request/response modification
+- **Use image optimization** with the Astro Image integration
+- **Leverage Server Endpoints** for API routes
+- **Implement hybrid rendering** with server-side rendering where needed
+- **Use Astro.cookies** for server-side cookie management
+- **Leverage import.meta.env** for environment variables (with type safety via env.d.ts)
+
+---
+
+## Component Props
+
+```astro
+---
+interface Props {
+  title: string;
+  showWelcome?: boolean;
+}
+
+const { title, showWelcome = false } = Astro.props;
+---
+
+<h1>{title}</h1>
+{showWelcome && <WelcomeMessage />}
+```
+
+---
+
+## Fetching Data in Astro
+
+```astro
+---
+// Top-level await is supported
+const response = await fetch('http://localhost:8000/api/data');
+const data = await response.json();
+---
+
+<div>{data.title}</div>
+```
+
+### Best Practices for Data Fetching
+
+- Use top-level `await` in Astro components
+- Fetch data at build time when possible (SSG)
+- Use `Astro.request` for request-specific data
+- Cache API responses when appropriate
+- Handle errors gracefully with try-catch
+
+---
+
+## View Transitions API
+
+```astro
+---
+// Enable smooth page transitions
+import { ViewTransitions } from 'astro:transitions';
+---
+
+<head>
+  <ViewTransitions />
+</head>
+```
+
+### Using View Transitions
+
+- Add `<ViewTransitions />` to your layout
+- Use `transition:name` attribute for persistent elements
+- Use `transition:animate` for custom animations
+- Works automatically with client-side navigation
+
+---
+
+## Image Optimization
+
+```astro
+---
+import { Image } from 'astro:assets';
+import heroImage from '../assets/hero.jpg';
+---
+
+<Image src={heroImage} alt="Hero image" width={1200} height={600} />
+```
+
+### Image Best Practices
+
+- Always use Astro's `<Image />` component
+- Provide width and height for layout stability
+- Use appropriate formats (WebP, AVIF)
+- Lazy load images below the fold
+- Use `picture` element for responsive images
+
+---
+
+## Server Endpoints
+
+```astro
+---
+// src/pages/api/data.json.ts
+export async function GET() {
+  return new Response(JSON.stringify({ data: 'example' }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+---
+
+```
+
+### Server Endpoints Best Practices
+
+- Use for API routes that don't need FastAPI backend
+- Return proper HTTP status codes
+- Set appropriate headers
+- Handle errors with try-catch
+- Use for simple data transformations
+
+---
+
+## Middleware
+
+```typescript
+// src/middleware.ts
+export async function onRequest(context, next) {
+  // Modify request/response
+  const response = await next();
+  response.headers.set('X-Custom-Header', 'value');
+  return response;
+}
+```
+
+### Middleware Use Cases
+
+- Authentication checks
+- Request logging
+- CORS headers
+- Request/response modification
+- Redirects
+
+---
+
+## Environment Variables
+
+```astro
+---
+// Access environment variables
+const apiUrl = import.meta.env.PUBLIC_API_BASE_URL;
+const secret = import.meta.env.SECRET_KEY; // Only available server-side
+---
+
+<div>API URL: {apiUrl}</div>
+```
+
+### Environment Variable Rules
+
+- `PUBLIC_*` variables are exposed to client-side
+- Variables without `PUBLIC_` prefix are server-only
+- Define types in `src/env.d.ts` for type safety
+- Never commit `.env` files to git
+
+---
+
+## Content Collections
+
+```typescript
+// src/content/config.ts
+import { defineCollection, z } from 'astro:content';
+
+const blog = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    date: z.date(),
+  }),
+});
+
+export const collections = { blog };
+```
+
+### Content Collections Best Practices
+
+- Use for structured content (blog posts, docs)
+- Define schemas with Zod for type safety
+- Use `getCollection()` to fetch all entries
+- Use `getEntry()` for single entries
+- Supports Markdown and MDX
+
+---
+
+## Related Rules
+
+- `frontend.mdc` - General frontend architecture
+- `react.mdc` - React islands guidelines
