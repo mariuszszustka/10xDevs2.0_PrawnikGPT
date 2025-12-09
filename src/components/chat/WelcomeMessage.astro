@@ -1,0 +1,42 @@
+---
+/**
+ * WelcomeMessage.astro
+ * 
+ * Statyczny komponent Astro wyświetlający komunikat powitalny dla nowych użytkowników.
+ * Wyświetlany tylko jeśli użytkownik nie ma historii zapytań.
+ * 
+ * @see chat-view-implementation-plan.md section 4.6
+ */
+
+// Brak props - komponent statyczny
+---
+
+<section class="max-w-3xl mx-auto px-4 py-8 text-center">
+  <h2 class="text-3xl font-bold text-foreground mb-4">
+    Witaj w PrawnikGPT!
+  </h2>
+  
+  <div class="space-y-4 text-muted-foreground">
+    <p class="text-lg">
+      Jestem inteligentnym asystentem prawnym opartym na sztucznej inteligencji. 
+      Mogę pomóc Ci znaleźć odpowiedzi na pytania dotyczące polskich aktów prawnych.
+    </p>
+    
+    <p>
+      Zadaj mi pytanie w języku naturalnym, a ja znajdę odpowiednie przepisy prawne 
+      i przedstawię Ci odpowiedź w przystępny sposób.
+    </p>
+    
+    <div class="mt-6 p-4 bg-muted rounded-lg">
+      <p class="text-sm font-medium text-foreground mb-2">
+        ⚠️ Informacja o zakresie MVP
+      </p>
+      <p class="text-sm">
+        Moja baza wiedzy jest na razie ograniczona i zawiera informacje o 
+        <strong class="text-foreground"> 20 000 najnowszych ustaw</strong>. 
+        Jeśli Twoje pytanie dotyczy aktu prawnego spoza tej bazy, poinformuję Cię o tym.
+      </p>
+    </div>
+  </div>
+</section>
+

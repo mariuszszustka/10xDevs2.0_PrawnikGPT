@@ -1,0 +1,48 @@
+---
+/**
+ * ExampleQuestions.astro
+ * 
+ * Statyczny komponent Astro wyświetlający listę przykładowych pytań.
+ * Przyciski są klikalne i przekazują tekst pytania do ChatInput przez event.
+ * 
+ * @see chat-view-implementation-plan.md section 4.7
+ */
+
+import type { ExampleQuestion } from '@/lib/types';
+
+interface Props {
+  examples: ExampleQuestion[];
+  onExampleQuestionClick?: (question: string) => void;
+}
+
+const { examples, onExampleQuestionClick } = Astro.props;
+
+// Walidacja: sprawdzenie czy lista nie jest pusta
+const hasExamples = examples && examples.length > 0;
+---
+
+{hasExamples && (
+  <section class="max-w-3xl mx-auto px-4 py-6">
+    <h3 class="text-xl font-semibold text-foreground mb-4">
+      Przykładowe pytania
+    </h3>
+    
+    <ul class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {examples.map((example) => (
+        <li>
+          <button
+            type="button"
+            class="w-full text-left p-4 rounded-lg border border-border bg-card hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            data-question={example.question}
+            data-example-question="true"
+          >
+            <span class="text-sm font-medium text-foreground">
+              {example.question}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+

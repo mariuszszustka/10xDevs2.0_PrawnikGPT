@@ -8,6 +8,7 @@
 import { getApiBaseUrl } from './utils';
 import { supabaseClient } from './supabase';
 import { ApiError, type ErrorResponse, type ApiErrorCode } from './types';
+import type { RateLimitInfo } from './AppContext';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -39,6 +40,46 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   }
 
   return headers;
+}
+
+/**
+ * Parse rate limit headers from API response
+ * 
+ * Headers format:
+ * - X-RateLimit-Limit: Maximum number of requests allowed
+ * - X-RateLimit-Remaining: Number of requests remaining
+ * - X-RateLimit-Reset: Unix timestamp when the rate limit resets
+ * 
+ * @param response - Fetch Response object
+ * @returns RateLimitInfo or null if headers not present
+ */
+function parseRateLimitHeaders(response: Response): RateLimitInfo | null {
+  const limitHeader = response.headers.get('X-RateLimit-Limit');
+  const remainingHeader = response.headers.get('X-RateLimit-Remaining');
+  const resetHeader = response.headers.get('X-RateLimit-Reset');
+
+  if (!limitHeader || !remainingHeader) {
+    return null;
+  }
+
+  const limit = parseInt(limitHeader, 10);
+  const remaining = parseInt(remainingHeader, 10);
+  const used = limit - remaining;
+
+  let resetAt: Date | null = null;
+  if (resetHeader) {
+    const resetTimestamp = parseInt(resetHeader, 10);
+    if (!isNaN(resetTimestamp)) {
+      // Convert Unix timestamp to Date
+      resetAt = new Date(resetTimestamp * 1000);
+    }
+  }
+
+  return {
+    used,
+    limit,
+    resetAt,
+  };
 }
 
 /**
@@ -91,15 +132,47 @@ async function parseErrorResponse(response: Response): Promise<ApiError> {
 }
 
 /**
+ * Response wrapper with rate limit information
+ */
+export interface ApiResponseWithRateLimit<T> {
+  data: T;
+  rateLimit: RateLimitInfo | null;
+}
+
+/**
  * Fetch data from API with error handling
  * 
  * Throws ApiError for all error responses (4xx, 5xx)
  * Handles 401 Unauthorized by redirecting to login
+ * Parses rate limit headers from response
+ * 
+ * @overload
+ * @param endpoint - API endpoint path
+ * @param options - Fetch options
+ * @param includeRateLimit - false (default)
+ * @returns Promise<T>
+ * 
+ * @overload
+ * @param endpoint - API endpoint path
+ * @param options - Fetch options
+ * @param includeRateLimit - true
+ * @returns Promise<ApiResponseWithRateLimit<T>>
  */
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+  options?: RequestInit,
+  includeRateLimit?: false
+): Promise<T>;
+export async function apiFetch<T>(
+  endpoint: string,
+  options: RequestInit,
+  includeRateLimit: true
+): Promise<ApiResponseWithRateLimit<T>>;
+export async function apiFetch<T>(
+  endpoint: string,
+  options: RequestInit = {},
+  includeRateLimit: boolean = false
+): Promise<T | ApiResponseWithRateLimit<T>> {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = await getAuthHeaders();
 
@@ -141,7 +214,14 @@ export async function apiFetch<T>(
       throw apiError;
     }
 
-    return response.json();
+    const data = await response.json();
+    const rateLimit = parseRateLimitHeaders(response);
+
+    if (includeRateLimit) {
+      return { data, rateLimit } as ApiResponseWithRateLimit<T>;
+    }
+
+    return data;
   } catch (error) {
     // Re-throw ApiError as-is
     if (error instanceof ApiError) {
@@ -165,24 +245,79 @@ export async function apiFetch<T>(
 
 /**
  * POST request helper
+ * 
+ * @overload
+ * @param endpoint - API endpoint path
+ * @param data - Request body data
+ * @param includeRateLimit - false (default)
+ * @returns Promise<T>
+ * 
+ * @overload
+ * @param endpoint - API endpoint path
+ * @param data - Request body data
+ * @param includeRateLimit - true
+ * @returns Promise<ApiResponseWithRateLimit<T>>
  */
 export async function apiPost<T>(
   endpoint: string,
-  data: unknown
-): Promise<T> {
+  data: unknown,
+  includeRateLimit?: false
+): Promise<T>;
+export async function apiPost<T>(
+  endpoint: string,
+  data: unknown,
+  includeRateLimit: true
+): Promise<ApiResponseWithRateLimit<T>>;
+export async function apiPost<T>(
+  endpoint: string,
+  data: unknown,
+  includeRateLimit: boolean = false
+): Promise<T | ApiResponseWithRateLimit<T>> {
+  if (includeRateLimit) {
+    return apiFetch<T>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, true);
+  }
   return apiFetch<T>(endpoint, {
     method: 'POST',
     body: JSON.stringify(data),
-  });
+  }, false);
 }
 
 /**
  * GET request helper
+ * 
+ * @overload
+ * @param endpoint - API endpoint path
+ * @param includeRateLimit - false (default)
+ * @returns Promise<T>
+ * 
+ * @overload
+ * @param endpoint - API endpoint path
+ * @param includeRateLimit - true
+ * @returns Promise<ApiResponseWithRateLimit<T>>
  */
-export async function apiGet<T>(endpoint: string): Promise<T> {
+export async function apiGet<T>(
+  endpoint: string,
+  includeRateLimit?: false
+): Promise<T>;
+export async function apiGet<T>(
+  endpoint: string,
+  includeRateLimit: true
+): Promise<ApiResponseWithRateLimit<T>>;
+export async function apiGet<T>(
+  endpoint: string,
+  includeRateLimit: boolean = false
+): Promise<T | ApiResponseWithRateLimit<T>> {
+  if (includeRateLimit) {
+    return apiFetch<T>(endpoint, {
+      method: 'GET',
+    }, true);
+  }
   return apiFetch<T>(endpoint, {
     method: 'GET',
-  });
+  }, false);
 }
 
 /**
