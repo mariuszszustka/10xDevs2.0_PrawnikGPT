@@ -524,3 +524,34 @@ export class ApiError extends Error {
   }
 }
 
+// =============================================================================
+// AUTH-RELATED TYPES (Login/Register Forms)
+// =============================================================================
+
+/**
+ * Login form data DTO
+ * Used for user authentication via Supabase Auth
+ */
+export interface LoginFormData {
+  email: string;
+  password: string;
+}
+
+/**
+ * Login form validation errors
+ * ViewModel for displaying validation errors in UI
+ */
+export interface LoginFormErrors {
+  email?: string;
+  password?: string;
+  general?: string;
+}
+
+/**
+ * Login form component props
+ */
+export interface LoginFormProps {
+  redirectTo?: string;
+  showExpiredMessage?: boolean;
+}
+
