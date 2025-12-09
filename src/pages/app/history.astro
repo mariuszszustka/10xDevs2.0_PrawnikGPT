@@ -1,0 +1,50 @@
+---
+/**
+ * History View - Astro page
+ * 
+ * Widok historii zapytań użytkownika z paginacją "Załaduj więcej",
+ * collapsible responses, usuwaniem zapytań i ocenianiem odpowiedzi.
+ * 
+ * @see history-view-implementation-plan.md
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HistoryList from '../../components/history/HistoryList';
+import { supabaseClient } from '../../lib/supabase';
+
+// Check authentication
+const {
+  data: { session },
+} = await supabaseClient.auth.getSession();
+
+// Redirect to login if not authenticated
+if (!session) {
+  return Astro.redirect('/login?redirect_to=/app/history');
+}
+
+// Optional: Fetch initial data server-side (for SSR)
+// For MVP, we'll let the client-side component fetch data
+// This allows for better loading states and error handling
+---
+
+<BaseLayout title="Historia zapytań - PrawnikGPT" description="Przeglądaj historię swoich zapytań i odpowiedzi">
+  <main class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+      <div class="max-w-4xl mx-auto">
+        <!-- Page Header -->
+        <header class="mb-8">
+          <h1 class="text-3xl font-bold text-gray-900">
+            Historia zapytań
+          </h1>
+          <p class="text-muted-foreground mt-2">
+            Przeglądaj wszystkie swoje zapytania i odpowiedzi
+          </p>
+        </header>
+
+        <!-- History List (React island) -->
+        <HistoryList client:load />
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+

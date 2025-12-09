@@ -329,3 +329,53 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
   });
 }
 
+// =============================================================================
+// Query Management Functions (History View)
+// =============================================================================
+
+import type {
+  QueryListResponse,
+  QueryListParams,
+  QueryDetailResponse,
+} from './types';
+
+/**
+ * Get list of user queries with pagination
+ * 
+ * @param params - Query parameters (page, per_page, order)
+ * @returns Query list response with pagination
+ */
+export async function getQueries(
+  params: QueryListParams = {}
+): Promise<QueryListResponse> {
+  const queryString = new URLSearchParams({
+    page: String(params.page || 1),
+    per_page: String(params.per_page || 20),
+    order: params.order || 'desc',
+  }).toString();
+
+  return apiGet<QueryListResponse>(`/api/v1/queries?${queryString}`);
+}
+
+/**
+ * Get query details by ID
+ * 
+ * @param queryId - Query ID (UUID)
+ * @returns Query detail response
+ */
+export async function getQueryDetails(
+  queryId: string
+): Promise<QueryDetailResponse> {
+  return apiGet<QueryDetailResponse>(`/api/v1/queries/${queryId}`);
+}
+
+/**
+ * Delete query by ID
+ * 
+ * @param queryId - Query ID (UUID)
+ * @returns Promise that resolves when query is deleted
+ */
+export async function deleteQuery(queryId: string): Promise<void> {
+  return apiDelete<void>(`/api/v1/queries/${queryId}`);
+}
+
