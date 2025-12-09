@@ -590,3 +590,35 @@ export interface RegisterFormProps {
  */
 export type PasswordStrength = 'weak' | 'medium' | 'strong';
 
+// =============================================================================
+// SETTINGS-RELATED TYPES
+// =============================================================================
+
+/**
+ * Change password form data DTO
+ * Used for password change form in Settings view
+ */
+export interface ChangePasswordFormData {
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirm: string;
+}
+
+/**
+ * Change password form validation errors
+ * ViewModel for displaying validation errors in UI
+ */
+export interface ChangePasswordFormErrors {
+  currentPassword?: string;
+  newPassword?: string;
+  newPasswordConfirm?: string;
+  general?: string;
+}
+
+/**
+ * Settings layout component props
+ */
+export interface SettingsLayoutProps {
+  userEmail: string;
+}
+

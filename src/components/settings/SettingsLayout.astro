@@ -1,0 +1,71 @@
+---
+/**
+ * SettingsLayout - Astro component for settings view layout
+ * 
+ * Renders card-based layout with sections:
+ * - Profile section: Email display and password change form
+ * - Account section: Delete account button
+ * 
+ * @see settings-view-implementation-plan.md
+ */
+
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import ChangePasswordForm from './ChangePasswordForm';
+import DeleteAccountButton from './DeleteAccountButton';
+import type { SettingsLayoutProps } from '@/lib/types';
+
+const { userEmail } = Astro.props;
+---
+
+<div class="space-y-6">
+  <!-- Profile Section -->
+  <Card>
+    <CardHeader>
+      <CardTitle>Profil</CardTitle>
+      <CardDescription>
+        Zarządzaj danymi swojego konta
+      </CardDescription>
+    </CardHeader>
+    <CardContent class="space-y-6">
+      <!-- Email Display (read-only) -->
+      <div>
+        <label for="email-display" class="block text-sm font-medium text-gray-700 mb-2">
+          Email
+        </label>
+        <p 
+          id="email-display" 
+          class="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md border"
+          role="textbox"
+          aria-readonly="true"
+          aria-label={`Email użytkownika: ${userEmail}`}
+        >
+          {userEmail}
+        </p>
+        <p class="mt-1 text-xs text-gray-500" id="email-help">
+          Email nie może być zmieniony
+        </p>
+      </div>
+
+      <!-- Password Change Form (React island) -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+          Zmień hasło
+        </h3>
+        <ChangePasswordForm client:load />
+      </div>
+    </CardContent>
+  </Card>
+
+  <!-- Account Section -->
+  <Card>
+    <CardHeader>
+      <CardTitle>Konto</CardTitle>
+      <CardDescription>
+        Zarządzaj kontem i danymi
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <DeleteAccountButton client:load />
+    </CardContent>
+  </Card>
+</div>
