@@ -2,13 +2,24 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+export interface InputProps extends React.ComponentProps<"input"> {
+  size?: "sm" | "md" | "lg";
+}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, size = "md", ...props }, ref) => {
+    const sizeClasses = {
+      sm: "h-[var(--input-height-sm)] text-body-small",
+      md: "h-[var(--input-height-md)] text-body",
+      lg: "h-[var(--input-height-lg)] text-body-large",
+    };
+
     return (
       <input
         type={type}
         className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          "flex w-full rounded-[var(--input-border-radius)] border-[var(--input-border-width)] border-input bg-background px-[var(--input-padding-x)] py-2 ring-offset-background file:border-0 file:bg-transparent file:text-body-small file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[var(--input-focus-ring-width)] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-normal ease-standard",
+          sizeClasses[size],
           className
         )}
         ref={ref}

@@ -2,21 +2,31 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Textarea = React.forwardRef<
-  HTMLTextAreaElement,
-  React.ComponentProps<"textarea">
->(({ className, ...props }, ref) => {
-  return (
-    <textarea
-      className={cn(
-        "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        className
-      )}
-      ref={ref}
-      {...props}
-    />
-  )
-})
+export interface TextareaProps extends React.ComponentProps<"textarea"> {
+  size?: "sm" | "md" | "lg";
+}
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, size = "md", ...props }, ref) => {
+    const sizeClasses = {
+      sm: "min-h-[var(--input-height-sm)] text-body-small px-[var(--input-padding-x)]",
+      md: "min-h-[var(--input-height-md)] text-body px-[var(--input-padding-x)]",
+      lg: "min-h-[var(--input-height-lg)] text-body-large px-[var(--input-padding-x)]",
+    };
+
+    return (
+      <textarea
+        className={cn(
+          "flex w-full rounded-[var(--input-border-radius)] border-[var(--input-border-width)] border-input bg-background py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[var(--input-focus-ring-width)] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-normal ease-standard",
+          sizeClasses[size],
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
 Textarea.displayName = "Textarea"
 
 export { Textarea }
