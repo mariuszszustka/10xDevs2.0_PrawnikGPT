@@ -1,6 +1,7 @@
 ---
 import '../styles/globals.css';
 import { Toaster } from '../components/ui/toaster';
+import { LogoutButton } from '../components/auth/LogoutButton';
 
 interface Props {
   title: string;
@@ -9,6 +10,10 @@ interface Props {
 }
 
 const { title, description = 'AI Assistant for Polish Legal Acts', ogImage } = Astro.props;
+
+// Verify user authentication state (from middleware)
+const user = Astro.locals.user;
+const isAuthenticated = user !== null;
 
 // Build canonical URL
 const canonicalURL = Astro.site 
@@ -55,6 +60,11 @@ const ogImageURL = ogImage
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
+    {isAuthenticated && (
+      <div class="fixed top-4 right-4 z-50">
+        <LogoutButton client:load variant="outline" size="sm" />
+      </div>
+    )}
     <slot />
     <Toaster client:load />
   </body>
