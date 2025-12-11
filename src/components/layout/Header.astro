@@ -66,13 +66,15 @@ const currentPath = Astro.url.pathname;
         <div class="flex items-center gap-2">
           <a
             href="/login"
-            class="px-4 py-2 rounded-lg text-body font-semibold text-foreground hover:bg-accent transition-all duration-normal shadow-sm hover:shadow-md"
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border-2 border-primary bg-background text-primary hover:bg-primary hover:text-primary-foreground active:bg-primary-active rounded-lg shadow-sm hover:shadow-md duration-normal ease-standard h-[var(--button-height-md)] px-[var(--button-padding-x-md)] text-body"
+            aria-label="Zaloguj się do istniejącego konta"
           >
             Zaloguj się
           </a>
           <a
             href="/register"
-            class="px-4 py-2 rounded-lg text-body font-semibold bg-primary text-primary-foreground hover:bg-primary-hover transition-all duration-normal shadow-md hover:shadow-lg"
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active rounded-lg shadow-md hover:shadow-lg active:shadow-sm duration-normal ease-standard h-[var(--button-height-md)] px-[var(--button-padding-x-md)] text-body"
+            aria-label="Wypróbuj PrawnikGPT za darmo - przejdź do rejestracji"
           >
             Wypróbuj
           </a>

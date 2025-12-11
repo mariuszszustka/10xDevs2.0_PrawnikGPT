@@ -1,13 +1,13 @@
 ---
 // FeatureCard.astro - Reużywalna karta prezentująca pojedynczą funkcjonalność
 // Updated with Fluent 2.0 elevation and professional styling
+// Uses professional vector icons (Lucide) instead of emoji
 interface Props {
-  icon: string; // Emoji lub SVG
   title: string;
   description: string;
 }
 
-const { icon, title, description } = Astro.props;
+const { title, description } = Astro.props;
 ---
 
 <div
@@ -19,7 +19,7 @@ const { icon, title, description } = Astro.props;
     role="img"
     aria-label={`Ikona dla ${title}`}
   >
-    <span class="text-4xl">{icon}</span>
+    <slot name="icon" />
   </div>
 
   <!-- Title with Fluent Typography -->

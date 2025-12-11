@@ -1,6 +1,7 @@
 ---
 // FeaturesSection.astro - Sekcja prezentująca trzy główne funkcjonalności
 // Updated with Fluent 2.0 Professional Design System
+// Uses professional vector icons (Lucide) instead of emoji
 import FeatureCard from './FeatureCard.astro';
 ---
 
@@ -19,21 +20,62 @@ import FeatureCard from './FeatureCard.astro';
 
       <!-- Features Grid with enhanced spacing -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-        <FeatureCard
-          icon="⚡"
-          title="Szybko"
-          description="Odpowiedzi w <15 sekund dzięki zaawansowanym modelom AI."
-        />
-        <FeatureCard
-          icon="🎯"
-          title="Dokładnie"
-          description="Opcjonalna szczegółowa odpowiedź z modelu 120B dla kompleksowej analizy."
-        />
-        <FeatureCard
-          icon="📚"
-          title="Wiarygodnie"
-          description="Źródła z 20 000 najnowszych polskich ustaw i rozporządzeń."
-        />
+        <FeatureCard title="Szybko" description="Odpowiedzi w <15 sekund dzięki zaawansowanym modelom AI.">
+          <svg
+            slot="icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="text-primary"
+            aria-hidden="true"
+          >
+            <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+          </svg>
+        </FeatureCard>
+        <FeatureCard title="Dokładnie" description="Opcjonalna szczegółowa odpowiedź z modelu 120B dla kompleksowej analizy.">
+          <svg
+            slot="icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="text-primary"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="6" />
+            <circle cx="12" cy="12" r="2" />
+          </svg>
+        </FeatureCard>
+        <FeatureCard title="Wiarygodnie" description="Źródła z 20 000 najnowszych polskich ustaw i rozporządzeń.">
+          <svg
+            slot="icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="text-primary"
+            aria-hidden="true"
+          >
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+          </svg>
+        </FeatureCard>
       </div>
     </div>
   </div>
