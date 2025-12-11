@@ -146,6 +146,10 @@ Następujące elementy są świadomie wyłączone z zakresu MVP:
 - Użytkownik jest automatycznie zalogowany po pomyślnej rejestracji.
 - Proces nie wymaga potwierdzenia adresu e-mail.
 - W przypadku błędu (np. zajęty e-mail) użytkownik widzi stosowny komunikat.
+- Hasło musi spełniać politykę złożoności: minimum 12 znaków, w tym małe i duże litery, cyfry oraz znaki specjalne (walidacja po stronie frontendu i backendu).
+- Hasło jest hashowane przy użyciu silnego algorytmu (Argon2id lub Bcrypt) z unikalną solą (salt) dla każdego użytkownika przez Supabase Auth.
+- Endpoint rejestracji jest objęty mechanizmem Rate Limiting (np. maksymalnie 5 prób rejestracji na 15 minut z jednego adresu IP).
+- System nie ujawnia, czy podany email już istnieje w bazie (komunikat ogólny: "Nie można utworzyć konta").
 
 ---
 
@@ -154,8 +158,12 @@ Następujące elementy są świadomie wyłączone z zakresu MVP:
 
 **Kryteria akceptacji:**
 - Po podaniu prawidłowego e-maila i hasła, użytkownik zostaje zalogowany.
-- Token sesji (JWT) jest zapisywany w przeglądarce.
-- W przypadku błędnych danych logowania, użytkownik widzi stosowny komunikat.
+- Token dostępowy (Access Token) JWT ma krótki czas życia (15 minut).
+- Token odświeżania (Refresh Token) jest przechowywany wyłącznie w ciasteczku HttpOnly, Secure, SameSite (nie w LocalStorage), aby zapobiec atakom XSS.
+- W przypadku błędnych danych logowania, użytkownik widzi ogólny komunikat: "Błędny login lub hasło" (system nie ujawnia, czy email istnieje w bazie).
+- Endpoint logowania jest objęty mechanizmem Rate Limiting: po 5 nieudanych próbach logowanie jest blokowane na 15 minut (ochrona przed atakami Brute Force).
+- Jeśli użytkownik ma włączone uwierzytelnianie dwuskładnikowe (MFA), po podaniu hasła system wymaga podania 6-cyfrowego kodu TOTP.
+- Wylogowanie unieważnia token odświeżania po stronie serwera (czarna lista lub usunięcie z bazy sesji).
 
 ---
 
@@ -178,6 +186,12 @@ Następujące elementy są świadomie wyłączone z zakresu MVP:
 - Odpowiedź zawiera treść wygenerowaną przez LLM oraz klikalny link do źródła (tytuł aktu i numer artykułu).
 - Pod odpowiedzią widoczne są przyciski do oceny ("kciuk w górę"/"kciuk w dół").
 - Pod odpowiedzią widoczny jest przycisk "Uzyskaj dokładniejszą odpowiedź".
+
+**Wymagania Niefunkcjonalne (Bezpieczeństwo):**
+- Endpoint API do generowania odpowiedzi wymaga walidacji JWT tokenu (tylko zalogowani użytkownicy).
+- Zapytania użytkownika są sanityzowane przed wysłaniem do LLM (ochrona przed injection attacks).
+- Endpoint jest objęty mechanizmem Rate Limiting (np. maksymalnie 10 zapytań na minutę na użytkownika, 30 zapytań na minutę na adres IP).
+- Szczegółowe wymagania bezpieczeństwa dotyczące uwierzytelniania, haseł, sesji i MFA znajdują się w sekcji 9.2 "Wymagania bezpieczeństwa".
 
 ---
 
@@ -286,8 +300,57 @@ Sukces MVP będzie mierzony za pomocą następujących wskaźników, które maj�
 
 ## 9. Wymagania prawne i bezpieczeństwo
 
+### 9.1. Wymagania prawne
 - **RODO:** Dane osobowe użytkowników (email, hasło) przechowywane zgodnie z RODO.
 - **Prawo do usunięcia danych:** Użytkownik może usunąć swoje konto wraz z całą historią zapytań i ocenami.
-- **Bezpieczeństwo haseł:** Hasła hashowane przez Supabase Auth (bcrypt).
-- **Autoryzacja:** Tylko zalogowany użytkownik może wyświetlać, edytować i usuwać swoje zapytania. Brak współdzielenia danych między użytkownikami.
-- **Ochrona przed atakami:** Podstawowa walidacja input'u (rate limiting, sanitization) w backendzie.
+
+### 9.2. Wymagania bezpieczeństwa
+
+#### 9.2.1. Hashowanie i przechowywanie haseł
+- **Hasła NIE MOGĄ być przechowywane w formie tekstu jawnego.**
+- Wymagane jest użycie silnego algorytmu haszującego (Argon2id lub Bcrypt) z unikalną solą (salt) dla każdego użytkownika.
+- Implementacja odbywa się przez Supabase Auth, który domyślnie używa Bcrypt.
+- Hasło musi spełniać politykę złożoności: minimum 12 znaków, w tym małe i duże litery, cyfry oraz znaki specjalne (walidacja po stronie frontendu i backendu).
+
+#### 9.2.2. Obsługa sesji i tokenów JWT
+- Uwierzytelnianie oparte jest o stateless JWT (JSON Web Token).
+- Token dostępowy (Access Token) ma krótki czas życia (15 minut).
+- Token odświeżania (Refresh Token) jest przechowywany wyłącznie w ciasteczku HttpOnly, Secure, SameSite (nie w LocalStorage!), aby zapobiec atakom XSS.
+- Wylogowanie musi unieważniać token odświeżania po stronie serwera (czarna lista lub usunięcie z bazy sesji).
+- Supabase Auth domyślnie obsługuje te mechanizmy, ale wymagane jest skonfigurowanie odpowiednich flag dla ciasteczek.
+
+#### 9.2.3. Uwierzytelnianie wieloetapowe (MFA/2FA)
+- System musi umożliwiać włączenie uwierzytelniania dwuskładnikowego (2FA/MFA).
+- Obsługiwana metoda to TOTP (Time-based One-Time Password), np. Google Authenticator / Authy.
+- Przy logowaniu, jeśli MFA jest włączone, system po podaniu hasła wymaga podania 6-cyfrowego kodu.
+- Wymagane jest wygenerowanie kodów zapasowych (backup codes) przy aktywacji MFA.
+- Kody zapasowe muszą być wyświetlane użytkownikowi tylko raz podczas aktywacji i zapisane w bezpieczny sposób (haszowane w bazie danych).
+
+#### 9.2.4. Zabezpieczenie przed popularnymi atakami
+- **Rate Limiting:**
+  - Endpointy logowania i rejestracji muszą być objęte mechanizmem Rate Limiting.
+  - Po 5 nieudanych próbach logowania, dostęp jest blokowany na 15 minut (ochrona przed Brute Force).
+  - Maksymalnie 5 prób rejestracji na 15 minut z jednego adresu IP.
+- **CSRF Protection:**
+  - Formularze muszą posiadać zabezpieczenie przed atakami CSRF (jeśli dotyczy architektury).
+  - Supabase Auth domyślnie obsługuje CSRF protection dla sesji.
+- **Sanityzacja danych wejściowych:**
+  - Wszystkie dane wejściowe użytkownika muszą być sanityzowane (ochrona przed SQL Injection / XSS).
+  - Backend używa parameterized queries (Supabase SDK automatycznie to zapewnia).
+  - Frontend używa React, który domyślnie chroni przed XSS poprzez escapowanie.
+- **Enumeracja użytkowników:**
+  - System nie może zwracać informacji, czy podany email istnieje w bazie przy nieudanym logowaniu/rejestracji.
+  - Komunikat ogólny: "Błędny login lub hasło" (logowanie) lub "Nie można utworzyć konta" (rejestracja).
+  - Alternatywnie, system może "udawać", że wysłał maila resetującego hasło, nawet jeśli konto nie istnieje (zapobieganie enumeracji).
+
+#### 9.2.5. Mechanizmy odzyskiwania dostępu
+- Proces resetowania hasła odbywa się poprzez wysłanie unikalnego, jednorazowego linku z tokenem na adres email.
+- Ważność tokenu resetującego hasło: maksymalnie 15-30 minut.
+- Zmiana hasła po użyciu linku powoduje automatyczne wylogowanie ze wszystkich innych aktywnych sesji użytkownika.
+- Jeśli konto nie istnieje, system "udaje", że wysłał maila (zapobieganie enumeracji użytkowników), lub wysyła informację, że konto nie istnieje (zależnie od polityki prywatności, bezpieczniej jest "udawać").
+
+#### 9.2.6. Autoryzacja i kontrola dostępu
+- Tylko zalogowany użytkownik może wyświetlać, edytować i usuwać swoje zapytania.
+- Brak współdzielenia danych między użytkownikami.
+- Każde zapytanie do API wymaga walidacji JWT tokenu.
+- Backend weryfikuje, czy użytkownik ma dostęp do zasobu (np. zapytania) przed wykonaniem operacji.
