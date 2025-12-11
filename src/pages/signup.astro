@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SignupForm } from '../components/auth/SignupForm';
+
+// Get URL parameters
+const url = Astro.url;
+const redirectTo = url.searchParams.get('redirect_to') || '/app';
+const emailSent = url.searchParams.get('emailSent') === 'true';
+---
+
+<BaseLayout title="Rejestracja - PrawnikGPT">
+  <main class="min-h-screen flex items-center justify-center bg-gray-50">
+    <div class="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+      <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">
+        Rejestracja
+      </h1>
+      <p class="text-gray-600 mb-8 text-center">
+        Utwórz konto, aby rozpocząć korzystanie z PrawnikGPT
+      </p>
+      
+      {emailSent && (
+        <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p class="text-sm text-blue-800 text-center">
+            Link do potwierdzenia konta został wysłany na Twój adres email. Sprawdź skrzynkę pocztową i kliknij link, aby aktywować konto.
+          </p>
+        </div>
+      )}
+      
+      <SignupForm client:load redirectTo={redirectTo} showEmailSentMessage={emailSent} />
+      
+      <p class="mt-6 text-center text-sm text-gray-600">
+        Masz już konto?{' '}
+        <a href="/login" class="text-blue-600 hover:text-blue-700 font-medium">
+          Zaloguj się
+        </a>
+      </p>
+    </div>
+  </main>
+</BaseLayout>
