@@ -16,7 +16,7 @@
 import { useState, useCallback } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabaseClient } from '@/lib/supabase';
+import { supabaseClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';

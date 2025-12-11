@@ -13,6 +13,22 @@ declare global {
   namespace App {
     interface Locals {
       supabase: SupabaseClient<Database>;
+      session: {
+        access_token: string;
+        refresh_token: string;
+        expires_at?: number;
+        expires_in?: number;
+        token_type: string;
+        user: {
+          id: string;
+          email?: string;
+          [key: string]: unknown;
+        };
+      } | null;
+      user: {
+        id: string;
+        email?: string;
+      } | null;
     }
   }
 }

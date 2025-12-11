@@ -6,7 +6,7 @@
  */
 
 import { getApiBaseUrl } from './utils';
-import { supabaseClient } from './supabase';
+import { supabaseClient } from './supabase/client';
 import { ApiError, type ErrorResponse, type ApiErrorCode } from './types';
 import type { RateLimitInfo } from './AppContext';
 

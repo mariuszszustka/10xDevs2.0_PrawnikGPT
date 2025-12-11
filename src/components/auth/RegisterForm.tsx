@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { supabaseClient } from '@/lib/supabase';
+import { supabaseClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -283,25 +283,31 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
     setIsLoading(true);
 
     try {
-      // Sign up with Supabase Auth
-      const { data, error } = await supabaseClient.auth.signUp({
-        email: formData.email.trim(),
-        password: formData.password,
-        options: {
-          emailRedirectTo: undefined, // No email verification in MVP
+      // Call register API endpoint (handles session with HttpOnly cookies)
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies in request
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
       });
 
-      if (error) {
-        // Map Supabase error to user-friendly message
-        const errorMessage = mapSupabaseError(error);
+      const data = await response.json();
+
+      if (!response.ok) {
+        // API returned error
+        const errorMessage = data.error || 'Nie można utworzyć konta. Spróbuj ponownie.';
         
         // Try to map to specific field if possible
-        if (error.message.toLowerCase().includes('email')) {
+        if (errorMessage.toLowerCase().includes('email')) {
           setErrors({
             email: errorMessage,
           });
-        } else if (error.message.toLowerCase().includes('password')) {
+        } else if (errorMessage.toLowerCase().includes('hasło') || errorMessage.toLowerCase().includes('password')) {
           setErrors({
             password: errorMessage,
           });
@@ -315,9 +321,12 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
         return;
       }
 
-      // Success - check if session was created
+      // Success: session is stored in HttpOnly cookies by API endpoint
+      // Refresh browser client session to sync with server
+      await supabaseClient.auth.getSession();
+
+      // Auto-login successful - redirect to app
       if (data.session) {
-        // Auto-login successful - redirect to app
         window.location.href = redirectTo;
       } else {
         // This shouldn't happen in MVP without email verification, but handle it anyway
@@ -330,7 +339,7 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
       // Handle network errors or unexpected errors
       console.error('Registration error:', error);
       setErrors({
-        general: 'Wystąpił błąd podczas rejestracji. Spróbuj ponownie.',
+        general: 'Wystąpił błąd podczas rejestracji. Sprawdź połączenie internetowe.',
       });
       setIsLoading(false);
     }

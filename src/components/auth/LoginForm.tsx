@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { supabaseClient } from '@/lib/supabase';
+import { supabaseClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -119,6 +119,7 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
 
   /**
    * Handle form submission
+   * Uses API endpoint for authentication with proper cookie management
    */
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -135,31 +136,41 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
     setIsLoading(true);
 
     try {
-      // Sign in with Supabase Auth
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: formData.email.trim(),
-        password: formData.password,
+      // Call login API endpoint (handles session with HttpOnly cookies)
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies in request
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
       });
 
-      if (error) {
-        // Map Supabase error to user-friendly message
-        const errorMessage = mapSupabaseError(error);
+      const data = await response.json();
+
+      if (!response.ok) {
+        // API returned error
         setErrors({
-          general: errorMessage,
+          general: data.error || 'Wystąpił błąd podczas logowania. Spróbuj ponownie.',
         });
         setIsLoading(false);
         return;
       }
 
-      // Success - redirect to app
-      if (data.session) {
-        window.location.href = redirectTo;
-      }
+      // Success: session is stored in HttpOnly cookies by API endpoint
+      // Refresh browser client session to sync with server
+      await supabaseClient.auth.getSession();
+
+      // Redirect to app
+      window.location.href = redirectTo;
     } catch (error) {
       // Handle network errors or unexpected errors
       console.error('Login error:', error);
       setErrors({
-        general: 'Wystąpił błąd podczas logowania. Spróbuj ponownie.',
+        general: 'Wystąpił błąd podczas logowania. Sprawdź połączenie internetowe.',
       });
       setIsLoading(false);
     }
