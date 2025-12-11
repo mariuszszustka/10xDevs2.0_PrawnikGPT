@@ -148,3 +148,4 @@ Przeprowadzono analizę wszystkich przepływów autentykacji w systemie:
 - Diagram jest zgodny z aktualną implementacją systemu autentykacji
 - Wszystkie przepływy są zgodne z wymaganiami bezpieczeństwa z PRD
 - Diagram może być rozszerzony o przepływ MFA/2FA w przyszłości
+
