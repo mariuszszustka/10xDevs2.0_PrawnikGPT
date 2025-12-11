@@ -1,0 +1,256 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Mermaid Diagram - Auth Architecture
+
+Diagram sekwencji przepływu autentykacji dla aplikacji PrawnikGPT.
+
+<authentication_analysis>
+
+## Analiza przepływów autentykacji
+
+### 1. Przepływy autentykacji
+
+Zgodnie z dokumentacją projektową (PRD i auth-spec.md), system obsługuje następujące przepływy:
+
+**A. Rejestracja użytkownika (US-001):**
+- Użytkownik wypełnia formularz rejestracji (email, hasło)
+- Walidacja client-side (minimum 12 znaków, małe/duże litery, cyfry, znaki specjalne)
+- Wywołanie Supabase Auth signUp
+- Automatyczne logowanie po rejestracji (brak weryfikacji email w MVP)
+- Przekierowanie do /app?firstLogin=true
+
+**B. Logowanie użytkownika (US-002):**
+- Użytkownik wypełnia formularz logowania (email, hasło)
+- Walidacja client-side
+- Wywołanie Supabase Auth signInWithPassword
+- Generowanie JWT access token (15 minut) i refresh token (7 dni)
+- Zapisanie sesji (access token w localStorage, refresh token w HttpOnly cookie)
+- Przekierowanie do /app
+
+**C. Wylogowanie:**
+- Wywołanie Supabase Auth signOut
+- Unieważnienie refresh token po stronie serwera
+- Usunięcie sesji z localStorage/cookies
+- Przekierowanie do /login
+
+**D. Odzyskiwanie hasła:**
+- Krok 1: Żądanie resetu (forgot-password)
+- Krok 2: Reset hasła (reset-password z tokenem)
+
+**E. Weryfikacja tokenu w API:**
+- Każde żądanie do FastAPI zawiera JWT w headerze Authorization
+- Backend weryfikuje JWT używając Supabase JWT secret
+- Ekstrakcja user_id z payload
+
+**F. Odświeżanie tokenu:**
+- Automatyczne odświeżanie przez Supabase SDK przed wygaśnięciem
+- Ręczne odświeżanie przy 401 Unauthorized
+- Retry requestu z nowym tokenem
+
+**G. Middleware Astro:**
+- Sprawdzanie sesji przy każdym żądaniu
+- Przekierowanie zalogowanych użytkowników z /login i /register do /app
+- Przekierowanie niezalogowanych użytkowników z /app/* do /login
+
+### 2. Główni aktorzy i interakcje
+
+**Aktorzy:**
+1. **Przeglądarka** - Interfejs użytkownika (React Islands w Astro)
+2. **Middleware Astro** - Middleware sprawdzający sesję i obsługujący przekierowania
+3. **Supabase Auth** - Serwis autentykacji (rejestracja, logowanie, weryfikacja tokenów)
+4. **FastAPI Backend** - Backend API z weryfikacją JWT
+
+**Interakcje:**
+- Przeglądarka ↔ Middleware Astro: Sprawdzanie sesji przy każdym żądaniu
+- Przeglądarka ↔ Supabase Auth: Rejestracja, logowanie, wylogowanie, odświeżanie tokenu
+- Przeglądarka ↔ FastAPI Backend: Żądania API z JWT tokenem
+- FastAPI Backend ↔ Supabase Auth: Weryfikacja JWT (używając JWT secret)
+
+### 3. Procesy weryfikacji i odświeżania tokenów
+
+**Weryfikacja tokenu:**
+- JWT access token zawiera user_id w claim "sub"
+- Backend dekoduje token używając Supabase JWT secret
+- Weryfikacja sygnatury i czasu wygaśnięcia
+- Ekstrakcja user_id dla autoryzacji
+
+**Odświeżanie tokenu:**
+- Access token wygasa po 15 minutach
+- Refresh token przechowywany w HttpOnly cookie (7 dni)
+- Automatyczne odświeżanie przez Supabase SDK
+- Przy 401: próba odświeżenia, retry requestu lub przekierowanie do /login
+
+### 4. Opis kroków autentykacji
+
+**Rejestracja:**
+1. Użytkownik wypełnia formularz → walidacja client-side
+2. Wywołanie signUp → Supabase waliduje i tworzy użytkownika
+3. Supabase zwraca sesję → automatyczne logowanie
+4. Przekierowanie do /app
+
+**Logowanie:**
+1. Użytkownik wypełnia formularz → walidacja client-side
+2. Wywołanie signInWithPassword → Supabase weryfikuje hasło
+3. Supabase generuje JWT i refresh token → zwraca sesję
+4. Zapisanie tokenów → przekierowanie do /app
+
+**Żądanie API:**
+1. Przeglądarka dodaje JWT do header Authorization
+2. FastAPI weryfikuje JWT → ekstrakcja user_id
+3. Wykonanie żądania z user_id → zwrócenie odpowiedzi
+
+**Odświeżanie tokenu:**
+1. Wykrycie 401 lub wygaśnięcia tokenu
+2. Wywołanie refreshSession → Supabase generuje nowy access token
+3. Retry requestu z nowym tokenem
+
+</authentication_analysis>
+
+<mermaid_diagram>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Browser as Przeglądarka
+    participant Middleware as Middleware Astro
+    participant Supabase as Supabase Auth
+    participant Backend as FastAPI Backend
+
+    Note over Browser,Backend: Przepływ rejestracji użytkownika
+
+    Browser->>Browser: Wypełnienie formularza rejestracji
+    Browser->>Browser: Walidacja client-side
+    activate Browser
+    Browser->>Supabase: signUp(email, password)
+    activate Supabase
+    Supabase->>Supabase: Walidacja danych
+    Supabase->>Supabase: Hashowanie hasła (Bcrypt)
+    Supabase->>Supabase: Tworzenie użytkownika
+    Supabase->>Supabase: Generowanie JWT token
+    Supabase-->>Browser: Zwrócenie sesji (JWT + refresh)
+    deactivate Supabase
+    Browser->>Browser: Zapisanie sesji
+    Browser->>Browser: Przekierowanie do /app
+    deactivate Browser
+
+    Note over Browser,Backend: Przepływ logowania użytkownika
+
+    Browser->>Browser: Wypełnienie formularza logowania
+    Browser->>Browser: Walidacja client-side
+    activate Browser
+    Browser->>Supabase: signInWithPassword(email, password)
+    activate Supabase
+    Supabase->>Supabase: Weryfikacja hasła
+    Supabase->>Supabase: Generowanie JWT (15 min)
+    Supabase->>Supabase: Generowanie refresh token (7 dni)
+    Supabase-->>Browser: Zwrócenie sesji
+    deactivate Supabase
+    Browser->>Browser: Zapisanie access token (localStorage)
+    Browser->>Browser: Zapisanie refresh token (HttpOnly cookie)
+    Browser->>Browser: Przekierowanie do /app
+    deactivate Browser
+
+    Note over Browser,Backend: Middleware sprawdzanie sesji
+
+    Browser->>Middleware: Żądanie strony /app
+    activate Middleware
+    Middleware->>Supabase: getSession()
+    activate Supabase
+    Supabase-->>Middleware: Zwrócenie sesji lub null
+    deactivate Supabase
+    alt Sesja istnieje
+        Middleware-->>Browser: Renderowanie strony /app
+    else Brak sesji
+        Middleware-->>Browser: Przekierowanie do /login
+    end
+    deactivate Middleware
+
+    Note over Browser,Backend: Żądanie API z weryfikacją tokenu
+
+    Browser->>Browser: Przygotowanie żądania API
+    activate Browser
+    Browser->>Browser: Pobranie JWT z sesji
+    Browser->>Backend: GET /api/v1/queries (Authorization: Bearer JWT)
+    activate Backend
+    Backend->>Backend: Dekodowanie JWT
+    Backend->>Backend: Weryfikacja sygnatury (JWT secret)
+    alt Token prawidłowy
+        Backend->>Backend: Ekstrakcja user_id
+        Backend->>Backend: Wykonanie żądania
+        Backend-->>Browser: Zwrócenie danych (200 OK)
+    else Token nieprawidłowy lub wygasły
+        Backend-->>Browser: 401 Unauthorized
+    end
+    deactivate Backend
+
+    Note over Browser,Backend: Odświeżanie tokenu przy 401
+
+    Browser->>Browser: Otrzymanie 401 Unauthorized
+    activate Browser
+    Browser->>Supabase: refreshSession()
+    activate Supabase
+    alt Refresh token prawidłowy
+        Supabase->>Supabase: Generowanie nowego JWT
+        Supabase-->>Browser: Nowa sesja
+        deactivate Supabase
+        Browser->>Backend: Retry requestu z nowym JWT
+        activate Backend
+        Backend->>Backend: Weryfikacja nowego JWT
+        Backend-->>Browser: Zwrócenie danych (200 OK)
+        deactivate Backend
+    else Refresh token wygasły
+        Supabase-->>Browser: Błąd odświeżania
+        deactivate Supabase
+        Browser->>Browser: Przekierowanie do /login?expired=true
+    end
+    deactivate Browser
+
+    Note over Browser,Backend: Wylogowanie użytkownika
+
+    Browser->>Browser: Kliknięcie przycisku wylogowania
+    activate Browser
+    Browser->>Supabase: signOut()
+    activate Supabase
+    Supabase->>Supabase: Unieważnienie refresh token
+    Supabase->>Supabase: Usunięcie sesji
+    Supabase-->>Browser: Potwierdzenie wylogowania
+    deactivate Supabase
+    Browser->>Browser: Usunięcie tokenów z localStorage
+    Browser->>Browser: Przekierowanie do /login
+    deactivate Browser
+
+    Note over Browser,Backend: Odzyskiwanie hasła - żądanie resetu
+
+    Browser->>Browser: Wypełnienie formularza forgot-password
+    activate Browser
+    Browser->>Supabase: resetPasswordForEmail(email)
+    activate Supabase
+    Supabase->>Supabase: Generowanie tokenu resetującego
+    Supabase->>Supabase: Wysłanie emaila z linkiem
+    Supabase-->>Browser: Komunikat sukcesu (nawet jeśli email nie istnieje)
+    deactivate Supabase
+    Browser->>Browser: Wyświetlenie komunikatu sukcesu
+    deactivate Browser
+
+    Note over Browser,Backend: Odzyskiwanie hasła - reset hasła
+
+    Browser->>Browser: Otwarcie linku z emaila (token w URL)
+    activate Browser
+    Browser->>Browser: Wypełnienie formularza reset-password
+    Browser->>Supabase: updateUser({ password })
+    activate Supabase
+    Supabase->>Supabase: Weryfikacja tokenu resetującego
+    Supabase->>Supabase: Hashowanie nowego hasła
+    Supabase->>Supabase: Aktualizacja hasła
+    Supabase->>Supabase: Unieważnienie innych sesji
+    Supabase-->>Browser: Potwierdzenie zmiany hasła
+    deactivate Supabase
+    Browser->>Browser: Przekierowanie do /login?passwordReset=true
+    deactivate Browser
+
+```
+
+</mermaid_diagram>
