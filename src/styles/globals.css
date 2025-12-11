@@ -4,47 +4,49 @@
 
 @layer base {
   :root {
-    /* Base radius - Fluent 2.0 */
-    --radius: 0.625rem; /* 10px */
-    --radius-sm: calc(var(--radius) - 4px); /* 2px */
-    --radius-md: calc(var(--radius) - 2px); /* 6px */
-    --radius-lg: var(--radius); /* 10px */
-    --radius-xl: calc(var(--radius) + 4px); /* 14px */
+    /* Base radius - Fluent 2.0 (Professional SaaS) */
+    --radius: 0.5rem; /* 8px - Fluent 2.0 standard */
+    --radius-sm: 0.25rem; /* 4px */
+    --radius-md: 0.375rem; /* 6px */
+    --radius-lg: 0.5rem; /* 8px - cards, inputs */
+    --radius-xl: 0.75rem; /* 12px - modals, elevated surfaces */
 
-    /* Colors - Light mode (HSL for compatibility) */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Colors - Light mode - Professional Legal Theme (Deep Navy) */
+    --background: 222 47% 98%; /* Slate-50 - not pure white */
+    --foreground: 222 47% 11%; /* Slate-900 text */
+    --card: 0 0% 100%; /* Pure white cards for contrast */
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --primary-hover: 221.2 83.2% 48%;
-    --primary-active: 221.2 83.2% 43%;
-    --primary-disabled: 221.2 20% 70%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --popover-foreground: 222 47% 11%;
+    /* Primary: Deep Navy - trustworthy, authoritative */
+    --primary: 220 80% 30%; /* Deep Navy Blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 220 80% 25%; /* Darker on hover */
+    --primary-active: 220 80% 20%; /* Even darker on click */
+    --primary-disabled: 220 20% 65%; /* Desaturated */
+    /* Secondary: Subtle Purple accent (AI context) */
+    --secondary: 250 25% 92%; /* Very light purple-grey */
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 250 30% 94%; /* Subtle purple tint */
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 88%; /* Subtle borders */
+    --input: 220 20% 92%;
+    --ring: 220 80% 30%; /* Matches primary */
 
     /* Semantic colors */
     --success: 142 76% 36%;
     --warning: 38 92% 50%;
-    --error: 0 84.2% 60.2%;
+    --error: 0 84% 60%;
     --info: 217 91% 60%;
 
-    /* Surface colors */
-    --surface-base: 0 0% 100%;
-    --surface-elevated: 0 0% 98%;
-    --surface-overlay: 0 0% 96%;
+    /* Surface colors - distinct layers */
+    --surface-base: 222 47% 98%; /* Matches background */
+    --surface-elevated: 0 0% 100%; /* White cards */
+    --surface-overlay: 0 0% 100%;
 
     /* Typography - Fluent 2.0 */
     --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -85,14 +87,14 @@
     --spacing-12: 3rem; /* 48px */
     --spacing-16: 4rem; /* 64px */
 
-    /* Shadows - Fluent 2.0 */
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    /* Shadows - Enhanced for depth (Ambient + Directional) */
+    --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.06);
+    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.1);
+    --shadow-sm: 0 2px 4px -1px hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
+    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.25);
 
     /* Motion - Fluent 2.0 */
     --motion-duration-fast: 150ms;
@@ -147,52 +149,53 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 47.4% 11.2%;
+    /* Dark mode - Professional Navy theme (not pure black) */
+    --background: 222 47% 11%; /* Slate-900 */
+    --foreground: 210 40% 98%; /* Almost white text */
+    --card: 222 47% 15%; /* Slate-800 - elevated cards */
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 47.4% 13.5%;
+    --popover: 222 47% 18%;
     --popover-foreground: 210 40% 98%;
-    /* Neonowy zielony primary - OKLCH: oklch(0.8853 0.1908 162.0984) */
-    --primary: 162 85% 45%;
-    --primary-foreground: 162 30% 10%;
-    --primary-hover: 162 90% 50%;
-    --primary-active: 162 80% 40%;
-    --primary-disabled: 162 20% 30%;
-    /* Secondary z zielonym odcieniem */
-    --secondary: 162 25% 20%;
+    /* Primary: Royal Blue - brighter for dark mode contrast */
+    --primary: 220 70% 55%; /* Royal Blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 220 70% 60%; /* Lighter on hover */
+    --primary-active: 220 70% 50%; /* Slightly darker on click */
+    --primary-disabled: 220 20% 35%;
+    /* Secondary: Subtle Purple accent */
+    --secondary: 250 30% 20%; /* Dark purple-grey */
     --secondary-foreground: 210 40% 98%;
-    --muted: 222.2 47.4% 13.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 162 30% 18%;
+    --muted: 220 20% 18%;
+    --muted-foreground: 220 15% 65%;
+    --accent: 250 35% 22%; /* Purple tint */
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 162 20% 15%;
-    --input: 162 25% 18%;
-    --ring: 162 85% 45%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 25%; /* Subtle borders */
+    --input: 220 25% 20%;
+    --ring: 220 70% 55%; /* Matches primary */
 
     /* Semantic colors - Dark mode */
     --success: 142 70% 45%;
     --warning: 38 85% 55%;
-    --error: 0 62.8% 30.6%;
+    --error: 0 62% 50%;
     --info: 217 85% 65%;
 
-    /* Surface colors - Dark mode */
-    --surface-base: 222.2 84% 4.9%;
-    --surface-elevated: 222.2 47.4% 11.2%;
-    --surface-overlay: 222.2 47.4% 13.5%;
+    /* Surface colors - Dark mode with distinct layers */
+    --surface-base: 222 47% 11%; /* Matches background */
+    --surface-elevated: 222 47% 15%; /* Cards */
+    --surface-overlay: 222 47% 18%; /* Modals */
 
-    /* Shadows - Dark mode (lighter for visibility) */
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.3);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.3);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.4), 0 1px 2px -1px hsl(0 0% 0% / 0.4);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.4), 0 2px 4px -1px hsl(0 0% 0% / 0.4);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.4), 0 4px 6px -1px hsl(0 0% 0% / 0.4);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.4), 0 8px 10px -1px hsl(0 0% 0% / 0.4);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.5);
+    /* Shadows - Dark mode (stronger for depth on dark bg) */
+    --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.5);
+    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.5);
+    --shadow-sm: 0 2px 4px -1px hsl(0 0% 0% / 0.5), 0 1px 2px -1px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.5), 0 2px 4px -2px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.6), 0 8px 10px -6px hsl(0 0% 0% / 0.5);
+    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.7);
 
-    --modal-overlay: hsl(0 0% 0% / 0.7);
+    --modal-overlay: hsl(0 0% 0% / 0.8);
   }
 
   * {
@@ -265,6 +268,21 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+
+  /* Glassmorphism / Acrylic effect - Fluent 2.0 */
+  .glass-surface {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .dark .glass-surface {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid hsl(var(--border) / 0.3);
   }
 }
 

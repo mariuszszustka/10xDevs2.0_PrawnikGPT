@@ -1,32 +1,46 @@
 ---
 // HeroSection.astro - Główna sekcja hero z komunikatem produktu i CTA
 // Komponent statyczny (Astro), bez React islands
+// Updated with Fluent 2.0 Professional Design System
 ---
 
-<header class="py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white">
-  <div class="container mx-auto px-4">
+<header class="relative py-20 md:py-32 overflow-hidden">
+  <!-- Gradient Background with subtle pattern -->
+  <div class="absolute inset-0 bg-gradient-to-br from-background via-surface-base to-accent/5"></div>
+
+  <!-- Decorative elements for depth -->
+  <div class="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+  <div class="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+
+  <div class="container mx-auto px-4 relative z-10">
     <div class="max-w-4xl mx-auto text-center">
-      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+      <!-- Main Heading with Fluent Typography -->
+      <h1 class="text-display text-foreground mb-6 tracking-tight">
         Inteligentny asystent prawny oparty na AI
       </h1>
-      <p class="text-xl md:text-2xl text-gray-600 mb-4 max-w-2xl mx-auto">
+
+      <!-- Subtitle -->
+      <p class="text-body-large text-muted-foreground mb-4 max-w-2xl mx-auto">
         Zadawaj pytania w języku naturalnym i otrzymuj precyzyjne odpowiedzi oparte na polskich aktach prawnych.
       </p>
-      <p class="text-lg text-gray-500 mb-12 max-w-xl mx-auto">
+
+      <!-- Supporting text -->
+      <p class="text-body text-muted-foreground/80 mb-12 max-w-xl mx-auto">
         Wspieramy Cię w analizie 20 000 najnowszych ustaw i rozporządzeń.
       </p>
-      
+
+      <!-- CTA Buttons with elevation -->
       <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
         <a
           href="/register"
-          class="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+          class="inline-flex items-center justify-center px-8 py-4 bg-primary text-primary-foreground rounded-lg font-semibold text-body-large shadow-lg hover:shadow-xl hover:bg-primary-hover active:bg-primary-active transition-all duration-normal ease-standard focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           aria-label="Wypróbuj PrawnikGPT za darmo - przejdź do rejestracji"
         >
           Wypróbuj za darmo
         </a>
         <a
           href="/login"
-          class="px-8 py-4 bg-white text-gray-900 border-2 border-gray-300 rounded-lg font-semibold text-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+          class="inline-flex items-center justify-center px-8 py-4 bg-card text-foreground border-2 border-primary rounded-lg font-semibold text-body-large shadow-md hover:shadow-lg hover:bg-primary hover:text-primary-foreground transition-all duration-normal ease-standard focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           aria-label="Zaloguj się do istniejącego konta"
         >
           Zaloguj się

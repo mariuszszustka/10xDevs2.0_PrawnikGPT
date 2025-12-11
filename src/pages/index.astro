@@ -1,21 +1,23 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/layout/Header.astro';
 import HeroSection from '../components/landing/HeroSection.astro';
 import FeaturesSection from '../components/landing/FeaturesSection.astro';
 import ExampleQuestionsPreview from '../components/landing/ExampleQuestionsPreview.astro';
 import Footer from '../components/layout/Footer.astro';
 ---
 
-<BaseLayout 
+<BaseLayout
   title="PrawnikGPT - Inteligentny asystent prawny oparty na AI"
   description="Zadawaj pytania w języku naturalnym o polskie akty prawne. Otrzymuj precyzyjne odpowiedzi oparte na 20 000 najnowszych ustaw i rozporządzeń."
   ogImage="/og-image.png"
 >
+  <Header transparent />
   <main>
     <HeroSection />
     <FeaturesSection />
     <ExampleQuestionsPreview />
-    <Footer />
   </main>
+  <Footer />
 </BaseLayout>
 

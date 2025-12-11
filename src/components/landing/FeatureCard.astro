@@ -1,5 +1,6 @@
 ---
 // FeatureCard.astro - Reużywalna karta prezentująca pojedynczą funkcjonalność
+// Updated with Fluent 2.0 elevation and professional styling
 interface Props {
   icon: string; // Emoji lub SVG
   title: string;
@@ -9,14 +10,25 @@ interface Props {
 const { icon, title, description } = Astro.props;
 ---
 
-<div class="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-  <div class="text-5xl mb-4" role="img" aria-label={`Ikona dla ${title}`}>
-    {icon}
+<div
+  class="group flex flex-col items-center text-center p-8 bg-card rounded-lg shadow-lg border border-border/50 hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-normal ease-standard"
+>
+  <!-- Icon with gradient background -->
+  <div
+    class="flex items-center justify-center w-16 h-16 mb-6 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 group-hover:from-primary/20 group-hover:to-accent/20 transition-all duration-normal"
+    role="img"
+    aria-label={`Ikona dla ${title}`}
+  >
+    <span class="text-4xl">{icon}</span>
   </div>
-  <h3 class="text-xl font-bold text-gray-900 mb-3">
+
+  <!-- Title with Fluent Typography -->
+  <h3 class="text-headline font-semibold text-foreground mb-3">
     {title}
   </h3>
-  <p class="text-gray-600 leading-relaxed">
+
+  <!-- Description -->
+  <p class="text-body text-muted-foreground leading-relaxed">
     {description}
   </p>
 </div>

@@ -1,20 +1,28 @@
 ---
 // FeaturesSection.astro - Sekcja prezentująca trzy główne funkcjonalności
+// Updated with Fluent 2.0 Professional Design System
 import FeatureCard from './FeatureCard.astro';
 ---
 
-<section aria-label="Funkcjonalności produktu" class="py-16 md:py-24 bg-white">
+<section aria-label="Funkcjonalności produktu" class="py-20 md:py-32 bg-background">
   <div class="container mx-auto px-4">
     <div class="max-w-6xl mx-auto">
-      <h2 class="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12">
-        Dlaczego PrawnikGPT?
-      </h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Section Header -->
+      <div class="text-center mb-16">
+        <h2 class="text-title font-semibold text-foreground mb-4">
+          Dlaczego PrawnikGPT?
+        </h2>
+        <p class="text-body-large text-muted-foreground max-w-2xl mx-auto">
+          Profesjonalne narzędzie AI stworzone z myślą o prawnikach i aplikantach
+        </p>
+      </div>
+
+      <!-- Features Grid with enhanced spacing -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
         <FeatureCard
           icon="⚡"
           title="Szybko"
-          description="Odpowiedzi w &lt;15 sekund dzięki zaawansowanym modelom AI."
+          description="Odpowiedzi w <15 sekund dzięki zaawansowanym modelom AI."
         />
         <FeatureCard
           icon="🎯"
