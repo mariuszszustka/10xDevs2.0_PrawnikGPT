@@ -18,10 +18,10 @@ Features:
 
 import logging
 import time
-import httpx
 from typing import Optional, Dict, Any, List
 
 from backend.config import settings
+from backend.services.ollama_service import get_ollama_service
 from backend.services.exceptions import (
     OLLAMAUnavailableError,
     OLLAMATimeoutError,
@@ -158,6 +158,9 @@ async def generate_text(
     """
     Generate text using OLLAMA model.
     
+    This function now uses OllamaService for improved error handling,
+    retry logic, and resource management.
+    
     Args:
         prompt: Input prompt
         model: Model name (fast or accurate)
@@ -183,86 +186,19 @@ async def generate_text(
         )
         ```
     """
-    # Validation
-    if not prompt or len(prompt.strip()) == 0:
-        raise ValueError("Prompt cannot be empty")
+    service = get_ollama_service()
     
-    start_time = time.time()
-    
-    try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            # Build request payload
-            payload = {
-                "model": model,
-                "prompt": prompt,
-                "stream": stream,
-                "options": {
-                    "temperature": temperature,
-                    "top_p": DEFAULT_TOP_P,
-                    "top_k": DEFAULT_TOP_K
-                }
-            }
-            
-            # Add system prompt if provided
-            if system_prompt:
-                payload["system"] = system_prompt
-            
-            logger.info(
-                f"Starting generation with {model} "
-                f"(timeout={timeout}s, temp={temperature})"
-            )
-            
-            # Send request
-            response = await client.post(
-                f"{settings.ollama_host}/api/generate",
-                json=payload
-            )
-            
-            if response.status_code != 200:
-                logger.error(f"OLLAMA error: HTTP {response.status_code}")
-                raise OLLAMAUnavailableError(
-                    f"OLLAMA generation failed: HTTP {response.status_code}"
-                )
-            
-            # Parse response
-            data = response.json()
-            generated_text = data.get("response", "")
-            
-            if not generated_text:
-                logger.error("Empty response from OLLAMA")
-                raise OLLAMAUnavailableError("OLLAMA returned empty response")
-            
-            generation_time = time.time() - start_time
-            logger.info(
-                f"Generation completed: {len(generated_text)} chars "
-                f"in {generation_time:.2f}s with {model}"
-            )
-            
-            return generated_text.strip()
-            
-    except httpx.TimeoutException:
-        generation_time = time.time() - start_time
-        logger.error(f"Generation timeout after {generation_time:.2f}s with {model}")
-        
-        if model == FAST_MODEL:
-            raise GenerationTimeoutError(
-                f"Fast generation timed out after {timeout}s"
-            )
-        else:
-            raise OLLAMATimeoutError(
-                f"Accurate generation timed out after {timeout}s"
-            )
-    
-    except httpx.ConnectError:
-        logger.error(f"Cannot connect to OLLAMA service: {settings.ollama_host}")
-        raise OLLAMAUnavailableError("OLLAMA service unavailable")
-    
-    except (OLLAMAUnavailableError, GenerationTimeoutError):
-        raise  # Re-raise our custom errors
-    
-    except Exception as e:
-        logger.error(f"Unexpected error during generation: {e}")
-        raise OLLAMAUnavailableError(f"Generation failed: {e}")
+    # Use OllamaService.generate_text() with all parameters
+    return await service.generate_text(
+        prompt=prompt,
+        model=model,
+        system_prompt=system_prompt,
+        temperature=temperature,
+        top_p=DEFAULT_TOP_P,
+        top_k=DEFAULT_TOP_K,
+        timeout=timeout,
+        stream=stream
+    )
 
 
 async def generate_text_fast(

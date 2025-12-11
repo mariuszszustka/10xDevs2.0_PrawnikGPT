@@ -1,36 +1,51 @@
 """
-PrawnikGPT Backend - OLLAMA Service Tests
+PrawnikGPT Backend - Ollama Service Tests
 
-Unit tests for OLLAMA embedding service:
+Unit tests for OllamaService:
+- Health checks
+- Model validation
+- Text generation
+- Structured outputs (JSON)
 - Embedding generation
-- Model health check
-- Error handling
+- Error handling and retry logic
 """
 
 import pytest
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 from typing import List
 
+import httpx
+
 from backend.services.ollama_service import (
-    generate_embedding,
-    OLLAMAClient,
-    ollama_client
+    OllamaService,
+    get_ollama_service,
+    generate_embedding  # Compatibility function
 )
 from backend.services.exceptions import (
     OLLAMAUnavailableError,
     OLLAMATimeoutError,
-    EmbeddingGenerationError
+    EmbeddingGenerationError,
+    ModelNotFoundError,
+    OutOfMemoryError
 )
-from backend.config import settings
-
-# Constants from settings
-EMBEDDING_MODEL = settings.ollama_embedding_model  # nomic-embed-text
-EMBEDDING_DIM = 768  # Standard dimension for nomic-embed-text
 
 
 # =========================================================================
 # FIXTURES
 # =========================================================================
+
+@pytest.fixture
+def ollama_service():
+    """Create OllamaService instance for testing."""
+    return OllamaService(
+        base_url="http://localhost:11434",
+        timeout_connect=5,
+        timeout_read=60,
+        max_retries=2,
+        retry_delay=0.1  # Fast retry for tests
+    )
+
 
 @pytest.fixture
 def sample_embedding_768() -> List[float]:
@@ -44,327 +59,418 @@ def sample_text() -> str:
     return "Jakie są podstawowe prawa konsumenta w Polsce?"
 
 
-# =========================================================================
-# CONFIGURATION TESTS
-# =========================================================================
-
-class TestOLLAMAConfiguration:
-    """Tests for OLLAMA configuration constants."""
-
-    def test_embedding_model_name(self):
-        """Verify embedding model name."""
-        assert EMBEDDING_MODEL == "nomic-embed-text"
-
-    def test_embedding_dimension(self):
-        """Verify embedding dimension (768 for nomic)."""
-        assert EMBEDDING_DIM == 768
-
-
-# =========================================================================
-# GENERATE EMBEDDING TESTS
-# =========================================================================
-
-class TestGenerateEmbedding:
-    """Tests for embedding generation."""
-
-    @pytest.mark.asyncio
-    async def test_generate_embedding_success(self, sample_text, sample_embedding_768):
-        """Test successful embedding generation."""
-        mock_response = {
-            "embedding": sample_embedding_768
-        }
-
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.post.return_value = MagicMock(
-                status_code=200,
-                json=MagicMock(return_value=mock_response)
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            embedding = await generate_embedding(sample_text)
-
-            assert len(embedding) == EMBEDDING_DIM
-            assert embedding == sample_embedding_768
-            
-            # Verify correct model was used
-            call_args = mock_instance.post.call_args
-            assert call_args[1]["json"]["model"] == EMBEDDING_MODEL
-
-    @pytest.mark.asyncio
-    async def test_generate_embedding_normalizes_whitespace(self, sample_embedding_768):
-        """Test embedding generation normalizes input text."""
-        text_with_extra_whitespace = "  Pytanie  z  wieloma    spacjami  "
-        
-        mock_response = {"embedding": sample_embedding_768}
-
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.post.return_value = MagicMock(
-                status_code=200,
-                json=MagicMock(return_value=mock_response)
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            embedding = await generate_embedding(text_with_extra_whitespace)
-
-            # Should succeed
-            assert len(embedding) == EMBEDDING_DIM
-
-    @pytest.mark.asyncio
-    async def test_generate_embedding_empty_text(self):
-        """Test embedding generation with empty text."""
-        with pytest.raises(EmbeddingGenerationError) as exc_info:
-            await generate_embedding("")
-        
-        assert "empty" in str(exc_info.value).lower()
-
-    @pytest.mark.asyncio
-    async def test_generate_embedding_whitespace_only(self):
-        """Test embedding generation with whitespace-only text."""
-        with pytest.raises(EmbeddingGenerationError) as exc_info:
-            await generate_embedding("   ")
-        
-        assert "empty" in str(exc_info.value).lower()
-
-    @pytest.mark.asyncio
-    async def test_generate_embedding_connection_error(self, sample_text):
-        """Test embedding generation connection error."""
-        import httpx
-        
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.post.side_effect = httpx.ConnectError("Connection refused")
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            with pytest.raises(OLLAMAUnavailableError):
-                await generate_embedding(sample_text)
-
-    @pytest.mark.asyncio
-    async def test_generate_embedding_timeout(self, sample_text):
-        """Test embedding generation timeout."""
-        import httpx
-        
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.post.side_effect = httpx.TimeoutException("Timeout")
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            with pytest.raises(OLLAMATimeoutError):
-                await generate_embedding(sample_text)
-
-    @pytest.mark.asyncio
-    async def test_generate_embedding_500_error(self, sample_text):
-        """Test embedding generation server error."""
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.post.return_value = MagicMock(
-                status_code=500,
-                text="Internal Server Error"
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            with pytest.raises(EmbeddingGenerationError):
-                await generate_embedding(sample_text)
-
-    @pytest.mark.asyncio
-    async def test_generate_embedding_malformed_response(self, sample_text):
-        """Test embedding generation with malformed response."""
-        mock_response = {"wrong_key": []}  # Missing 'embedding' key
-
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.post.return_value = MagicMock(
-                status_code=200,
-                json=MagicMock(return_value=mock_response)
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            with pytest.raises((EmbeddingGenerationError, KeyError)):
-                await generate_embedding(sample_text)
+@pytest.fixture
+def mock_httpx_client():
+    """Mock httpx.AsyncClient for testing."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+    return mock_client
 
 
 # =========================================================================
 # HEALTH CHECK TESTS
 # =========================================================================
 
-class TestOLLAMAClientHealth:
-    """Tests for OLLAMA client health check."""
+class TestHealthCheck:
+    """Tests for health_check() method."""
 
     @pytest.mark.asyncio
-    async def test_health_check_success(self):
+    async def test_health_check_success(self, ollama_service, mock_httpx_client):
         """Test successful health check."""
-        client = OLLAMAClient()
-
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.get.return_value = MagicMock(
-                status_code=200
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            is_healthy = await client.health_check()
-
-            assert is_healthy is True
-
-    @pytest.mark.asyncio
-    async def test_health_check_connection_error(self):
-        """Test health check connection error."""
-        import httpx
-        client = OLLAMAClient()
+        mock_response = MagicMock(status_code=200)
+        mock_httpx_client.get = AsyncMock(return_value=mock_response)
         
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.get.side_effect = httpx.ConnectError("Connection refused")
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            is_healthy = await client.health_check()
-
-            assert is_healthy is False
-
-    @pytest.mark.asyncio
-    async def test_health_check_server_error(self):
-        """Test health check server error."""
-        client = OLLAMAClient()
-        
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.get.return_value = MagicMock(
-                status_code=500,
-                text="Internal Server Error"
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            is_healthy = await client.health_check()
-
-            assert is_healthy is False
-
-
-# =========================================================================
-# LIST MODELS TESTS
-# =========================================================================
-
-class TestOLLAMAClientListModels:
-    """Tests for OLLAMA client model listing."""
-
-    @pytest.mark.asyncio
-    async def test_list_models_success(self):
-        """Test successful model listing."""
-        client = OLLAMAClient()
-        mock_response = {
-            "models": [
-                {"name": "nomic-embed-text"},
-                {"name": "mistral:7b"},
-                {"name": "gpt-oss:120b"}
-            ]
-        }
-
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.get.return_value = MagicMock(
-                status_code=200,
-                json=MagicMock(return_value=mock_response)
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            models = await client.list_models()
-
-            assert len(models) == 3
-            assert "nomic-embed-text" in models
-            assert "mistral:7b" in models
-
-    @pytest.mark.asyncio
-    async def test_list_models_empty(self):
-        """Test empty model list."""
-        client = OLLAMAClient()
-        mock_response = {"models": []}
-
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.get.return_value = MagicMock(
-                status_code=200,
-                json=MagicMock(return_value=mock_response)
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            models = await client.list_models()
-
-            assert models == []
-
-    @pytest.mark.asyncio
-    async def test_list_models_connection_error(self):
-        """Test model listing connection error."""
-        import httpx
-        client = OLLAMAClient()
-        
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.get.side_effect = httpx.ConnectError("Connection refused")
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            with pytest.raises(OLLAMAUnavailableError):
-                await client.list_models()
-
-
-# =========================================================================
-# INTEGRATION-STYLE TESTS
-# =========================================================================
-
-class TestOLLAMAIntegration:
-    """Integration-style tests for OLLAMA service."""
-
-    @pytest.mark.asyncio
-    async def test_embedding_then_health_check(self, sample_embedding_768):
-        """Test embedding generation followed by health check."""
-        client = OLLAMAClient()
-        embed_response = {"embedding": sample_embedding_768}
-
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            result = await ollama_service.health_check()
             
-            # Configure sequential responses
-            mock_instance.post.return_value = MagicMock(
-                status_code=200,
-                json=MagicMock(return_value=embed_response)
-            )
-            mock_instance.get.return_value = MagicMock(
-                status_code=200
-            )
-            mock_client.return_value.__aenter__.return_value = mock_instance
-
-            # Generate embedding
-            embedding = await generate_embedding("Test text")
-            assert len(embedding) == EMBEDDING_DIM
-
-            # Check health
-            is_healthy = await client.health_check()
-            assert is_healthy is True
+            assert result is True
+            assert ollama_service.is_available is True
 
     @pytest.mark.asyncio
-    async def test_batch_embeddings(self, sample_embedding_768):
-        """Test generating multiple embeddings."""
-        texts = [
-            "Pytanie o prawa konsumenta",
-            "Pytanie o kodeks cywilny",
-            "Pytanie o prawo pracy"
-        ]
+    async def test_health_check_connection_error(self, ollama_service, mock_httpx_client):
+        """Test health check with connection error."""
+        mock_httpx_client.get = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
         
-        mock_response = {"embedding": sample_embedding_768}
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            result = await ollama_service.health_check()
+            
+            assert result is False
+            assert ollama_service.is_available is False
 
-        with patch('backend.services.ollama_service.httpx.AsyncClient') as mock_client:
-            mock_instance = AsyncMock()
-            mock_instance.post.return_value = MagicMock(
-                status_code=200,
-                json=MagicMock(return_value=mock_response)
+    @pytest.mark.asyncio
+    async def test_health_check_timeout(self, ollama_service, mock_httpx_client):
+        """Test health check with timeout."""
+        mock_httpx_client.get = AsyncMock(side_effect=httpx.TimeoutException("Timeout"))
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            result = await ollama_service.health_check()
+            
+            assert result is False
+
+    @pytest.mark.asyncio
+    async def test_health_check_cache(self, ollama_service, mock_httpx_client):
+        """Test health check caching."""
+        import time
+        
+        mock_response = MagicMock(status_code=200)
+        mock_httpx_client.get = AsyncMock(return_value=mock_response)
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            # First call
+            result1 = await ollama_service.health_check()
+            assert result1 is True
+            
+            # Second call should use cache (no new HTTP call)
+            result2 = await ollama_service.health_check()
+            assert result2 is True
+            
+            # Verify only one HTTP call was made
+            assert mock_httpx_client.get.call_count == 1
+
+
+# =========================================================================
+# MODEL VALIDATION TESTS
+# =========================================================================
+
+class TestModelValidation:
+    """Tests for validate_model() and list_models() methods."""
+
+    @pytest.mark.asyncio
+    async def test_list_models_success(self, ollama_service, mock_httpx_client):
+        """Test successful model listing."""
+        mock_response = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                "models": [
+                    {"name": "mistral:7b"},
+                    {"name": "gpt-oss:120b"},
+                    {"name": "nomic-embed-text"}
+                ]
+            })
+        )
+        mock_httpx_client.get = AsyncMock(return_value=mock_response)
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            models = await ollama_service.list_models()
+            
+            assert len(models) == 3
+            assert "mistral:7b" in models
+            assert "gpt-oss:120b" in models
+            assert ollama_service.available_models == models
+
+    @pytest.mark.asyncio
+    async def test_validate_model_success(self, ollama_service, mock_httpx_client):
+        """Test successful model validation."""
+        mock_response = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                "models": [{"name": "mistral:7b"}]
+            })
+        )
+        mock_httpx_client.get = AsyncMock(return_value=mock_response)
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            result = await ollama_service.validate_model("mistral:7b")
+            
+            assert result is True
+            assert ollama_service._model_cache["mistral:7b"] is True
+
+    @pytest.mark.asyncio
+    async def test_validate_model_not_found(self, ollama_service, mock_httpx_client):
+        """Test model validation when model doesn't exist."""
+        mock_response = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                "models": [{"name": "mistral:7b"}]
+            })
+        )
+        mock_httpx_client.get = AsyncMock(return_value=mock_response)
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            result = await ollama_service.validate_model("nonexistent:model")
+            
+            assert result is False
+            assert ollama_service._model_cache["nonexistent:model"] is False
+
+
+# =========================================================================
+# TEXT GENERATION TESTS
+# =========================================================================
+
+class TestTextGeneration:
+    """Tests for generate_text() method."""
+
+    @pytest.mark.asyncio
+    async def test_generate_text_success(self, ollama_service, mock_httpx_client):
+        """Test successful text generation."""
+        mock_response = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                "response": "To jest przykładowa odpowiedź."
+            })
+        )
+        mock_httpx_client.post = AsyncMock(return_value=mock_response)
+        
+        # Mock validate_model to return True
+        with patch.object(ollama_service, 'validate_model', return_value=True), \
+             patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            
+            result = await ollama_service.generate_text(
+                prompt="Test prompt",
+                model="mistral:7b",
+                timeout=15
             )
-            mock_client.return_value.__aenter__.return_value = mock_instance
+            
+            assert result == "To jest przykładowa odpowiedź."
+            assert mock_httpx_client.post.called
 
-            embeddings = []
-            for text in texts:
-                embedding = await generate_embedding(text)
-                embeddings.append(embedding)
+    @pytest.mark.asyncio
+    async def test_generate_text_model_not_found(self, ollama_service):
+        """Test text generation with non-existent model."""
+        with patch.object(ollama_service, 'validate_model', return_value=False), \
+             patch.object(ollama_service, 'list_models', return_value=["other:model"]):
+            
+            with pytest.raises(ModelNotFoundError):
+                await ollama_service.generate_text(
+                    prompt="Test",
+                    model="nonexistent:model",
+                    timeout=15
+                )
 
-            assert len(embeddings) == 3
-            for emb in embeddings:
-                assert len(emb) == EMBEDDING_DIM
+    @pytest.mark.asyncio
+    async def test_generate_text_timeout(self, ollama_service, mock_httpx_client):
+        """Test text generation timeout."""
+        mock_httpx_client.post = AsyncMock(side_effect=httpx.TimeoutException("Timeout"))
+        
+        with patch.object(ollama_service, 'validate_model', return_value=True), \
+             patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            
+            with pytest.raises(OLLAMATimeoutError):
+                await ollama_service.generate_text(
+                    prompt="Test",
+                    model="mistral:7b",
+                    timeout=15
+                )
 
+    @pytest.mark.asyncio
+    async def test_generate_text_out_of_memory(self, ollama_service, mock_httpx_client):
+        """Test text generation with OOM error."""
+        mock_response = MagicMock(
+            status_code=500,
+            text="out of memory"
+        )
+        mock_httpx_client.post = AsyncMock(return_value=mock_response)
+        
+        with patch.object(ollama_service, 'validate_model', return_value=True), \
+             patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            
+            with pytest.raises(OutOfMemoryError):
+                await ollama_service.generate_text(
+                    prompt="Test",
+                    model="gpt-oss:120b",
+                    timeout=240
+                )
+
+    @pytest.mark.asyncio
+    async def test_generate_text_empty_prompt(self, ollama_service):
+        """Test text generation with empty prompt."""
+        with pytest.raises(ValueError, match="empty"):
+            await ollama_service.generate_text(
+                prompt="",
+                model="mistral:7b",
+                timeout=15
+            )
+
+    @pytest.mark.asyncio
+    async def test_generate_text_invalid_temperature(self, ollama_service):
+        """Test text generation with invalid temperature."""
+        with pytest.raises(ValueError, match="Temperature"):
+            await ollama_service.generate_text(
+                prompt="Test",
+                model="mistral:7b",
+                temperature=2.0,  # Invalid: > 1.0
+                timeout=15
+            )
+
+
+# =========================================================================
+# STRUCTURED OUTPUT TESTS
+# =========================================================================
+
+class TestStructuredOutput:
+    """Tests for generate_text_structured() method."""
+
+    @pytest.mark.asyncio
+    async def test_generate_text_structured_success(self, ollama_service, mock_httpx_client):
+        """Test successful structured JSON generation."""
+        json_response = {
+            "answer": "Odpowiedź testowa",
+            "sources": [{"act_title": "Test Act", "article": "Art. 1"}],
+            "confidence": 0.95
+        }
+        
+        mock_response = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                "response": json.dumps(json_response)
+            })
+        )
+        mock_httpx_client.post = AsyncMock(return_value=mock_response)
+        
+        schema = {
+            "type": "object",
+            "properties": {
+                "answer": {"type": "string"},
+                "sources": {"type": "array"},
+                "confidence": {"type": "number"}
+            }
+        }
+        
+        with patch.object(ollama_service, 'validate_model', return_value=True), \
+             patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            
+            result = await ollama_service.generate_text_structured(
+                prompt="Test prompt",
+                model="mistral:7b",
+                json_schema=schema
+            )
+            
+            assert result == json_response
+            assert "answer" in result
+            assert "sources" in result
+
+    @pytest.mark.asyncio
+    async def test_generate_text_structured_invalid_json(self, ollama_service, mock_httpx_client):
+        """Test structured generation with invalid JSON response."""
+        mock_response = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                "response": "This is not JSON"
+            })
+        )
+        mock_httpx_client.post = AsyncMock(return_value=mock_response)
+        
+        schema = {"type": "object"}
+        
+        with patch.object(ollama_service, 'validate_model', return_value=True), \
+             patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            
+            with pytest.raises(ValueError, match="JSON"):
+                await ollama_service.generate_text_structured(
+                    prompt="Test",
+                    model="mistral:7b",
+                    json_schema=schema
+                )
+
+
+# =========================================================================
+# EMBEDDING GENERATION TESTS
+# =========================================================================
+
+class TestEmbeddingGeneration:
+    """Tests for generate_embedding() method."""
+
+    @pytest.mark.asyncio
+    async def test_generate_embedding_success(self, ollama_service, mock_httpx_client, sample_embedding_768):
+        """Test successful embedding generation."""
+        mock_response = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                "embedding": sample_embedding_768
+            })
+        )
+        mock_httpx_client.post = AsyncMock(return_value=mock_response)
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            result = await ollama_service.generate_embedding("Test text")
+            
+            assert len(result) == 768
+            assert result == sample_embedding_768
+
+    @pytest.mark.asyncio
+    async def test_generate_embedding_empty_text(self, ollama_service):
+        """Test embedding generation with empty text."""
+        with pytest.raises(EmbeddingGenerationError, match="empty"):
+            await ollama_service.generate_embedding("")
+
+    @pytest.mark.asyncio
+    async def test_generate_embedding_timeout(self, ollama_service, mock_httpx_client):
+        """Test embedding generation timeout."""
+        mock_httpx_client.post = AsyncMock(side_effect=httpx.TimeoutException("Timeout"))
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client):
+            with pytest.raises(OLLAMATimeoutError):
+                await ollama_service.generate_embedding("Test text")
+
+    @pytest.mark.asyncio
+    async def test_generate_embedding_compatibility_function(self, sample_embedding_768):
+        """Test compatibility function generate_embedding()."""
+        with patch('backend.services.ollama_service.get_ollama_service') as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.generate_embedding = AsyncMock(return_value=sample_embedding_768)
+            mock_get_service.return_value = mock_service
+            
+            result = await generate_embedding("Test text")
+            
+            assert result == sample_embedding_768
+            mock_service.generate_embedding.assert_called_once_with("Test text", None, None)
+
+
+# =========================================================================
+# RETRY LOGIC TESTS
+# =========================================================================
+
+class TestRetryLogic:
+    """Tests for retry logic with exponential backoff."""
+
+    @pytest.mark.asyncio
+    async def test_retry_on_connection_error(self, ollama_service, mock_httpx_client):
+        """Test retry on connection error."""
+        # First call fails, second succeeds
+        mock_httpx_client.get = AsyncMock(
+            side_effect=[
+                httpx.ConnectError("Connection refused"),
+                MagicMock(status_code=200)
+            ]
+        )
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client), \
+             patch('asyncio.sleep', new_callable=AsyncMock):  # Mock sleep to speed up test
+            result = await ollama_service.health_check(force=True)
+            
+            assert result is True
+            assert mock_httpx_client.get.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_retry_exhausted(self, ollama_service, mock_httpx_client):
+        """Test retry exhausted after max attempts."""
+        mock_httpx_client.get = AsyncMock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+        
+        with patch.object(ollama_service, '_get_client', return_value=mock_httpx_client), \
+             patch('asyncio.sleep', new_callable=AsyncMock):
+            
+            with pytest.raises(OLLAMAUnavailableError):
+                await ollama_service.health_check(force=True)
+
+
+# =========================================================================
+# SINGLETON TESTS
+# =========================================================================
+
+class TestSingleton:
+    """Tests for singleton pattern."""
+
+    def test_get_ollama_service_singleton(self):
+        """Test that get_ollama_service() returns same instance."""
+        # Reset singleton
+        import backend.services.ollama_service as ollama_module
+        ollama_module._ollama_service = None
+        
+        service1 = get_ollama_service()
+        service2 = get_ollama_service()
+        
+        assert service1 is service2
+        assert isinstance(service1, OllamaService)

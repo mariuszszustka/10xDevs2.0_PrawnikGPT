@@ -11,11 +11,11 @@ All checks run asynchronously with timeouts to ensure fast responses.
 
 import logging
 import asyncio
-import httpx
 from typing import Literal
 
 from backend.config import settings
 from backend.db.supabase_client import check_database_health
+from backend.services.ollama_service import get_ollama_service
 
 logger = logging.getLogger(__name__)
 
@@ -61,28 +61,27 @@ async def check_ollama() -> ServiceStatus:
     """
     Check OLLAMA service availability.
     
-    Sends GET request to /api/version endpoint to verify service is running.
+    Uses OllamaService.health_check() for improved error handling and caching.
     Times out after 2 seconds.
     
     Returns:
         ServiceStatus: "ok" if responsive, "down" if not
     """
     try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            response = await client.get(f"{settings.ollama_host}/api/version")
+        # Use asyncio timeout to prevent hanging
+        async with asyncio.timeout(2.0):
+            service = get_ollama_service()
+            is_healthy = await service.health_check(force=False)  # Use cache
             
-            if response.status_code == 200:
+            if is_healthy:
                 logger.debug("OLLAMA health check: OK")
                 return "ok"
             else:
-                logger.warning(f"OLLAMA health check: FAILED (status {response.status_code})")
+                logger.warning("OLLAMA health check: FAILED")
                 return "down"
                 
-    except httpx.TimeoutException:
+    except asyncio.TimeoutError:
         logger.warning("OLLAMA health check: TIMEOUT")
-        return "down"
-    except httpx.ConnectError:
-        logger.warning("OLLAMA health check: CONNECTION REFUSED")
         return "down"
     except Exception as e:
         logger.error(f"OLLAMA health check: ERROR - {e}")

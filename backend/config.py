@@ -76,6 +76,11 @@ class Settings(BaseSettings):
     ollama_accurate_timeout: int = 240
     ollama_embedding_timeout: int = 30
     
+    # Rate limiting per model (max concurrent requests)
+    ollama_fast_model_concurrency: int = 5  # Fast model can handle more concurrent requests
+    ollama_accurate_model_concurrency: int = 2  # Accurate model is resource-intensive
+    ollama_embedding_model_concurrency: int = 10  # Embeddings are fast, can handle many
+    
     # =========================================================================
     # REDIS CONFIGURATION (Optional)
     # =========================================================================

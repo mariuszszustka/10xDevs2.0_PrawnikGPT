@@ -97,3 +97,13 @@ class GenerationTimeoutError(TimeoutError):
     """
     pass
 
+
+class ModelNotFoundError(OLLAMAUnavailableError):
+    """Raised when model is not found in Ollama"""
+    pass
+
+
+class OutOfMemoryError(OLLAMAUnavailableError):
+    """Raised when model requires more memory than available"""
+    pass
+

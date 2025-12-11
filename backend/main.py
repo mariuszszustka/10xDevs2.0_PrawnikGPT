@@ -18,6 +18,8 @@ from backend.middleware import (
     add_request_id_middleware,
     add_rate_limit_headers
 )
+from backend.services.ollama_service import get_ollama_service
+from backend.services.rag_pipeline import log_rag_pipeline_metrics, periodic_metrics_logging
 
 # =========================================================================
 # LOGGING CONFIGURATION
@@ -128,7 +130,8 @@ async def startup_event():
     
     Performs initialization tasks:
     - Log application configuration
-    - Verify service connectivity (optional)
+    - Verify service connectivity
+    - Warm up Ollama models (optional, non-blocking)
     """
     logger.info("=" * 80)
     logger.info("PrawnikGPT Backend Starting...")
@@ -140,6 +143,34 @@ async def startup_event():
     logger.info(f"OLLAMA Host: {settings.ollama_host}")
     logger.info(f"Redis URL: {settings.redis_url or 'Not configured (optional)'}")
     logger.info("=" * 80)
+    
+    # Warm up Ollama models (non-blocking, runs in background)
+    if settings.environment != "production" or settings.debug:
+        # Only warmup in development or if explicitly enabled
+        try:
+            ollama_service = get_ollama_service()
+            
+            # Check if Ollama is available
+            is_available = await ollama_service.health_check(force=True)
+            if is_available:
+                logger.info("Ollama is available, starting model warmup...")
+                
+                # Warm up models in background (don't block startup)
+                import asyncio
+                asyncio.create_task(ollama_service.warmup_models())
+                logger.info("Model warmup started in background")
+            else:
+                logger.warning("Ollama is not available, skipping model warmup")
+        except Exception as e:
+            logger.warning(f"Failed to warm up models (non-fatal): {e}")
+    else:
+        logger.info("Model warmup skipped (production mode, set DEBUG=true to enable)")
+    
+    # Start periodic metrics logging (every 5 minutes)
+    if settings.debug:
+        import asyncio
+        asyncio.create_task(periodic_metrics_logging(interval_seconds=300))
+        logger.info("Periodic metrics logging started (every 5 minutes)")
 
 
 @app.on_event("shutdown")

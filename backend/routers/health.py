@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 
 from backend.models.health import HealthResponse, ServiceHealthStatus
 from backend.services.health_check import perform_health_check
+from backend.services.rag_pipeline import get_rag_pipeline_metrics
 from backend.middleware.rate_limit import check_rate_limit_health
 from backend.config import settings
 
@@ -45,6 +46,13 @@ router = APIRouter(
 
 @router.get(
     "/health",
+    summary="System health check",
+    description="""
+    Check health status of all critical services.
+    
+    Optional query parameter:
+    - `metrics=true`: Include RAG pipeline metrics in response
+    """,
     response_model=HealthResponse,
     status_code=status.HTTP_200_OK,
     summary="System Health Check",
@@ -131,5 +139,47 @@ async def health_check():
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content=error_response.model_dump(mode='json')
+        )
+
+
+@router.get(
+    "/health/metrics",
+    summary="RAG Pipeline Metrics",
+    description="""
+    Get performance metrics for RAG pipeline.
+    
+    Returns aggregated statistics including:
+    - Generation times (fast/accurate models)
+    - Pipeline execution times
+    - Step-by-step durations
+    - Success/failure rates
+    - Cache hit rates
+    
+    This endpoint does not require authentication.
+    """,
+    response_description="RAG pipeline performance metrics"
+)
+async def health_metrics():
+    """
+    GET /health/metrics - RAG pipeline metrics endpoint.
+    
+    Returns current aggregated metrics for RAG pipeline including:
+    - Generation times (average, min, max) for fast/accurate responses
+    - Pipeline execution times
+    - Individual step durations
+    - Success/failure rates
+    - Cache hit rate
+    
+    Returns:
+        dict: Aggregated metrics dictionary
+    """
+    try:
+        metrics = get_rag_pipeline_metrics()
+        return metrics
+    except Exception as e:
+        logger.error(f"Metrics endpoint failed: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "Failed to retrieve metrics"}
         )
 
