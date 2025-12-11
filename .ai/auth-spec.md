@@ -8,6 +8,18 @@
 
 Niniejsza specyfikacja opisuje szczegółową architekturę modułu rejestracji, logowania i odzyskiwania hasła użytkowników dla aplikacji PrawnikGPT. Moduł jest oparty na Supabase Auth i integruje się z istniejącą architekturą Astro 5 + React 19 oraz FastAPI backend.
 
+### 1.3. Weryfikacja zgodności z PRD
+
+**Status weryfikacji:** ✅ Zaktualizowano zgodnie z PRD
+
+**Znalezione i naprawione sprzeczności:**
+1. ✅ **Refresh Token storage:** Zaktualizowano wymaganie użycia HttpOnly cookies (PRD 9.2.2) - wymagane użycie Supabase Auth Helpers (`@supabase/ssr`)
+2. ✅ **MFA/2FA:** Zmieniono status z "opcjonalnie" na "wymagane" zgodnie z PRD 9.2.3 (system musi umożliwiać włączenie MFA)
+3. ✅ **Ważność tokenu resetującego hasło:** Doprecyzowano zgodnie z PRD 9.2.5 (15-30 minut)
+4. ✅ **Konfiguracja Supabase Client:** Zaktualizowano przykład kodu na użycie `createBrowserClient` z `@supabase/ssr`
+
+**Wszystkie User Stories (US-001, US-002) są w pełni pokryte przez specyfikację.**
+
 ### 1.1. Zakres funkcjonalności
 
 Moduł autentykacji obejmuje:
@@ -39,9 +51,16 @@ Moduł autentykacji obejmuje:
 
 **Odzyskiwanie hasła (z PRD 9.2.5)**
 - Reset hasła przez email z tokenem
-- Ważność tokenu: 15-30 minut
-- Zmiana hasła wylogowuje z innych sesji
-- Zapobieganie enumeracji użytkowników
+- Ważność tokenu: maksymalnie 15-30 minut (konfigurowalne w Supabase, zgodnie z PRD 9.2.5)
+- Zmiana hasła po użyciu linku powoduje automatyczne wylogowanie ze wszystkich innych aktywnych sesji użytkownika (PRD 9.2.5)
+- Zapobieganie enumeracji użytkowników (system "udaje", że wysłał maila, nawet jeśli konto nie istnieje - PRD 9.2.5)
+
+**MFA/2FA (z PRD 9.2.3)**
+- System musi umożliwiać włączenie uwierzytelniania dwuskładnikowego (2FA/MFA)
+- Obsługiwana metoda: TOTP (Time-based One-Time Password), np. Google Authenticator / Authy
+- Przy logowaniu, jeśli MFA jest włączone, system wymaga podania 6-cyfrowego kodu TOTP
+- Wymagane wygenerowanie kodów zapasowych (backup codes) przy aktywacji MFA
+- Kody zapasowe muszą być wyświetlane użytkownikowi tylko raz podczas aktywacji i zapisane w bezpieczny sposób (haszowane w bazie danych)
 
 ---
 
@@ -121,7 +140,7 @@ Moduł autentykacji obejmuje:
 
 **Wymagane rozszerzenia:**
 - ✅ Link do `/forgot-password` (dodany w `login.astro`)
-- ⚠️ Obsługa MFA/2FA (opcjonalnie, jeśli wymagane w przyszłości)
+- ⚠️ Obsługa MFA/2FA (wymagana zgodnie z PRD 9.2.3 - system musi umożliwiać włączenie MFA, obsługa TOTP przy logowaniu)
 - ✅ Komunikat o wygasłej sesji (`showExpiredMessage` prop)
 
 **Props:**
@@ -810,8 +829,9 @@ supabase: Client = create_client(
 
 **Refresh Token:**
 - **Czas życia:** 7 dni (konfigurowalne w Supabase)
-- **Przechowywanie:** HttpOnly cookie (Secure, SameSite) - **WYMAGANE**
+- **Przechowywanie:** HttpOnly cookie (Secure, SameSite) - **WYMAGANE zgodnie z PRD 9.2.2**
 - **Użycie:** Automatyczne odświeżanie przez Supabase SDK
+- **UWAGA BEZPIECZEŃSTWA:** Refresh token NIE MOŻE być przechowywany w localStorage ze względu na ryzyko ataków XSS. Wymagane jest użycie HttpOnly cookies.
 
 **Konfiguracja w Supabase Dashboard:**
 - **Authentication → Settings → JWT Settings:**
@@ -819,28 +839,42 @@ supabase: Client = create_client(
   - `Refresh token rotation`: Enabled (zalecane)
   - `Refresh token expiry`: 604800 seconds (7 dni)
 
-**Konfiguracja cookies (wymagana):**
+**Konfiguracja cookies (wymagana zgodnie z PRD):**
+
+**Opcja 1: Supabase Auth Helpers (zalecane dla Astro)**
 ```typescript
 // src/lib/supabase.ts
+import { createBrowserClient } from '@supabase/ssr';
+
+export const supabaseClient = createBrowserClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+```
+
+**Opcja 2: Ręczna konfiguracja z custom storage**
+```typescript
+// src/lib/supabase.ts
+import { createClient } from '@supabase/supabase-js';
+
+// Custom storage adapter dla HttpOnly cookies
+// Wymaga implementacji custom storage adaptera lub użycia Supabase Auth Helpers
 export const supabaseClient = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
   {
     auth: {
-      storage: typeof window !== 'undefined' 
-        ? window.localStorage 
-        : undefined,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
-      // Cookies dla refresh token (wymagane)
-      storageKey: 'supabase.auth.token',
+      // Wymagana implementacja custom storage dla HttpOnly cookies
+      // Zalecane: użycie @supabase/ssr (Supabase Auth Helpers)
     },
   }
 );
 ```
 
-**UWAGA:** Supabase SDK domyślnie używa localStorage. Aby użyć HttpOnly cookies dla refresh token, wymagana jest dodatkowa konfiguracja lub użycie Supabase Auth Helpers.
+**UWAGA KRYTYCZNA:** Standardowy Supabase JS SDK (`@supabase/supabase-js`) domyślnie używa localStorage dla wszystkich tokenów, co NARUSZA wymagania PRD 9.2.2. Aby spełnić wymagania bezpieczeństwa, **WYMAGANE jest użycie Supabase Auth Helpers (`@supabase/ssr`)** dla Astro, które automatycznie obsługują HttpOnly cookies dla refresh tokenów.
 
 ### 4.4. Wylogowywanie użytkownika
 
@@ -930,7 +964,8 @@ const { error } = await supabaseClient.auth.updateUser({
 
 **Konfiguracja ważności tokenu:**
 - **Authentication → Settings:**
-  - `Password reset token expiry`: 1800 seconds (30 minut) - zalecane
+  - `Password reset token expiry`: 900-1800 seconds (15-30 minut) - zgodnie z PRD 9.2.5
+  - Zalecane: 1800 seconds (30 minut) dla lepszego UX
 
 ### 4.6. Zarządzanie sesją
 
@@ -938,8 +973,9 @@ const { error } = await supabaseClient.auth.updateUser({
 
 **Automatyczne odświeżanie (Supabase SDK):**
 - Supabase SDK automatycznie odświeża access token przed wygaśnięciem
-- Używa refresh token z HttpOnly cookie
-- Przezroczyste dla aplikacji
+- **Wymagane:** Użycie Supabase Auth Helpers (`@supabase/ssr`) dla HttpOnly cookies
+- Refresh token jest przechowywany w HttpOnly cookie (Secure, SameSite) zgodnie z PRD 9.2.2
+- Przezroczyste dla aplikacji (przy użyciu Auth Helpers)
 
 **Ręczne odświeżanie (jeśli wymagane):**
 ```typescript
@@ -975,6 +1011,60 @@ async def get_current_user(
     user_id = extract_user_id(payload)
     return user_id
 ```
+
+### 4.6.3. Obsługa MFA/2FA (wymagana zgodnie z PRD 9.2.3)
+
+**Wymagania z PRD:**
+- System musi umożliwiać włączenie uwierzytelniania dwuskładnikowego (2FA/MFA)
+- Obsługiwana metoda: TOTP (Time-based One-Time Password)
+- Przy logowaniu, jeśli MFA jest włączone, system wymaga podania 6-cyfrowego kodu TOTP
+- Wymagane wygenerowanie kodów zapasowych (backup codes) przy aktywacji MFA
+
+**Implementacja (Supabase Auth):**
+
+**1. Aktywacja MFA:**
+```typescript
+// Włączanie MFA dla użytkownika
+const { data, error } = await supabaseClient.auth.mfa.enroll({
+  factorType: 'totp',
+  friendlyName: 'Authenticator App',
+});
+```
+
+**2. Weryfikacja MFA przy logowaniu:**
+```typescript
+// Po pomyślnym signInWithPassword, jeśli MFA jest włączone
+const { data: { session }, error } = await supabaseClient.auth.signInWithPassword({
+  email,
+  password,
+});
+
+if (session === null && error?.message === 'mfa_required') {
+  // Wymagany kod TOTP
+  const { data: mfaData, error: mfaError } = await supabaseClient.auth.mfa.verify({
+    factorId: mfaData.factorId,
+    code: totpCode, // 6-cyfrowy kod z aplikacji
+  });
+}
+```
+
+**3. Generowanie kodów zapasowych:**
+```typescript
+// Przy aktywacji MFA
+const { data: backupCodes, error } = await supabaseClient.auth.mfa.generateBackupCodes();
+// Wyświetl użytkownikowi TYLKO RAZ i zapisz w bezpieczny sposób
+```
+
+**Konfiguracja w Supabase Dashboard:**
+- **Authentication → Settings → MFA:**
+  - `Enable MFA`: Enabled
+  - `MFA factors`: TOTP enabled
+  - `Backup codes`: Enabled
+
+**Uwagi implementacyjne:**
+- MFA jest opcjonalne dla użytkownika (może włączyć/wyłączyć)
+- System musi obsługiwać przepływ logowania z MFA (dodatkowy krok po podaniu hasła)
+- Kody zapasowe muszą być wyświetlane tylko raz i zapisane w bezpieczny sposób (haszowane w bazie)
 
 ### 4.7. Ochrona przed atakami
 
@@ -1213,6 +1303,7 @@ setIsSuccess(true);
 ### 7.2. Priorytety implementacji
 
 1. **Wysoki priorytet:**
+   - **KRYTYCZNE:** Migracja na Supabase Auth Helpers (`@supabase/ssr`) dla HttpOnly cookies (wymaganie PRD 9.2.2)
    - Utworzenie `ForgotPasswordForm` i `ResetPasswordForm`
    - Utworzenie stron `/forgot-password` i `/reset-password`
    - Aktualizacja walidacji hasła w `RegisterForm` (minimum 12 znaków)
@@ -1223,8 +1314,13 @@ setIsSuccess(true);
    - Testowanie scenariuszy odzyskiwania hasła
    - Optymalizacja komunikatów błędów
 
-3. **Niski priorytet:**
-   - Obsługa MFA/2FA (opcjonalnie, jeśli wymagane w przyszłości)
+3. **Średni priorytet:**
+   - Obsługa MFA/2FA (wymagana zgodnie z PRD 9.2.3 - system musi umożliwiać włączenie MFA)
+   - Implementacja TOTP (Google Authenticator / Authy)
+   - Generowanie kodów zapasowych (backup codes)
+   - Integracja z formularzem logowania (pole na kod TOTP)
+
+4. **Niski priorytet:**
    - Dodatkowe endpointy backendowe (jeśli wymagane)
 
 ### 7.3. Uwagi implementacyjne
@@ -1234,9 +1330,10 @@ setIsSuccess(true);
    - Minimalna integracja z backendem FastAPI (tylko weryfikacja JWT)
 
 2. **Bezpieczeństwo:**
-   - HttpOnly cookies dla refresh token (wymagane)
+   - HttpOnly cookies dla refresh token (WYMAGANE zgodnie z PRD 9.2.2 - użycie Supabase Auth Helpers)
    - Rate limiting przez Supabase Auth (automatyczne)
    - Ogólne komunikaty błędów (zapobieganie enumeracji)
+   - Obsługa MFA/2FA (wymagana zgodnie z PRD 9.2.3)
 
 3. **UX:**
    - Przyjazne komunikaty błędów w języku polskim
@@ -1272,10 +1369,22 @@ Użytkownik → ForgotPasswordForm → Supabase Auth API → Email → ResetPass
 ### 8.2. Referencje
 
 - **Supabase Auth Documentation:** https://supabase.com/docs/guides/auth
+- **Supabase Auth Helpers (SSR):** https://supabase.com/docs/guides/auth/server-side/creating-a-client
 - **Astro Middleware:** https://docs.astro.build/en/guides/middleware/
 - **React Islands:** https://docs.astro.build/en/guides/integrations-guide/react/
-- **PRD:** `.ai/prd.md` (US-001, US-002)
+- **PRD:** `.ai/prd.md` (US-001, US-002, sekcja 9.2)
 - **Tech Stack:** `.ai/tech-stack.md`
+
+### 8.3. Historia zmian
+
+**Wersja 1.1 (2025-01-11):**
+- ✅ Zaktualizowano wymaganie HttpOnly cookies dla refresh token (PRD 9.2.2)
+- ✅ Dodano wymaganie użycia Supabase Auth Helpers (`@supabase/ssr`)
+- ✅ Zmieniono status MFA/2FA z "opcjonalnie" na "wymagane" (PRD 9.2.3)
+- ✅ Dodano sekcję implementacji MFA/2FA
+- ✅ Doprecyzowano ważność tokenu resetującego hasło (PRD 9.2.5)
+- ✅ Zaktualizowano przykłady kodu konfiguracji Supabase Client
+- ✅ Dodano sekcję weryfikacji zgodności z PRD
 
 ---
 
