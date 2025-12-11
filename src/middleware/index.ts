@@ -19,8 +19,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   context.locals.session = session;
   
-  // Redirect logged-in users away from login/register pages
-  if (session && (context.url.pathname === '/login' || context.url.pathname === '/register')) {
+  // Redirect logged-in users away from login/register/forgot-password pages
+  if (session && ['/login', '/register', '/forgot-password'].includes(context.url.pathname)) {
     return context.redirect('/app', 302);
   }
   
@@ -28,6 +28,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (!session && context.url.pathname.startsWith('/app')) {
     return context.redirect('/login', 302);
   }
+  
+  // /reset-password is allowed for all users (with token) - no redirects needed
   
   return next();
 });

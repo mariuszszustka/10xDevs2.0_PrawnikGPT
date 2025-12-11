@@ -1,8 +1,19 @@
 /**
- * RegisterForm - React island for registration form
+ * ResetPasswordForm - React island for password reset form
  * 
- * Interactive registration form component with validation, error handling,
- * and Supabase Auth integration. Uses Shadcn/ui components for UI.
+ * Interactive form component for resetting password using token from email.
+ * Uses Shadcn/ui components for UI and Supabase Auth for password reset.
+ * 
+ * Features:
+ * - Client-side validation (password strength, password match)
+ * - Password visibility toggle for both password fields
+ * - Password strength indicator
+ * - Loading states
+ * - Error handling with user-friendly messages
+ * - Token validation
+ * - Auto-focus on password field
+ * - Full keyboard navigation support
+ * - Redirect to login after success
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -12,18 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
-import type { RegisterFormData, RegisterFormErrors, RegisterFormProps, PasswordStrength } from '@/lib/types';
-
-/**
- * Validate email format using regex pattern
- * 
- * @param email - Email address to validate
- * @returns true if email format is valid, false otherwise
- */
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
+import type { PasswordStrength } from '@/lib/types';
 
 /**
  * Validate password according to PRD requirements:
@@ -59,13 +59,6 @@ function validatePasswordStrength(password: string): { isValid: boolean; error?:
 
 /**
  * Calculate password strength based on PRD requirements
- * 
- * @param password - Password to evaluate
- * @returns Password strength level: 'weak', 'medium', or 'strong'
- * 
- * Rules (PRD):
- * - 'weak': Doesn't meet all requirements (12+ chars, lowercase, uppercase, digit, special char)
- * - 'strong': Meets all requirements
  */
 function calculatePasswordStrength(password: string): PasswordStrength {
   const validation = validatePasswordStrength(password);
@@ -80,25 +73,14 @@ function calculatePasswordStrength(password: string): PasswordStrength {
 
 /**
  * Map Supabase Auth errors to user-friendly Polish messages
- * 
- * @param error - Supabase Auth error object or null
- * @returns User-friendly error message in Polish
- * 
- * Handles common error cases:
- * - User already registered
- * - Weak password
- * - Rate limiting
- * - Invalid email
- * - Network errors
- * - Generic errors
  */
 function mapSupabaseError(error: { message: string } | null): string {
   if (!error) return '';
   
   const errorMessage = error.message.toLowerCase();
   
-  if (errorMessage.includes('user already registered') || errorMessage.includes('email already registered')) {
-    return 'Ten adres email jest już zarejestrowany';
+  if (errorMessage.includes('invalid token') || errorMessage.includes('token expired') || errorMessage.includes('expired')) {
+    return 'Link resetujący hasło jest nieprawidłowy lub wygasł. Poproś o nowy link.';
   }
   
   if (errorMessage.includes('password should be at least') || errorMessage.includes('password is too weak')) {
@@ -109,90 +91,85 @@ function mapSupabaseError(error: { message: string } | null): string {
     return 'Zbyt wiele prób. Spróbuj ponownie za chwilę.';
   }
   
-  if (errorMessage.includes('invalid email')) {
-    return 'Podaj prawidłowy adres email';
-  }
-  
   if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-    return 'Wystąpił problem z połączeniem. Spróbuj ponownie.';
+    return 'Błąd połączenia. Sprawdź połączenie internetowe.';
   }
   
-  return 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie później.';
+  return 'Wystąpił błąd podczas resetowania hasła. Spróbuj ponownie.';
+}
+
+interface ResetPasswordFormProps {
+  token?: string; // Optional - can be read from URL if not provided
+}
+
+interface ResetPasswordFormData {
+  password: string;
+  passwordConfirm: string;
+}
+
+interface ResetPasswordFormErrors {
+  password?: string;
+  passwordConfirm?: string;
+  token?: string;
+  general?: string;
 }
 
 /**
- * RegisterForm component
+ * ResetPasswordForm component
  * 
- * Features:
- * - Client-side validation (email format, password length, password match, terms acceptance)
- * - Password visibility toggle for both password fields
- * - Password strength indicator (optional)
- * - Loading states
- * - Error handling with user-friendly messages
- * - Auto-focus on email field
- * - Full keyboard navigation support
+ * Note: Supabase automatically handles password reset tokens from URL hash.
+ * The token prop is optional and mainly for display/validation purposes.
+ * Supabase SDK will automatically extract the token from the URL when updateUser is called.
  */
-export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFormProps) {
-  const [formData, setFormData] = useState<RegisterFormData>({
-    email: '',
+export function ResetPasswordForm({ token: tokenProp }: ResetPasswordFormProps) {
+  const [formData, setFormData] = useState<ResetPasswordFormData>({
     password: '',
     passwordConfirm: '',
-    acceptTerms: false,
   });
-  const [errors, setErrors] = useState<RegisterFormErrors>({});
+  const [errors, setErrors] = useState<ResetPasswordFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
   
-  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-focus on email field when component mounts
+  // Auto-focus on password field when component mounts
   useEffect(() => {
-    emailInputRef.current?.focus();
+    passwordInputRef.current?.focus();
   }, []);
 
-  /**
-   * Validate email field
-   * 
-   * @param email - Email address to validate
-   * @returns Error message if validation fails, undefined if valid
-   */
-  const validateEmail = useCallback((email: string): string | undefined => {
-    if (!email.trim()) {
-      return 'Email jest wymagany';
+  // Check if token exists (from prop or URL)
+  useEffect(() => {
+    // Supabase automatically handles tokens from URL hash, but we can validate
+    // if a token was provided via query parameter
+    if (!tokenProp) {
+      // Try to read from URL query parameter (if not in hash)
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      
+      // If no token in prop or URL, show error
+      if (!tokenFromUrl && !window.location.hash.includes('access_token')) {
+        setErrors({
+          token: 'Brak tokenu resetującego hasło. Poproś o nowy link.',
+        });
+      }
     }
-    if (!isValidEmail(email)) {
-      return 'Podaj prawidłowy adres email';
-    }
-    return undefined;
-  }, []);
+  }, [tokenProp]);
 
   /**
-   * Validate password field (PRD requirements: minimum 12 characters, lowercase, uppercase, digit, special char)
-   * 
-   * @param password - Password to validate
-   * @returns Error message if validation fails, undefined if valid
+   * Validate password field
    */
   const validatePassword = useCallback((password: string): string | undefined => {
-    if (!password) {
-      return 'Hasło jest wymagane';
-    }
-    
     const validation = validatePasswordStrength(password);
     if (!validation.isValid) {
       return validation.error;
     }
-    
     return undefined;
   }, []);
 
   /**
-   * Validate password confirmation field (must match password)
-   * 
-   * @param password - Original password
-   * @param passwordConfirm - Password confirmation to validate
-   * @returns Error message if validation fails, undefined if valid
+   * Validate password confirmation field
    */
   const validatePasswordConfirm = useCallback((password: string, passwordConfirm: string): string | undefined => {
     if (!passwordConfirm) {
@@ -205,37 +182,30 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
   }, []);
 
   /**
-   * Validate entire form (all fields)
-   * 
-   * @returns Object with validation errors for each field (empty if valid)
+   * Validate entire form
    */
-  const validateForm = useCallback((): RegisterFormErrors => {
-    const validationErrors: RegisterFormErrors = {};
+  const validateForm = useCallback((): ResetPasswordFormErrors => {
+    const validationErrors: ResetPasswordFormErrors = {};
 
-    validationErrors.email = validateEmail(formData.email);
     validationErrors.password = validatePassword(formData.password);
     validationErrors.passwordConfirm = validatePasswordConfirm(formData.password, formData.passwordConfirm);
-    
-    if (!formData.acceptTerms) {
-      validationErrors.acceptTerms = 'Musisz zaakceptować regulamin';
-    }
 
     // Remove undefined values
     Object.keys(validationErrors).forEach(key => {
-      if (validationErrors[key as keyof RegisterFormErrors] === undefined) {
-        delete validationErrors[key as keyof RegisterFormErrors];
+      if (validationErrors[key as keyof ResetPasswordFormErrors] === undefined) {
+        delete validationErrors[key as keyof ResetPasswordFormErrors];
       }
     });
 
     return validationErrors;
-  }, [formData, validateEmail, validatePassword, validatePasswordConfirm]);
+  }, [formData, validatePassword, validatePasswordConfirm]);
 
   /**
    * Handle input field changes
    */
-  const handleChange = useCallback((field: keyof RegisterFormData) => {
+  const handleChange = useCallback((field: keyof ResetPasswordFormData) => {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = field === 'acceptTerms' ? e.target.checked : e.target.value;
+      const value = e.target.value;
       
       setFormData(prev => ({
         ...prev,
@@ -244,7 +214,7 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
       
       // Update password strength when password changes
       if (field === 'password') {
-        setPasswordStrength(calculatePasswordStrength(value as string));
+        setPasswordStrength(calculatePasswordStrength(value));
       }
       
       // Clear error for this field when user starts typing
@@ -283,27 +253,20 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
     setIsLoading(true);
 
     try {
-      // Sign up with Supabase Auth
-      const { data, error } = await supabaseClient.auth.signUp({
-        email: formData.email.trim(),
+      // Update password via Supabase Auth
+      // Note: Supabase automatically validates the token from the URL
+      const { error: updateError } = await supabaseClient.auth.updateUser({
         password: formData.password,
-        options: {
-          emailRedirectTo: undefined, // No email verification in MVP
-        },
       });
 
-      if (error) {
+      if (updateError) {
         // Map Supabase error to user-friendly message
-        const errorMessage = mapSupabaseError(error);
+        const errorMessage = mapSupabaseError(updateError);
         
-        // Try to map to specific field if possible
-        if (error.message.toLowerCase().includes('email')) {
+        // Check if it's a token error
+        if (updateError.message.toLowerCase().includes('token') || updateError.message.toLowerCase().includes('expired')) {
           setErrors({
-            email: errorMessage,
-          });
-        } else if (error.message.toLowerCase().includes('password')) {
-          setErrors({
-            password: errorMessage,
+            token: errorMessage,
           });
         } else {
           setErrors({
@@ -315,26 +278,17 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
         return;
       }
 
-      // Success - check if session was created
-      if (data.session) {
-        // Auto-login successful - redirect to app
-        window.location.href = redirectTo;
-      } else {
-        // This shouldn't happen in MVP without email verification, but handle it anyway
-        setErrors({
-          general: 'Rejestracja zakończyła się sukcesem, ale nie udało się zalogować. Spróbuj zalogować się ręcznie.',
-        });
-        setIsLoading(false);
-      }
+      // Success - redirect to login with success message
+      window.location.href = '/login?passwordReset=true';
     } catch (error) {
       // Handle network errors or unexpected errors
-      console.error('Registration error:', error);
+      console.error('Password reset error:', error);
       setErrors({
-        general: 'Wystąpił błąd podczas rejestracji. Spróbuj ponownie.',
+        general: 'Wystąpił błąd podczas resetowania hasła. Spróbuj ponownie.',
       });
       setIsLoading(false);
     }
-  }, [formData, validateForm, redirectTo]);
+  }, [formData, validateForm]);
 
   /**
    * Toggle password visibility
@@ -352,8 +306,17 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      {/* Token error message */}
+      {errors.token && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {errors.token}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* General error message */}
-      {errors.general && (
+      {errors.general && !errors.token && (
         <Alert variant="destructive" role="alert">
           <AlertDescription>
             {errors.general}
@@ -361,46 +324,15 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
         </Alert>
       )}
 
-      {/* Email field */}
-      <div className="space-y-2">
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <Input
-          id="email"
-          ref={emailInputRef}
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange('email')}
-          disabled={isLoading}
-          required
-          aria-invalid={errors.email ? 'true' : 'false'}
-          aria-describedby={errors.email ? 'email-error' : undefined}
-          className={errors.email ? 'border-red-500' : ''}
-          placeholder="twoj@email.pl"
-          autoComplete="email"
-        />
-        {errors.email && (
-          <span
-            id="email-error"
-            className="text-sm text-red-600"
-            role="alert"
-            aria-live="polite"
-          >
-            {errors.email}
-          </span>
-        )}
-      </div>
-
       {/* Password field */}
       <div className="space-y-2">
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Hasło
+          Nowe hasło
         </label>
         <div className="relative">
           <Input
             id="password"
+            ref={passwordInputRef}
             type={showPassword ? 'text' : 'password'}
             name="password"
             value={formData.password}
@@ -452,7 +384,7 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
       {/* Password confirmation field */}
       <div className="space-y-2">
         <label htmlFor="passwordConfirm" className="block text-sm font-medium text-gray-700">
-          Potwierdź hasło
+          Potwierdź nowe hasło
         </label>
         <div className="relative">
           <Input
@@ -498,56 +430,22 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
         )}
       </div>
 
-      {/* Terms acceptance checkbox */}
-      <div className="space-y-2">
-        <div className="flex items-start space-x-2">
-          <input
-            id="acceptTerms"
-            type="checkbox"
-            checked={formData.acceptTerms}
-            onChange={handleChange('acceptTerms')}
-            disabled={isLoading}
-            required
-            aria-invalid={errors.acceptTerms ? 'true' : 'false'}
-            aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
-            className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-          />
-          <label htmlFor="acceptTerms" className="text-sm text-gray-700">
-            Akceptuję{' '}
-            <a href="/regulamin" className="text-blue-600 hover:text-blue-700 underline" target="_blank" rel="noopener noreferrer">
-              regulamin
-            </a>
-          </label>
-        </div>
-        {errors.acceptTerms && (
-          <span
-            id="acceptTerms-error"
-            className="text-sm text-red-600"
-            role="alert"
-            aria-live="polite"
-          >
-            {errors.acceptTerms}
-          </span>
-        )}
-      </div>
-
       {/* Submit button */}
       <Button
         type="submit"
         disabled={isLoading}
         className="w-full"
-        aria-label={isLoading ? 'Rejestrowanie w toku...' : 'Zarejestruj się'}
+        aria-label={isLoading ? 'Resetowanie hasła...' : 'Zresetuj hasło'}
       >
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Rejestrowanie...
+            Resetowanie...
           </>
         ) : (
-          'Zarejestruj się'
+          'Zresetuj hasło'
         )}
       </Button>
     </form>
   );
 }
-

@@ -1,10 +1,16 @@
 /**
  * PasswordStrengthIndicator - Visual indicator for password strength
  * 
- * Displays a color-coded bar and text label indicating password strength:
- * - Red (weak): Less than 8 characters or only letters/digits
- * - Yellow (medium): 8+ characters with mix of letters and numbers
- * - Green (strong): 8+ characters with mix of letters, numbers, and special characters
+ * Displays a color-coded bar and text label indicating password strength based on PRD requirements:
+ * - Red (weak): Doesn't meet all PRD requirements (12+ chars, lowercase, uppercase, digit, special char)
+ * - Green (strong): Meets all PRD requirements (12+ chars, lowercase, uppercase, digit, special char)
+ * 
+ * PRD Requirements:
+ * - Minimum 12 characters
+ * - At least one lowercase letter
+ * - At least one uppercase letter
+ * - At least one digit
+ * - At least one special character
  */
 
 import type { PasswordStrength } from '@/lib/types';
@@ -20,6 +26,9 @@ export interface PasswordStrengthIndicatorProps {
  * 
  * @param strength - Password strength level
  * @returns Configuration object with color, text color, label, and width
+ * 
+ * Note: Only 'weak' and 'strong' are used (no 'medium') based on PRD requirements.
+ * Password either meets all requirements (strong) or doesn't (weak).
  */
 function getStrengthConfig(strength: PasswordStrength) {
   switch (strength) {
@@ -31,6 +40,7 @@ function getStrengthConfig(strength: PasswordStrength) {
         width: '33%',
       };
     case 'medium':
+      // Medium is not used with PRD requirements, but kept for backward compatibility
       return {
         color: 'bg-yellow-500',
         textColor: 'text-yellow-600',
