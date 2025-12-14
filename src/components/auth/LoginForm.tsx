@@ -120,6 +120,7 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
   /**
    * Handle form submission
    * Uses API endpoint for authentication with proper cookie management
+   * Endpoint redirects on success, so we handle redirects and errors appropriately
    */
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -135,43 +136,89 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
     setErrors({});
     setIsLoading(true);
 
+    // Timeout configuration (20 seconds for client request)
+    const TIMEOUT_MS = 20000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
     try {
       // Call login API endpoint (handles session with HttpOnly cookies)
+      // Endpoint redirects on success (302), so we need to handle redirects
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include', // Include cookies in request
+        signal: controller.signal,
+        redirect: 'manual', // Handle redirects manually
         body: JSON.stringify({
           email: formData.email.trim(),
           password: formData.password,
         }),
       });
 
-      const data = await response.json();
+      clearTimeout(timeoutId);
 
+      // Handle redirect (302) - success case
+      if (response.status === 302 || response.status === 0) {
+        // Redirect response - session is set in HttpOnly cookies
+        // Browser will automatically follow redirect, but we can also do it explicitly
+        const redirectUrl = response.headers.get('Location') || redirectTo;
+        window.location.href = redirectUrl;
+        return;
+      }
+
+      // Handle error responses (400, 500, 503)
       if (!response.ok) {
-        // API returned error
+        let errorMessage = 'Wystąpił błąd podczas logowania. Spróbuj ponownie.';
+        
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // If JSON parsing fails, use default message
+          if (response.status === 503) {
+            errorMessage = 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.';
+          }
+        }
+
         setErrors({
-          general: data.error || 'Wystąpił błąd podczas logowania. Spróbuj ponownie.',
+          general: errorMessage,
         });
         setIsLoading(false);
         return;
       }
 
-      // Success: session is stored in HttpOnly cookies by API endpoint
-      // Refresh browser client session to sync with server
-      await supabaseClient.auth.getSession();
-
-      // Redirect to app
-      window.location.href = redirectTo;
-    } catch (error) {
-      // Handle network errors or unexpected errors
-      console.error('Login error:', error);
-      setErrors({
-        general: 'Wystąpił błąd podczas logowania. Sprawdź połączenie internetowe.',
-      });
+      // Fallback: if response is OK but not a redirect, try to parse JSON
+      // (shouldn't happen with new implementation, but kept for safety)
+      try {
+        const data = await response.json();
+        if (data.error) {
+          setErrors({
+            general: data.error,
+          });
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // If no error in JSON, redirect manually
+        window.location.href = redirectTo;
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout or network errors
+      if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+        setErrors({
+          general: 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.',
+        });
+      } else {
+        console.error('Login error:', error);
+        setErrors({
+          general: 'Wystąpił błąd podczas logowania. Sprawdź połączenie internetowe.',
+        });
+      }
       setIsLoading(false);
     }
   }, [formData, validateForm, redirectTo]);

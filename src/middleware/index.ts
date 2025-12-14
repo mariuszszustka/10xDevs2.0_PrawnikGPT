@@ -5,9 +5,9 @@
  * - Creates Supabase server client with cookie-based session management
  * - Adds Supabase client to Astro context locals
  * - Handles authentication redirects:
- *   - Redirects logged-in users from /login, /register, /forgot-password to /app/chat
+ *   - Redirects logged-in users from /login, /register, /forgot-password to /app
  *   - Redirects unauthenticated users from / (home page) to /login
- *   - Redirects authenticated users from / (home page) to /app/chat
+ *   - Redirects authenticated users from / (home page) to /app
  *   - Redirects unauthenticated users from /app/* to /login
  * - Automatically refreshes sessions using HttpOnly cookies (PRD 9.2.2)
  */
@@ -70,7 +70,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (isPublicPath || isAuthApiPath) {
     // Redirect logged-in users away from login/register/signup/forgot-password pages
     if (user && ['/login', '/register', '/signup', '/forgot-password'].includes(pathname)) {
-      return context.redirect('/app/chat', 302);
+      return context.redirect('/app', 302);
     }
     return next();
   }
@@ -83,7 +83,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return context.redirect(`/login?redirect_to=${redirectTo}`, 302);
     }
     // Redirect authenticated users to main app page
-    return context.redirect('/app/chat', 302);
+    return context.redirect('/app', 302);
   }
 
   // Protected routes: redirect unauthenticated users to login

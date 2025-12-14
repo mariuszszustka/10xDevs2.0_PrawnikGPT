@@ -14,7 +14,7 @@ Niniejsza specyfikacja opisuje szczegółową architekturę modułu rejestracji,
 
 **Znalezione i naprawione sprzeczności:**
 1. ✅ **Refresh Token storage:** Zaktualizowano wymaganie użycia HttpOnly cookies (PRD 9.2.2) - wymagane użycie Supabase Auth Helpers (`@supabase/ssr`)
-2. ✅ **MFA/2FA:** Zmieniono status z "opcjonalnie" na "wymagane" zgodnie z PRD 9.2.3 (system musi umożliwiać włączenie MFA)
+2. ✅ **MFA/2FA:** Usunięto z zakresu MVP zgodnie z aktualizacją PRD 9.2.3 (funkcjonalność może zostać dodana w przyszłości)
 3. ✅ **Ważność tokenu resetującego hasło:** Doprecyzowano zgodnie z PRD 9.2.5 (15-30 minut)
 4. ✅ **Konfiguracja Supabase Client:** Zaktualizowano przykład kodu na użycie `createBrowserClient` z `@supabase/ssr`
 
@@ -45,7 +45,7 @@ Moduł autentykacji obejmuje:
 - Access Token JWT: 15 minut
 - Refresh Token: HttpOnly cookie, Secure, SameSite
 - Rate limiting: 5 nieudanych prób = blokada na 15 minut
-- Obsługa MFA/2FA (TOTP) - opcjonalnie
+- ~~Obsługa MFA/2FA~~ - **Poza zakresem MVP** (może zostać dodana w przyszłości)
 - Wylogowanie unieważnia refresh token
 - Ogólne komunikaty błędów
 
@@ -56,11 +56,9 @@ Moduł autentykacji obejmuje:
 - Zapobieganie enumeracji użytkowników (system "udaje", że wysłał maila, nawet jeśli konto nie istnieje - PRD 9.2.5)
 
 **MFA/2FA (z PRD 9.2.3)**
-- System musi umożliwiać włączenie uwierzytelniania dwuskładnikowego (2FA/MFA)
-- Obsługiwana metoda: TOTP (Time-based One-Time Password), np. Google Authenticator / Authy
-- Przy logowaniu, jeśli MFA jest włączone, system wymaga podania 6-cyfrowego kodu TOTP
-- Wymagane wygenerowanie kodów zapasowych (backup codes) przy aktywacji MFA
-- Kody zapasowe muszą być wyświetlane użytkownikowi tylko raz podczas aktywacji i zapisane w bezpieczny sposób (haszowane w bazie danych)
+- ⚠️ **Status MVP:** **Poza zakresem MVP** - funkcjonalność może zostać dodana w przyszłych wersjach
+- MFA/2FA nie jest wymagane w wersji MVP aplikacji
+- W przyszłości system może umożliwiać włączenie uwierzytelniania dwuskładnikowego (2FA/MFA) z obsługą TOTP
 
 ---
 
@@ -140,8 +138,8 @@ Moduł autentykacji obejmuje:
 
 **Wymagane rozszerzenia:**
 - ✅ Link do `/forgot-password` (dodany w `login.astro`)
-- ⚠️ Obsługa MFA/2FA (wymagana zgodnie z PRD 9.2.3 - system musi umożliwiać włączenie MFA, obsługa TOTP przy logowaniu)
 - ✅ Komunikat o wygasłej sesji (`showExpiredMessage` prop)
+- ~~Obsługa MFA/2FA~~ - **Poza zakresem MVP**
 
 **Props:**
 ```typescript
@@ -1314,11 +1312,8 @@ setIsSuccess(true);
    - Testowanie scenariuszy odzyskiwania hasła
    - Optymalizacja komunikatów błędów
 
-3. **Średni priorytet:**
-   - Obsługa MFA/2FA (wymagana zgodnie z PRD 9.2.3 - system musi umożliwiać włączenie MFA)
-   - Implementacja TOTP (Google Authenticator / Authy)
-   - Generowanie kodów zapasowych (backup codes)
-   - Integracja z formularzem logowania (pole na kod TOTP)
+3. **Poza zakresem MVP:**
+   - ~~Obsługa MFA/2FA~~ - może zostać dodana w przyszłych wersjach
 
 4. **Niski priorytet:**
    - Dodatkowe endpointy backendowe (jeśli wymagane)
@@ -1333,7 +1328,7 @@ setIsSuccess(true);
    - HttpOnly cookies dla refresh token (WYMAGANE zgodnie z PRD 9.2.2 - użycie Supabase Auth Helpers)
    - Rate limiting przez Supabase Auth (automatyczne)
    - Ogólne komunikaty błędów (zapobieganie enumeracji)
-   - Obsługa MFA/2FA (wymagana zgodnie z PRD 9.2.3)
+   - ~~Obsługa MFA/2FA~~ - poza zakresem MVP
 
 3. **UX:**
    - Przyjazne komunikaty błędów w języku polskim
@@ -1380,8 +1375,7 @@ Użytkownik → ForgotPasswordForm → Supabase Auth API → Email → ResetPass
 **Wersja 1.1 (2025-01-11):**
 - ✅ Zaktualizowano wymaganie HttpOnly cookies dla refresh token (PRD 9.2.2)
 - ✅ Dodano wymaganie użycia Supabase Auth Helpers (`@supabase/ssr`)
-- ✅ Zmieniono status MFA/2FA z "opcjonalnie" na "wymagane" (PRD 9.2.3)
-- ✅ Dodano sekcję implementacji MFA/2FA
+- ✅ Usunięto MFA/2FA z zakresu MVP (zgodnie z aktualizacją PRD 9.2.3)
 - ✅ Doprecyzowano ważność tokenu resetującego hasło (PRD 9.2.5)
 - ✅ Zaktualizowano przykłady kodu konfiguracji Supabase Client
 - ✅ Dodano sekcję weryfikacji zgodności z PRD

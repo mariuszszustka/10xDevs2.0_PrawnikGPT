@@ -8,6 +8,7 @@
  * - Session management with HttpOnly cookies (PRD 9.2.2)
  * - Rate limiting (handled by Supabase Auth)
  * - Error handling with generic messages (no user enumeration)
+ * - Timeout handling (15 seconds for Supabase requests)
  * 
  * Request Body:
  * {
@@ -15,15 +16,18 @@
  *   "password": string
  * }
  * 
- * Response (200):
- * {
- *   "user": { id, email, ... },
- *   "session": { access_token, refresh_token, ... }
- * }
+ * Response (302 Redirect):
+ * - Success: Redirects to /app (or redirect_to from query params)
+ * - HttpOnly cookies are automatically set by Supabase SSR
  * 
- * Response (400):
+ * Response (400 JSON):
  * {
  *   "error": "Nieprawidłowy email lub hasło"
+ * }
+ * 
+ * Response (503 JSON):
+ * {
+ *   "error": "Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę."
  * }
  */
 
@@ -60,10 +64,30 @@ function mapSupabaseError(error: { message: string } | null): string {
   return 'Wystąpił błąd podczas logowania. Spróbuj ponownie.';
 }
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies, redirect }) => {
+  // Timeout configuration (15 seconds for Supabase requests)
+  const TIMEOUT_MS = 15000;
+
   try {
-    // Parse request body
-    const body = await request.json();
+    // Parse request body with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    let body;
+    try {
+      body = await request.json();
+      clearTimeout(timeoutId);
+    } catch (parseError) {
+      clearTimeout(timeoutId);
+      return new Response(
+        JSON.stringify({ error: 'Nieprawidłowy format żądania' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     const { email, password } = body;
 
     // Validate input
@@ -83,11 +107,35 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       headers: request.headers,
     });
 
-    // Sign in with password
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    // Sign in with password (with timeout)
+    const signInController = new AbortController();
+    const signInTimeoutId = setTimeout(() => signInController.abort(), TIMEOUT_MS);
+
+    let data, error;
+    try {
+      const result = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      clearTimeout(signInTimeoutId);
+      data = result.data;
+      error = result.error;
+    } catch (signInError: any) {
+      clearTimeout(signInTimeoutId);
+      // Handle timeout or network errors
+      if (signInError.name === 'AbortError' || signInError.message?.includes('timeout')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.',
+          }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      throw signInError;
+    }
 
     if (error) {
       // Map error to user-friendly message (no enumeration)
@@ -99,19 +147,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Success: session is automatically stored in HttpOnly cookies by Supabase SSR
-    return new Response(
-      JSON.stringify({
-        user: data.user,
-        session: data.session,
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  } catch (error) {
-    // Handle JSON parsing errors or other unexpected errors
+    // Redirect to app (or redirect_to from query params)
+    const url = new URL(request.url);
+    const redirectTo = url.searchParams.get('redirect_to') || '/app';
+    
+    return redirect(redirectTo, 302);
+  } catch (error: any) {
+    // Handle unexpected errors
     console.error('Login API error:', error);
+    
+    // Check if it's a timeout error
+    if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+      return new Response(
+        JSON.stringify({
+          error: 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.',
+        }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         error: 'Wystąpił błąd podczas logowania. Spróbuj ponownie.',

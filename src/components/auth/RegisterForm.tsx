@@ -98,7 +98,7 @@ function mapSupabaseError(error: { message: string } | null): string {
   const errorMessage = error.message.toLowerCase();
   
   if (errorMessage.includes('user already registered') || errorMessage.includes('email already registered')) {
-    return 'Ten adres email jest już zarejestrowany';
+    return 'Nie można utworzyć konta';
   }
   
   if (errorMessage.includes('password should be at least') || errorMessage.includes('password is too weak')) {

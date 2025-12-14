@@ -1,0 +1,39 @@
+---
+/**
+ * GET /app
+ * 
+ * Main app page - renders chat view
+ * This ensures consistent routing: /app is the main entry point
+ * 
+ * Note: This page renders the same content as /app/chat
+ * to provide a consistent user experience
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ChatMessagesContainer from '../../components/chat/ChatMessagesContainer.tsx';
+import ChatInput from '../../components/chat/ChatInput.tsx';
+import WelcomeMessage from '../../components/chat/WelcomeMessage.astro';
+import ExampleQuestions from '../../components/chat/ExampleQuestions.astro';
+---
+
+<BaseLayout title="PrawnikGPT">
+  <main class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">
+        Zadaj pytanie prawne
+      </h1>
+
+      <!-- Welcome message (static Astro component) -->
+      <WelcomeMessage />
+
+      <!-- Example questions (static Astro component) -->
+      <ExampleQuestions />
+
+      <!-- Chat messages container (React island - hydrated on load) -->
+      <ChatMessagesContainer client:load />
+
+      <!-- Chat input (React island - hydrated on load) -->
+      <ChatInput client:load />
+    </div>
+  </main>
+</BaseLayout>
+

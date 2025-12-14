@@ -162,7 +162,7 @@ Następujące elementy są świadomie wyłączone z zakresu MVP:
 - Token odświeżania (Refresh Token) jest przechowywany wyłącznie w ciasteczku HttpOnly, Secure, SameSite (nie w LocalStorage), aby zapobiec atakom XSS.
 - W przypadku błędnych danych logowania, użytkownik widzi ogólny komunikat: "Błędny login lub hasło" (system nie ujawnia, czy email istnieje w bazie).
 - Endpoint logowania jest objęty mechanizmem Rate Limiting: po 5 nieudanych próbach logowanie jest blokowane na 15 minut (ochrona przed atakami Brute Force).
-- Jeśli użytkownik ma włączone uwierzytelnianie dwuskładnikowe (MFA), po podaniu hasła system wymaga podania 6-cyfrowego kodu TOTP.
+- ~~MFA/2FA nie wchodzi w zakres MVP~~ (funkcjonalność może zostać dodana w przyszłości)
 - Wylogowanie unieważnia token odświeżania po stronie serwera (czarna lista lub usunięcie z bazy sesji).
 
 ---
@@ -191,7 +191,7 @@ Następujące elementy są świadomie wyłączone z zakresu MVP:
 - Endpoint API do generowania odpowiedzi wymaga walidacji JWT tokenu (tylko zalogowani użytkownicy).
 - Zapytania użytkownika są sanityzowane przed wysłaniem do LLM (ochrona przed injection attacks).
 - Endpoint jest objęty mechanizmem Rate Limiting (np. maksymalnie 10 zapytań na minutę na użytkownika, 30 zapytań na minutę na adres IP).
-- Szczegółowe wymagania bezpieczeństwa dotyczące uwierzytelniania, haseł, sesji i MFA znajdują się w sekcji 9.2 "Wymagania bezpieczeństwa".
+- Szczegółowe wymagania bezpieczeństwa dotyczące uwierzytelniania, haseł i sesji znajdują się w sekcji 9.2 "Wymagania bezpieczeństwa".
 
 ---
 
@@ -320,11 +320,9 @@ Sukces MVP będzie mierzony za pomocą następujących wskaźników, które maj�
 - Supabase Auth domyślnie obsługuje te mechanizmy, ale wymagane jest skonfigurowanie odpowiednich flag dla ciasteczek.
 
 #### 9.2.3. Uwierzytelnianie wieloetapowe (MFA/2FA)
-- System musi umożliwiać włączenie uwierzytelniania dwuskładnikowego (2FA/MFA).
-- Obsługiwana metoda to TOTP (Time-based One-Time Password), np. Google Authenticator / Authy.
-- Przy logowaniu, jeśli MFA jest włączone, system po podaniu hasła wymaga podania 6-cyfrowego kodu.
-- Wymagane jest wygenerowanie kodów zapasowych (backup codes) przy aktywacji MFA.
-- Kody zapasowe muszą być wyświetlane użytkownikowi tylko raz podczas aktywacji i zapisane w bezpieczny sposób (haszowane w bazie danych).
+- **Status MVP:** ⚠️ **Poza zakresem MVP** - funkcjonalność zostanie dodana w przyszłych wersjach
+- MFA/2FA nie jest wymagane w wersji MVP aplikacji
+- W przyszłości system może umożliwiać włączenie uwierzytelniania dwuskładnikowego (2FA/MFA) z obsługą TOTP
 
 #### 9.2.4. Zabezpieczenie przed popularnymi atakami
 - **Rate Limiting:**
