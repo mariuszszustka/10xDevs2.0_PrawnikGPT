@@ -3,104 +3,210 @@ description:
 globs:
 alwaysApply: false
 ---
-# Mermaid Diagram - UI Components
+# Mermaid Diagram - UI Architecture
 
-Jesteś doświadczonym architektem oprogramowania, którego zadaniem jest utworzenie diagramu Mermaid w celu wizualizacji architektury stron Astro i komponentów React dla modułu logowania i rejestracji. Diagram powinien zostać utworzony w następującym pliku: DESTINATION
+Diagram architektury interfejsu użytkownika dla aplikacji PrawnikGPT przedstawiający strukturę stron Astro, komponentów React Islands oraz przepływ danych między komponentami.
 
-Będziesz musiał odnieść się do następujących plików w celu poznania istniejących komponentów:
+<architecture_analysis>
 
-<file_references>
-[project-prd.md](mdc:.ai/project-prd.md)
-</file_references>
+## Analiza architektury UI
 
-<destination>
-.ai/diagrams/ui.md
-</destination>
+### 1. Główne strony (Astro Pages)
 
-Twoim zadaniem jest analiza specyfikacji modułu logowania i rejestracji oraz utworzenie kompleksowego diagramu Mermaid, który dokładnie przedstawia architekturę systemu. Diagram powinien być w języku polskim.
+Zgodnie z PRD i dokumentacją projektu:
 
-Przed utworzeniem diagramu, przeanalizuj wymagania i zaplanuj swoje podejście. Umieść swoją analizę wewnątrz tagów <architecture_analysis>. W tej analizie:
+**Strony publiczne:**
+- `index.astro` (`/`) - Landing page (SSG)
+- `login.astro` (`/login`) - Strona logowania (SSR)
+- `register.astro` (`/register`) - Strona rejestracji (SSR)
+- `forgot-password.astro` (`/forgot-password`) - Żądanie resetu hasła (SSR)
+- `reset-password.astro` (`/reset-password`) - Reset hasła (SSR)
 
-1. Wypisz wszystkie komponenty wymienione w plikach referencyjnych.
-2. Zidentyfikuj główne strony i ich odpowiadające komponenty.
-3. Określ przepływ danych między komponentami.
-4. Dostarcz krótki opis funkcjonalności każdego komponentu.
+**Strony chronione:**
+- `app/index.astro` lub `app/chat.astro` (`/app`) - Chat View (SSR)
+- `app/history.astro` (`/app/history`) - Historia zapytań (SSR)
+- `app/settings.astro` (`/app/settings`) - Ustawienia (SSR, opcjonalnie)
 
-Kiedy będziesz gotowy do utworzenia diagramu, postępuj zgodnie z poniższymi wytycznymi:
+### 2. Layouts
 
-1. Rozpocznij diagram od następującej składni:
+- `BaseLayout.astro` - Podstawowy layout (HTML, meta tags)
+- `AppLayout.astro` - Layout dla aplikacji (Header z nawigacją, User Menu)
 
-   ```mermaid
-   flowchart TD
-   ```
+### 3. Komponenty React Islands (Interaktywne)
 
-2. Uwzględnij następujące elementy w swoim diagramie:
+**Moduł Autentykacji:**
+- `LoginForm.tsx` - Formularz logowania
+- `RegisterForm.tsx` - Formularz rejestracji
+- `ForgotPasswordForm.tsx` - Formularz żądania resetu hasła
+- `ResetPasswordForm.tsx` - Formularz resetu hasła
 
-   - Zaktualizowaną strukturę UI po wdrożeniu nowych wymagań
-   - Layouts, server pages i aktualizacje istniejących komponentów
-   - Grupowanie elementów według funkcjonalności
-   - Kierunek przepływu danych między komponentami
-   - Moduły odpowiedzialne za stan aplikacji
-   - Podział na komponenty współdzielone i komponenty specyficzne dla stron
-   - Zależności między komponentami związanymi z autentykacją a resztą aplikacji
-   - Wyróżnij komponenty, które wymagały aktualizacji ze względu na nowe wymagania
+**Moduł Czatu:**
+- `ChatInput.tsx` - Pole wprowadzania pytań
+- `ChatMessagesContainer.tsx` - Kontener wiadomości z polling
+- `QueryBubble.tsx` - Bańka z pytaniem użytkownika
+- `ResponseCard.tsx` - Karta odpowiedzi (szybka/dokładna)
+- `RatingButtons.tsx` - Przyciski oceny (thumbs up/down)
+- `DetailedAnswerButton.tsx` - Przycisk żądania dokładniejszej odpowiedzi
+- `NoRelevantActsCard.tsx` - Komunikat o braku aktów w bazie
+- `SourcesList.tsx` - Lista źródeł z linkami do ISAP (React, używany w ResponseCard)
 
-3. Przestrzegaj tych zasad składni Mermaid:
+**Moduł Historii:**
+- `HistoryList.tsx` - Lista zapytań
+- `QueryCard.tsx` - Karta pojedynczego zapytania
+- `DeleteQueryButton.tsx` - Przycisk usuwania zapytania
 
-   - Używaj spójnego formatowania ID węzłów:
-     ```
-     A[Panel Główny] --> B[Formularz Logowania]
-     B --> C[Walidacja Danych]
-     ```
-   - Pamiętaj, że ID węzłów rozróżniają wielkość liter i muszą być unikalne
-   - Używaj poprawnych kształtów węzłów:
-     - `[Tekst]` dla prostokątów
-     - `(Tekst)` dla zaokrąglonych prostokątów
-     - `((Tekst))` dla okręgów
-     - `{Tekst}` dla rombów
-     - `>Tekst]` dla flag
-     - `[[Tekst]]` dla podprogramów
-   - Grupuj powiązane elementy za pomocą subgrafów:
-     ```
-     subgraph "Moduł Autentykacji"
-       A[Formularz Logowania]
-       B[Walidacja Danych]
-       C[Zarządzanie Sesją]
-     end
-     ```
-   - Używaj węzłów pośrednich dla złożonych relacji zamiast skomplikowanych połączeń
-   - Preferuj układ pionowy dla hierarchii i poziomy dla przepływu procesu
-   - Używaj poprawnych typów połączeń:
-     - `-->` dla standardowych strzałek
-     - `---` dla linii bez strzałek
-     - `-.->` dla linii kropkowanych ze strzałkami
-     - `==>` dla grubych linii ze strzałkami
-     - `--Tekst-->` dla strzałek z etykietami
-   - Unikaj używania adresów URL, adresów endpointów, nawiasów, długich nazw funkcji lub złożonych wyrażeń w nazwach węzłów
-   - Używaj spójnego nazewnictwa w całym dokumencie
-   - Unikaj długich etykiet, które mogą powodować problemy z renderowaniem
-   - Używaj cudzysłowów dla tekstu zawierającego spacje:
-     ```
-     A["Komponent Autentykacji"] --> B["Zarządzanie Stanem"]
-     ```
-   - Dla stylizacji węzłów, używaj poprawnej składni:
-     ```
-     A:::styleClass --> B
-     ```
-     z definicją klasy:
-     ```
-     classDef styleClass fill:#f96,stroke:#333,stroke-width:2px;
-     ```
+**Moduł Layout:**
+- `UserMenu.tsx` - Menu użytkownika (wylogowanie, profil)
 
-4. Unikaj tych typowych błędów:
-   - Brak deklaracji sekcji Mermaid i typu diagramu na początku
-   - Nieprawidłowe ID węzłów (zawierające niedozwolone znaki)
-   - Niezamknięte subgrafy (brakujący "end" dla rozpoczętego "subgraph")
-   - Niezamknięte nawiasy kwadratowe w opisach węzłów
-   - Niespójne kierunki przepływu (mieszanie TD i LR bez uzasadnienia)
-   - Zbyt złożone diagramy bez odpowiedniego grupowania
-   - Nakładające się etykiety i połączenia
+### 4. Komponenty Astro (Statyczne)
 
-Po utworzeniu diagramu, przejrzyj go dokładnie, aby upewnić się, że nie ma błędów składniowych ani problemów z renderowaniem. Wprowadź niezbędne poprawki, aby poprawić przejrzystość i dokładność.
+- `Header.astro` - Nagłówek z nawigacją
+- `Footer.astro` - Stopka
+- `WelcomeMessage.astro` - Komunikat powitalny (onboarding)
+- `ExampleQuestions.astro` - Przykładowe pytania (klikalne)
+- `HeroSection.astro` - Sekcja hero na landing page
+- `FeaturesSection.astro` - Sekcja funkcjonalności na landing page
 
-Kiedy będziesz gotowy do przedstawienia końcowego diagramu, użyj tagów <mermaid_diagram> do jego otoczenia.
+**Uwaga:** `SourcesList` jest obecnie renderowany inline w `ResponseCard.tsx`, ale powinien być osobnym komponentem React (`.tsx`), ponieważ jest używany wewnątrz komponentu React i wymaga dynamicznych danych z API.
+
+### 5. Komponenty UI (Shadcn/ui)
+
+- `Button`, `Input`, `Textarea`, `Card`, `Badge`, `Alert`, `Skeleton`, `Dialog`, itp.
+
+### 6. Przepływ danych
+
+- **Supabase Client:** Inicjalizacja w middleware, dostęp przez `Astro.locals.supabase`
+- **API Client:** `apiClient.ts` - wrapper dla żądań do FastAPI z JWT. **Pobiera token z Supabase Client** (`getSession()`) do nagłówka Authorization
+- **Hooks:** `useRateLimit`, `useActiveQueries`, `useQueryPolling`
+- **State Management:** React Context (opcjonalnie) lub props drilling
+
+</architecture_analysis>
+
+<mermaid_diagram>
+
+```mermaid
+flowchart TD
+    subgraph "Layouts"
+        BaseLayout["BaseLayout.astro<br/>Podstawowy layout"]
+        AppLayout["AppLayout.astro<br/>Layout aplikacji"]
+    end
+    
+    subgraph "Strony Publiczne"
+        LandingPage["index.astro<br/>Landing Page"]
+        LoginPage["login.astro<br/>Strona logowania"]
+        RegisterPage["register.astro<br/>Strona rejestracji"]
+        ForgotPasswordPage["forgot-password.astro<br/>Odzyskiwanie hasła"]
+        ResetPasswordPage["reset-password.astro<br/>Reset hasła"]
+    end
+    
+    subgraph "Strony Chronione"
+        ChatPage["app/index.astro<br/>Chat View"]
+        HistoryPage["app/history.astro<br/>Historia zapytań"]
+        SettingsPage["app/settings.astro<br/>Ustawienia"]
+    end
+    
+    subgraph "Komponenty Layout"
+        Header["Header.astro<br/>Nawigacja"]
+        Footer["Footer.astro<br/>Stopka"]
+        UserMenu["UserMenu.tsx<br/>Menu użytkownika"]
+    end
+    
+    subgraph "Komponenty Autentykacji"
+        LoginForm["LoginForm.tsx<br/>Formularz logowania"]
+        RegisterForm["RegisterForm.tsx<br/>Formularz rejestracji"]
+        ForgotPasswordForm["ForgotPasswordForm.tsx<br/>Żądanie resetu"]
+        ResetPasswordForm["ResetPasswordForm.tsx<br/>Reset hasła"]
+    end
+    
+    subgraph "Komponenty Czatu"
+        ChatInput["ChatInput.tsx<br/>Pole wprowadzania"]
+        ChatMessagesContainer["ChatMessagesContainer.tsx<br/>Kontener wiadomości"]
+        QueryBubble["QueryBubble.tsx<br/>Bańka pytania"]
+        ResponseCard["ResponseCard.tsx<br/>Karta odpowiedzi"]
+        RatingButtons["RatingButtons.tsx<br/>Przyciski oceny"]
+        DetailedAnswerButton["DetailedAnswerButton.tsx<br/>Dokładniejsza odpowiedź"]
+        NoRelevantActsCard["NoRelevantActsCard.tsx<br/>Brak aktów"]
+    end
+    
+    subgraph "Komponenty Historii"
+        HistoryList["HistoryList.tsx<br/>Lista zapytań"]
+        QueryCard["QueryCard.tsx<br/>Karta zapytania"]
+        DeleteQueryButton["DeleteQueryButton.tsx<br/>Usuwanie"]
+    end
+    
+    subgraph "Komponenty Statyczne"
+        WelcomeMessage["WelcomeMessage.astro<br/>Komunikat powitalny"]
+        ExampleQuestions["ExampleQuestions.astro<br/>Przykładowe pytania"]
+        HeroSection["HeroSection.astro<br/>Sekcja hero"]
+        FeaturesSection["FeaturesSection.astro<br/>Funkcjonalności"]
+    end
+    
+    subgraph "Infrastruktura"
+        SupabaseClient["Supabase Client<br/>@supabase/ssr"]
+        ApiClient["apiClient.ts<br/>Wrapper FastAPI"]
+        Hooks["React Hooks<br/>useRateLimit, useQueryPolling"]
+    end
+    
+    BaseLayout --> LandingPage
+    BaseLayout --> LoginPage
+    BaseLayout --> RegisterPage
+    BaseLayout --> ForgotPasswordPage
+    BaseLayout --> ResetPasswordPage
+    
+    AppLayout --> ChatPage
+    AppLayout --> HistoryPage
+    AppLayout --> SettingsPage
+    
+    BaseLayout --> Header
+    BaseLayout --> Footer
+    AppLayout --> Header
+    AppLayout --> UserMenu
+    
+    LoginPage --> LoginForm
+    RegisterPage --> RegisterForm
+    ForgotPasswordPage --> ForgotPasswordForm
+    ResetPasswordPage --> ResetPasswordForm
+    
+    ChatPage --> WelcomeMessage
+    ChatPage --> ExampleQuestions
+    ChatPage --> ChatInput
+    ChatPage --> ChatMessagesContainer
+    
+    ChatMessagesContainer --> QueryBubble
+    ChatMessagesContainer --> ResponseCard
+    ChatMessagesContainer --> NoRelevantActsCard
+    
+    ResponseCard --> SourcesList
+    ResponseCard --> RatingButtons
+    ResponseCard --> DetailedAnswerButton
+    
+    HistoryPage --> HistoryList
+    HistoryList --> QueryCard
+    QueryCard --> DeleteQueryButton
+    
+    LandingPage --> HeroSection
+    LandingPage --> FeaturesSection
+    
+    LoginForm -.->|"Supabase Auth"| SupabaseClient
+    RegisterForm -.->|"Supabase Auth"| SupabaseClient
+    ChatInput -.->|"API Request"| ApiClient
+    ChatMessagesContainer -.->|"Polling"| ApiClient
+    RatingButtons -.->|"API Request"| ApiClient
+    HistoryList -.->|"API Request"| ApiClient
+    
+    ApiClient -.->|"JWT Token"| SupabaseClient
+    ChatInput --> Hooks
+    ChatMessagesContainer --> Hooks
+    
+    classDef astroPage fill:#ff6b6b,stroke:#333,stroke-width:2px
+    classDef reactComponent fill:#4ecdc4,stroke:#333,stroke-width:2px
+    classDef astroComponent fill:#ffe66d,stroke:#333,stroke-width:2px
+    classDef infrastructure fill:#95e1d3,stroke:#333,stroke-width:2px
+    
+    class LandingPage,LoginPage,RegisterPage,ForgotPasswordPage,ResetPasswordPage,ChatPage,HistoryPage,SettingsPage astroPage
+    class LoginForm,RegisterForm,ForgotPasswordForm,ResetPasswordForm,ChatInput,ChatMessagesContainer,QueryBubble,ResponseCard,RatingButtons,DetailedAnswerButton,NoRelevantActsCard,HistoryList,QueryCard,DeleteQueryButton,UserMenu,SourcesList reactComponent
+    class Header,Footer,WelcomeMessage,ExampleQuestions,HeroSection,FeaturesSection astroComponent
+    class SupabaseClient,ApiClient,Hooks infrastructure
+```
+
+</mermaid_diagram>

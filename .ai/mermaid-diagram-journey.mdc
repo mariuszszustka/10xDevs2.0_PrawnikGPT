@@ -5,131 +5,163 @@ alwaysApply: false
 ---
 # Mermaid Diagram - User Journey
 
-Jesteś specjalistą UX, którego zadaniem jest utworzenie diagramu Mermaid w celu wizualizacji podróży użytkownika dla modułu logowania i rejestracji. Diagram powinien zostać utworzony w następującym pliku: DESTINATION
+Diagram podróży użytkownika dla aplikacji PrawnikGPT przedstawiający wszystkie ścieżki użytkownika od pierwszego wejścia do aplikacji po korzystanie z głównych funkcjonalności.
 
-Będziesz musiał odnieść się do następujących plików w celu poznania istniejących wymagań:
+<user_journey_analysis>
 
-<file_references>
-[project-prd.md](mdc:.ai/project-prd.md)
-</file_references>
+## Analiza podróży użytkownika
 
-<destination>
-.ai/diagrams/journey.md
-</destination>
+### 1. Główne ścieżki użytkownika
 
-Twoim zadaniem jest analiza specyfikacji modułu logowania i rejestracji oraz utworzenie kompleksowego diagramu Mermaid, który dokładnie przedstawia podróż użytkownika. Diagram powinien być w języku polskim.
+Zgodnie z PRD i User Stories, system obsługuje następujące ścieżki:
 
-Przed utworzeniem diagramu, przeanalizuj wymagania i zaplanuj swoje podejście. Umieść swoją analizę wewnątrz tagów <user_journey_analysis>. W tej analizie:
+**A. Nowy użytkownik (niezalogowany):**
+- Landing page (`/`) - marketing, CTA do rejestracji/logowania
+- Rejestracja (`/register`) - tworzenie konta, automatyczne logowanie
+- Logowanie (`/login`) - dostęp dla istniejących użytkowników
+- Odzyskiwanie hasła (`/forgot-password`, `/reset-password`)
 
-1. Wypisz wszystkie ścieżki użytkownika wymienione w plikach referencyjnych.
-2. Zidentyfikuj główne podróże i ich odpowiadające stany.
-3. Określ punkty decyzyjne i alternatywne ścieżki.
-4. Dostarcz krótki opis celu każdego stanu.
+**B. Zalogowany użytkownik:**
+- Chat View (`/app`) - główny interfejs, zadawanie pytań, otrzymywanie odpowiedzi
+- Historia (`/app/history`) - przeglądanie poprzednich zapytań i odpowiedzi
+- Ustawienia (`/app/settings`) - zarządzanie kontem (opcjonalnie w MVP)
 
-Kiedy będziesz gotowy do utworzenia diagramu, postępuj zgodnie z poniższymi wytycznymi:
+**C. Funkcjonalności w Chat View:**
+- Zadawanie pytań (US-003)
+- Otrzymywanie szybkiej odpowiedzi <15s (US-004)
+- Żądanie dokładniejszej odpowiedzi do 240s (US-005)
+- Ocenianie odpowiedzi (US-008)
+- Onboarding dla nowych użytkowników (US-010)
 
-1. Rozpocznij diagram od następującej składni:
+**D. Funkcjonalności w History:**
+- Przeglądanie historii zapytań (US-006)
+- Usuwanie zapytań z historii (US-007)
 
-   ```mermaid
-   stateDiagram-v2
-   ```
+### 2. Stany i przejścia
 
-2. Uwzględnij następujące elementy w swoim diagramie:
+**Stany początkowe:**
+- Landing Page (public)
+- Login Page (public)
+- Register Page (public)
 
-   - Ścieżki użytkownika oparte na istniejących wymaganiach
-   - Korzystanie z aplikacji jako niezalogowany użytkownik
-   - Dostęp do głównej funkcjonalności aplikacji
-   - Logowanie się
-   - Tworzenie konta
-   - Odzyskiwanie hasła
-   - Podróż użytkownika na wysokim poziomie zgodna z wymaganiami projektu i HISTORIAMI UŻYTKOWNIKA
-   - Punkty decyzyjne i alternatywne ścieżki
-   - Przepływ po weryfikacji e-mail
-   - Skupienie się na ścieżkach biznesowych, a nie aspektach technicznych
+**Stany chronione (wymagają autentykacji):**
+- Chat View (główny widok aplikacji)
+- History View
+- Settings View (opcjonalnie)
 
-3. Przestrzegaj tych zasad składni Mermaid:
+**Punkty decyzyjne:**
+- Czy użytkownik jest zalogowany? → Middleware przekierowuje
+- Czy to pierwsze logowanie? → Wyświetl onboarding
+- Czy historia jest pusta? → Wyświetl przykładowe pytania
+- Czy odpowiedź jest wystarczająca? → Możliwość żądania dokładniejszej odpowiedzi
 
-   - Stany początkowe i końcowe muszą być poprawnie zdefiniowane:
-     ```
-     [*] --> StronaGlowna
-     StronaGlowna --> [*]
-     ```
-   - Używaj stanów złożonych do grupowania powiązanych stanów:
-     ```
-     state "Proces Rejestracji" as Rejestracja {
-       [*] --> FormularzRejestracji
-       FormularzRejestracji --> WalidacjaDanych
-       WalidacjaDanych --> WyslanieMaila
-     }
-     ```
-   - Dla rozgałęzień decyzyjnych, używaj poprawnej składni:
-     ```
-     state if_weryfikacja <<choice>>
-     WeryfikacjaTokena --> if_weryfikacja
-     if_weryfikacja --> TokenPoprawny: Token OK
-     if_weryfikacja --> TokenNiepoprawny: Token błędny
-     ```
-   - Używaj notatek dla dodatkowych informacji:
-     ```
-     FormularzLogowania: Użytkownik może się zalogować
-     note right of FormularzLogowania
-       Formularz zawiera pola email i hasło
-       oraz link do odzyskiwania hasła
-     end note
-     ```
-   - Dla stanów równoległych, używaj poprawnej składni:
+### 3. Opis stanów
 
-     ```
-     state fork_state <<fork>>
-     state join_state <<join>>
+- **Landing Page:** Marketingowa strona główna z opisem funkcjonalności
+- **Login/Register:** Formularze autentykacji z walidacją
+- **Chat View:** Główny interfejs czatu z inputem, listą wiadomości, przyciskami oceny
+- **History View:** Chronologiczna lista zapytań z możliwością usuwania
+- **Onboarding:** Komunikat powitalny + przykładowe pytania (tylko przy pierwszym logowaniu)
 
-     Rejestracja --> fork_state
-     fork_state --> WyslanieMaila
-     fork_state --> AktualizacjaBazy
-     WyslanieMaila --> join_state
-     AktualizacjaBazy --> join_state
-     join_state --> StanKoncowy
-     ```
+</user_journey_analysis>
 
-   - Używaj przestrzeni nazw do organizowania złożonych diagramów:
-     ```
-     state "Autentykacja" as Autentykacja {
-       state "Logowanie" as Logowanie {
-         // stany dla procesu logowania
-       }
-       state "Rejestracja" as Rejestracja {
-         // stany dla procesu rejestracji
-       }
-     }
-     ```
-   - Dla historii stanu, używaj poprawnej składni:
-     ```
-     state "Panel użytkownika" as Panel {
-       [*] --> historia
-       state historia <<history>>
-     }
-     ```
-   - Dla przejść z wydarzeniami i warunkami, używaj poprawnej składni:
-     ```
-     StanA --> StanB: Przycisk Dalej [dane poprawne]
-     ```
-   - Unikaj używania adresów URL, adresów endpointów, nawiasów, długich nazw funkcji lub złożonych wyrażeń w nazwach stanów:
-     ŹLE: [Strona Główna<br/>(Kreator Reguł)]
-     DOBRZE: [Kreator Reguł]
-   - Używaj spójnego nazewnictwa w całym dokumencie
-   - Unikaj długich etykiet, które mogą powodować problemy z renderowaniem
+<mermaid_diagram>
 
-4. Unikaj tych typowych błędów:
-   - Brak deklaracji sekcji Mermaid i typu diagramu na początku
-   - Niepoprawne stany decyzyjne (brakujący choice, fork, join)
-   - Brakujące stany początkowe i końcowe ([*])
-   - Niespójne nazewnictwo stanów
-   - Niezamknięte zagnieżdżone stany (brakujący zamykający nawias klamrowy)
-   - Zbyt złożone diagramy bez odpowiedniego grupowania stanów
-   - Niepoprawne etykiety przejść
-   - Przekraczanie limitów długości linii
-   - Brak pustych linii przed i po bloku kodu Mermaid
+```mermaid
+stateDiagram-v2
+    [*] --> LandingPage: Wejście do aplikacji
+    
+    state "Strony Publiczne" as Publiczne {
+        LandingPage: Strona główna<br/>Marketing, CTA
+        LoginPage: Strona logowania<br/>Email + hasło
+        RegisterPage: Strona rejestracji<br/>Email + hasło + walidacja
+        ForgotPasswordPage: Odzyskiwanie hasła<br/>Żądanie resetu
+        ResetPasswordPage: Reset hasła<br/>Nowe hasło z tokenem
+    }
+    
+    state "Aplikacja Chroniona" as Aplikacja {
+        state "Chat View" as ChatView {
+            Onboarding: Pierwsze logowanie<br/>Komunikat powitalny
+            ChatEmpty: Wyświetl przykładowe pytania
+            ChatActive: Aktywny Czat
+            ChatWaitingFast: Oczekiwanie na szybką odpowiedź
+            ChatFastResponse: Szybka odpowiedź <15s
+            ChatWaitingDetailed: Oczekiwanie na dokładną odpowiedź
+            ChatDetailedResponse: Dokładna odpowiedź do 240s
+            
+            Onboarding --> ChatEmpty: Wyświetl przykładowe pytania
+            ChatEmpty --> ChatActive: Zadanie pierwszego pytania
+            ChatActive --> ChatActive: Kolejne pytania
+            ChatActive --> ChatWaitingFast: Wysłanie zapytania
+            ChatWaitingFast --> ChatFastResponse: Odpowiedź systemu
+            ChatFastResponse --> ChatWaitingDetailed: Żądanie szczegółów
+            ChatWaitingDetailed --> ChatDetailedResponse: Generowanie odpowiedzi
+            ChatFastResponse --> ChatActive: Nowy wątek
+            ChatDetailedResponse --> ChatActive: Nowy wątek
+        }
+        
+        HistoryView: Historia zapytań<br/>Chronologiczna lista
+        SettingsView: Ustawienia<br/>Zarządzanie kontem
+    }
 
-Po utworzeniu diagramu, przejrzyj go dokładnie, aby upewnić się, że nie ma błędów składniowych ani problemów z renderowaniem. Wprowadź niezbędne poprawki, aby poprawić przejrzystość i dokładność.
+    %% --- NAWIGACJA PUBLICZNA ---
+    LandingPage --> LoginPage: Kliknięcie "Zaloguj się"
+    LandingPage --> RegisterPage: Kliknięcie "Zarejestruj się"
+    LoginPage --> RegisterPage: Link "Nie masz konta?"
+    LoginPage --> ForgotPasswordPage: Link "Zapomniałeś hasła?"
+    RegisterPage --> LoginPage: Link "Masz już konto?"
+    
+    ForgotPasswordPage --> ResetPasswordPage: Otwarcie linku z emaila
+    ResetPasswordPage --> LoginPage: Pomyślny reset hasła
 
-Kiedy będziesz gotowy do przedstawienia końcowego diagramu, użyj tagów <mermaid_diagram> do jego otoczenia.
+    %% --- LOGIKA LOGOWANIA I WEJŚCIA (CHOICE) ---
+    state if_pierwsze_logowanie <<choice>>
+    
+    LoginPage --> if_pierwsze_logowanie: Pomyślne logowanie
+    RegisterPage --> if_pierwsze_logowanie: Pomyślna rejestracja
+    
+    %% Kierujemy bezpośrednio do stanów wewnątrz ChatView
+    if_pierwsze_logowanie --> Onboarding: firstLogin=true
+    if_pierwsze_logowanie --> if_historia_pusta: Kolejne logowanie
+
+    %% --- SPRAWDZENIE HISTORII (EDGE CASE) ---
+    state if_historia_pusta <<choice>>
+    
+    %% Wejścia do ChatActive z zewnątrz - sprawdzamy historię
+    if_historia_pusta --> ChatEmpty: Historia pusta<br/>(edge case: usunięto wszystkie)
+    if_historia_pusta --> ChatActive: Historia istnieje
+
+    %% --- NAWIGACJA WEWNĘTRZNA ---
+    ChatActive --> HistoryView: Kliknięcie "Historia"
+    HistoryView --> if_historia_pusta: Powrót
+    ChatActive --> SettingsView: Kliknięcie "Ustawienia"
+    SettingsView --> if_historia_pusta: Powrót
+    
+    %% Wylogowanie
+    ChatActive --> LoginPage: Wylogowanie
+    HistoryView --> LoginPage: Wylogowanie
+    SettingsView --> LoginPage: Wylogowanie
+    
+    %% --- LOGIKA DOSTĘPU (GUARD) ---
+    state if_zalogowany <<choice>>
+    LandingPage --> if_zalogowany: Próba dostępu (Guard)
+    if_zalogowany --> if_historia_pusta: Użytkownik ma sesję
+    if_zalogowany --> LandingPage: Brak sesji
+    
+    %% --- OCENA I DECYZJE WEWNĄTRZ CZATU ---
+    state if_ocena <<choice>>
+    ChatFastResponse --> if_ocena: Ocena odpowiedzi
+    ChatDetailedResponse --> if_ocena: Ocena odpowiedzi
+    if_ocena --> ChatActive: Zapisano
+    
+    state if_dokladniejsza <<choice>>
+    ChatFastResponse --> if_dokladniejsza: Potrzeba dokładniejszej odpowiedzi?
+    if_dokladniejsza --> ChatWaitingDetailed: Tak
+    if_dokladniejsza --> ChatActive: Nie
+    
+    %% --- BEZPOŚREDNI DOSTĘP ---
+    [*] --> LoginPage: Bezpośredni dostęp do /login
+    [*] --> RegisterPage: Bezpośredni dostęp do /register
+```
+
+</mermaid_diagram>
