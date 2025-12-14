@@ -7,12 +7,12 @@ Widok Register Page (Strona rejestracji) umożliwia nowym użytkownikom utworzen
 **Główne funkcjonalności:**
 - Formularz rejestracji z polami: email, hasło, potwierdzenie hasła
 - Checkbox akceptacji regulaminu (wymagany)
-- Walidacja hasła w czasie rzeczywistym (minimum 8 znaków)
+- Walidacja hasła w czasie rzeczywistym (minimum 12 znaków, zgodnie z PRD 3.1)
 - Wskaźnik siły hasła (opcjonalny)
 - Sprawdzanie zgodności haseł
 - Toggle widoczności hasła
-- Auto-login po rejestracji
-- Obsługa błędów z Supabase Auth
+- Auto-login po rejestracji (MVP - brak email verification, zgodnie z PRD 3.1)
+- Obsługa błędów z Supabase Auth (bez enumeracji użytkowników - PRD 9.2.4)
 
 **Stack technologiczny:**
 - Astro 5 (SSR) dla strony
@@ -104,9 +104,10 @@ register.astro (Astro page)
    - Komunikat: `"Podaj prawidłowy adres email"` lub `"Email jest wymagany"`
 
 2. **Hasło:**
-   - Minimum 8 znaków: `password.length >= 8`
+   - Minimum 12 znaków: `password.length >= 12` (zgodnie z PRD 3.1)
+   - Małe i duże litery, cyfry, znaki specjalne (zgodnie z PRD 3.1)
    - Pole wymagane: `password.length > 0`
-   - Komunikat: `"Hasło musi mieć minimum 8 znaków"` lub `"Hasło jest wymagane"`
+   - Komunikat: `"Hasło musi mieć minimum 12 znaków, w tym małe i duże litery, cyfry oraz znaki specjalne"` lub `"Hasło jest wymagane"`
 
 3. **Potwierdzenie hasła:**
    - Zgodność z hasłem: `passwordConfirm === password`
@@ -119,12 +120,12 @@ register.astro (Astro page)
 
 **Server-side (Supabase Auth):**
 1. **Email zajęty:**
-   - Błąd: `"User already registered"`
-   - Komunikat użytkownika: `"Ten adres email jest już zarejestrowany"`
+   - Błąd: `"User already registered"` lub `"Email already registered"`
+   - Komunikat użytkownika: `"Nie można utworzyć konta"` (generic, brak enumeracji - zgodnie z PRD 9.2.4)
 
 2. **Słabe hasło:**
-   - Błąd: `"Password should be at least 6 characters"` (Supabase domyślnie)
-   - Komunikat użytkownika: `"Hasło jest zbyt słabe"`
+   - Błąd: `"Password should be at least 12 characters"` (zgodnie z PRD)
+   - Komunikat użytkownika: `"Hasło jest zbyt słabe. Minimum 12 znaków, w tym małe i duże litery, cyfry oraz znaki specjalne."`
 
 3. **Rate limiting:**
    - Błąd: `"Too many requests"`

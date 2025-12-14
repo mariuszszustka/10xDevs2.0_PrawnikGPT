@@ -194,7 +194,7 @@ const { data, error } = await supabaseClient.auth.signInWithPassword({
 - ✅ Toggle widoczności hasła
 
 **Wymagane rozszerzenia:**
-- ⚠️ Walidacja hasła zgodna z PRD: minimum 12 znaków, małe/duże litery, cyfry, znaki specjalne (obecnie minimum 8 znaków)
+- ✅ Walidacja hasła zgodna z PRD: minimum 12 znaków, małe/duże litery, cyfry, znaki specjalne (zaimplementowane)
 - ✅ Ogólne komunikaty błędów (brak enumeracji)
 
 **Props:**

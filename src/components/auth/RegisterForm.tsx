@@ -282,6 +282,11 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
     setErrors({});
     setIsLoading(true);
 
+    // Timeout configuration (20 seconds for client request)
+    const TIMEOUT_MS = 20000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
     try {
       // Call register API endpoint (handles session with HttpOnly cookies)
       const response = await fetch('/api/auth/register', {
@@ -290,17 +295,27 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
           'Content-Type': 'application/json',
         },
         credentials: 'include', // Include cookies in request
+        signal: controller.signal,
         body: JSON.stringify({
           email: formData.email.trim(),
           password: formData.password,
         }),
       });
 
-      const data = await response.json();
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // API returned error
-        const errorMessage = data.error || 'Nie można utworzyć konta. Spróbuj ponownie.';
+        let errorMessage = 'Nie można utworzyć konta. Spróbuj ponownie.';
+        
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // If JSON parsing fails, use default message
+          if (response.status === 503) {
+            errorMessage = 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.';
+          }
+        }
         
         // Try to map to specific field if possible
         if (errorMessage.toLowerCase().includes('email')) {
@@ -323,6 +338,7 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
 
       // Success: session is stored in HttpOnly cookies by API endpoint
       // Refresh browser client session to sync with server
+      const data = await response.json();
       await supabaseClient.auth.getSession();
 
       // Auto-login successful - redirect to app
@@ -335,12 +351,20 @@ export function RegisterForm({ redirectTo = '/app?firstLogin=true' }: RegisterFo
         });
         setIsLoading(false);
       }
-    } catch (error) {
-      // Handle network errors or unexpected errors
-      console.error('Registration error:', error);
-      setErrors({
-        general: 'Wystąpił błąd podczas rejestracji. Sprawdź połączenie internetowe.',
-      });
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout or network errors
+      if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+        setErrors({
+          general: 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.',
+        });
+      } else {
+        console.error('Registration error:', error);
+        setErrors({
+          general: 'Wystąpił błąd podczas rejestracji. Sprawdź połączenie internetowe.',
+        });
+      }
       setIsLoading(false);
     }
   }, [formData, validateForm, redirectTo]);

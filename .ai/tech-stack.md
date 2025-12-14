@@ -136,8 +136,100 @@
 - **Backend**: mypy (static type checker dla Python)
 
 ### Testing
-- **Frontend**: Vitest (unit tests dla React components)
-- **Backend**: pytest (unit tests + integration tests)
+
+#### Backend Testing
+- **pytest** (>=8.3.0) - główny framework testowy
+  - Testy jednostkowe dla services, middleware, db layer
+  - Testy integracyjne dla API endpoints
+  - Wsparcie dla async/await testów
+- **pytest-asyncio** (>=0.24.0) - testy asynchroniczne (FastAPI, async DB calls)
+- **httpx** (>=0.28.0) - TestClient dla testowania endpointów FastAPI
+- **pytest-mock** - fixtures dla mocków i stubów
+- **pytest-cov** - pomiar code coverage (target: ≥70%)
+- **unittest.mock** - mockowanie zewnętrznych serwisów (OLLAMA API, Supabase)
+
+**Typy testów backend:**
+- Unit tests: RAG pipeline, LLM service, vector search
+- Integration tests: Supabase, OLLAMA, API endpoints
+- Performance tests: czas odpowiedzi, throughput, similarity search
+
+#### Frontend Testing
+- **Vitest** - nowoczesny framework testowy (Vite-native, szybszy niż Jest)
+  - Unit tests dla React components (islands)
+  - Integration tests dla flow użytkownika
+  - Watch mode dla development
+- **@testing-library/react** - testy komponentów React (behavior-driven)
+- **@testing-library/user-event** - symulacja interakcji użytkownika (kliknięcia, wpisywanie)
+- **MSW (Mock Service Worker)** - mockowanie API calls (FastAPI endpoints)
+- **@vitest/coverage-v8** - pomiar code coverage (target: ≥50% MVP)
+- **@axe-core/react** - testy dostępności (WCAG AA compliance)
+
+**Typy testów frontend:**
+- Unit tests: React components, utility functions
+- Integration tests: Auth flow, Chat flow, History flow
+- Accessibility tests: keyboard navigation, screen reader support
+
+#### End-to-End Testing (Opcjonalnie, poza MVP)
+- **Playwright** (zalecane) - nowoczesny framework E2E
+  - Cross-browser testing (Chromium, Firefox, WebKit)
+  - Auto-waiting, retry-ability
+  - Debugging tools (trace viewer, inspector)
+- **Cypress** (alternatywa) - popularna alternatywa dla Playwright
+  - Real-time reloading
+  - Time-travel debugging
+  - Network stubbing
+
+**Uwaga:** E2E testy nie są w zakresie MVP, ale mogą być dodane później dla:
+- Pełny user journey: rejestracja → chat → ocena → historia
+- Smoke tests dla kluczowych funkcji
+- Regression tests przed release
+
+#### Performance Testing
+- **locust** (Python) - testy obciążeniowe dla FastAPI backend
+  - Symulacja wielu użytkowników jednocześnie
+  - Sprawdzanie rate limiting (10 queries/min per user)
+  - Pomiar latency, throughput, error rate
+- **k6** (JavaScript/Go) - alternatywa dla locust
+  - Scripting w JavaScript
+  - Real-time metrics
+  - Cloud integration
+- **Lighthouse** (Google) - audyty frontend
+  - Performance (FCP, LCP, TTI)
+  - Accessibility (WCAG)
+  - SEO, best practices
+
+**Performance targets:**
+- Fast response: <15s (95th percentile)
+- Accurate response: <240s (timeout)
+- Similarity search: <200ms średnio
+- Page load: First Contentful Paint <2s
+- Bundle size: Main bundle <50KB gzipped
+
+#### Security Testing
+- **bandit** - security linter dla Python
+  - Wykrywanie SQL injection, command injection
+  - Sprawdzanie hardcoded secrets
+  - Insecure cryptography usage
+- **npm audit** - audit zależności npm
+  - Wykrywanie known vulnerabilities
+  - Auto-fix dla znanych CVE
+- **snyk** (opcjonalnie) - advanced security scanning
+  - Continuous monitoring
+  - Dependency vulnerability management
+  - License compliance
+
+**Security test cases:**
+- SQL injection prevention (parameterized queries)
+- XSS prevention (React auto-escaping)
+- JWT validation (signature, expiration)
+- RLS policies enforcement (cross-user access)
+- Rate limiting enforcement
+
+#### Continuous Integration (GitHub Actions)
+- Workflow dla backend: pytest, ruff, mypy, bandit
+- Workflow dla frontend: ESLint, Prettier, type-check, Vitest
+- Coverage reports (codecov.io integration opcjonalnie)
+- Blokada merge jeśli coverage < target
 
 ---
 

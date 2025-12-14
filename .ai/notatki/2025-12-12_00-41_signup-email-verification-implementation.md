@@ -2,11 +2,23 @@
 
 **Data:** 2025-12-12  
 **Czas:** 00:41  
-**Asystent:** Auto (Cursor AI)
+**Asystent:** Auto (Cursor AI)  
+**Status:** ⚠️ **PRZESTARZAŁE** - Email verification zostało usunięte z MVP zgodnie z PRD 3.1
 
 ---
 
-## 📋 Cel sesji
+## ⚠️ UWAGA: Ten dokument opisuje implementację, która została zmieniona
+
+**Aktualizacja (2025-01-11):** Zgodnie z PRD 3.1, MVP **nie wymaga weryfikacji adresu e-mail**. Implementacja została zmieniona:
+- `SignupForm.tsx` używa teraz endpointu `/api/auth/register` (bez email verification)
+- Automatyczne logowanie po rejestracji (zgodnie z PRD)
+- Endpoint `/api/auth/signup` pozostaje w kodzie na przyszłość, ale nie jest używany w MVP
+
+Zobacz: `.ai/notatki/2025-01-11_signup-email-verification-removal.md` dla szczegółów zmian.
+
+---
+
+## 📋 Cel sesji (historyczny)
 
 Implementacja backendu dla strony `signup.astro` i komponentu `SignupForm.tsx` z obsługą weryfikacji email przez Supabase. Logika powinna być spójna z `login.astro` i `LoginForm.tsx`. Po rejestracji użytkownik otrzymuje link do potwierdzenia konta.
 
@@ -255,16 +267,18 @@ if (user && ['/login', '/register', '/signup', '/forgot-password'].includes(path
 
 ### Różnice między /register a /signup
 
-**/api/auth/register:**
-- Weryfikacja email wyłączona (`emailRedirectTo: undefined`)
-- Automatyczne logowanie po rejestracji (session jest tworzona od razu)
-- Używane w MVP bez weryfikacji email
+**/api/auth/register (MVP - używane):**
+- ✅ Weryfikacja email wyłączona (`emailRedirectTo: undefined`)
+- ✅ Automatyczne logowanie po rejestracji (session jest tworzona od razu)
+- ✅ Używane w MVP bez weryfikacji email (zgodnie z PRD 3.1)
+- ✅ Działa w lokalnym środowisku bez serwera pocztowego
 
-**/api/auth/signup:**
-- Weryfikacja email włączona (`emailRedirectTo: "${origin}/login?emailConfirmed=true"`)
-- Brak automatycznego logowania (session = null do momentu potwierdzenia email)
-- Użytkownik musi kliknąć link w emailu przed zalogowaniem
-- Używane gdy weryfikacja email jest wymagana
+**/api/auth/signup (opcjonalne - nieużywane w MVP):**
+- ⚠️ Weryfikacja email włączona (`emailRedirectTo: "${origin}/login?emailConfirmed=true"`)
+- ⚠️ Brak automatycznego logowania (session = null do momentu potwierdzenia email)
+- ⚠️ Użytkownik musi kliknąć link w emailu przed zalogowaniem
+- ⚠️ Wymaga serwera pocztowego (nie działa lokalnie)
+- ⚠️ **NIE UŻYWANE W MVP** - pozostaje w kodzie na przyszłość
 
 ### Konfiguracja Supabase
 
@@ -356,10 +370,10 @@ Implementacja jest w pełni spójna z `login.astro` i `LoginForm.tsx`:
 
 ### Różnice między /register a /signup
 Projekt ma teraz dwie ścieżki rejestracji:
-- `/register` - bez weryfikacji email (MVP, automatyczne logowanie)
-- `/signup` - z weryfikacją email (wymaga potwierdzenia przed logowaniem)
+- ✅ `/register` - bez weryfikacji email (MVP, automatyczne logowanie) - **UŻYWANE W MVP**
+- ⚠️ `/signup` - z weryfikacją email (wymaga potwierdzenia przed logowaniem) - **NIE UŻYWANE W MVP**
 
-To pozwala na elastyczność w zależności od wymagań biznesowych.
+**Status (2025-01-11):** Zgodnie z PRD 3.1, MVP używa tylko `/register` bez email verification. Endpoint `/signup` pozostaje w kodzie na przyszłość, ale nie jest używany w MVP.
 
 ### Bezpieczeństwo
 - Zabezpieczenie przed enumeracją użytkowników (generic error messages)

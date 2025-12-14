@@ -2,11 +2,11 @@
  * SignupForm - React island for signup form
  * 
  * Interactive signup form component with validation, error handling,
- * and Supabase Auth integration with email verification.
+ * and Supabase Auth integration (MVP - no email verification per PRD 3.1).
  * Uses Shadcn/ui components for UI.
  * 
- * After successful registration, user receives an email verification link.
- * User must click the link to activate their account before logging in.
+ * After successful registration, user is automatically logged in (MVP - PRD 3.1).
+ * No email verification required in MVP to minimize barriers to entry.
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -23,7 +23,7 @@ import type { RegisterFormData, RegisterFormErrors, PasswordStrength } from '@/l
  */
 export interface SignupFormProps {
   redirectTo?: string;
-  showEmailSentMessage?: boolean;
+  showEmailSentMessage?: boolean; // Deprecated: MVP doesn't use email verification (PRD 3.1)
 }
 
 /**
@@ -121,7 +121,7 @@ function mapSupabaseError(error: { message: string } | null): string {
  * - Error handling with user-friendly messages
  * - Auto-focus on email field
  * - Full keyboard navigation support
- * - Email verification flow (user receives verification link)
+ * - Automatic login after registration (MVP - no email verification per PRD 3.1)
  */
 export function SignupForm({ redirectTo = '/app', showEmailSentMessage = false }: SignupFormProps) {
   const [formData, setFormData] = useState<RegisterFormData>({
@@ -135,7 +135,6 @@ export function SignupForm({ redirectTo = '/app', showEmailSentMessage = false }
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
-  const [emailSent, setEmailSent] = useState(showEmailSentMessage);
   
   const emailInputRef = useRef<HTMLInputElement>(null);
 
@@ -247,7 +246,8 @@ export function SignupForm({ redirectTo = '/app', showEmailSentMessage = false }
 
   /**
    * Handle form submission
-   * Uses API endpoint for registration with email verification
+   * Uses API endpoint for registration without email verification (MVP - PRD 3.1)
+   * Automatically logs in user after successful registration
    */
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -263,25 +263,40 @@ export function SignupForm({ redirectTo = '/app', showEmailSentMessage = false }
     setErrors({});
     setIsLoading(true);
 
+    // Timeout configuration (20 seconds for client request)
+    const TIMEOUT_MS = 20000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
     try {
-      // Call signup API endpoint (handles email verification)
-      const response = await fetch('/api/auth/signup', {
+      // Call register API endpoint (no email verification in MVP - PRD 3.1)
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        credentials: 'include', // Include cookies in request
+        signal: controller.signal,
         body: JSON.stringify({
           email: formData.email.trim(),
           password: formData.password,
         }),
       });
 
-      const data = await response.json();
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // API returned error
-        const errorMessage = data.error || 'Nie można utworzyć konta. Spróbuj ponownie.';
+        let errorMessage = 'Nie można utworzyć konta. Spróbuj ponownie.';
+        
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // If JSON parsing fails, use default message
+          if (response.status === 503) {
+            errorMessage = 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.';
+          }
+        }
         
         // Try to map to specific field if possible
         if (errorMessage.toLowerCase().includes('email')) {
@@ -302,16 +317,32 @@ export function SignupForm({ redirectTo = '/app', showEmailSentMessage = false }
         return;
       }
 
-      // Success: email verification link has been sent
-      // Show success message and redirect to signup page with emailSent parameter
-      setEmailSent(true);
-      window.location.href = `/signup?emailSent=true&redirect_to=${encodeURIComponent(redirectTo)}`;
-    } catch (error) {
-      // Handle network errors or unexpected errors
-      console.error('Signup error:', error);
-      setErrors({
-        general: 'Wystąpił błąd podczas rejestracji. Sprawdź połączenie internetowe.',
-      });
+      // Success: session is stored in HttpOnly cookies by API endpoint
+      // Refresh browser client session to sync with server
+      await supabaseClient.auth.getSession();
+
+      // Auto-login successful - redirect to app (MVP - no email verification)
+      const data = await response.json();
+      if (data.session) {
+        window.location.href = redirectTo;
+      } else {
+        // Fallback: redirect even if session is not in response (shouldn't happen)
+        window.location.href = redirectTo;
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout or network errors
+      if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+        setErrors({
+          general: 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.',
+        });
+      } else {
+        console.error('Signup error:', error);
+        setErrors({
+          general: 'Wystąpił błąd podczas rejestracji. Sprawdź połączenie internetowe.',
+        });
+      }
       setIsLoading(false);
     }
   }, [formData, validateForm, redirectTo]);
@@ -329,33 +360,6 @@ export function SignupForm({ redirectTo = '/app', showEmailSentMessage = false }
   const handleTogglePasswordConfirm = useCallback(() => {
     setShowPasswordConfirm(prev => !prev);
   }, []);
-
-  // If email was sent, show success message instead of form
-  if (emailSent) {
-    return (
-      <div className="space-y-4">
-        <Alert variant="default" className="bg-blue-50 border-blue-200">
-          <AlertDescription className="text-blue-800">
-            <p className="font-medium mb-2">Link do potwierdzenia konta został wysłany!</p>
-            <p className="text-sm">
-              Sprawdź skrzynkę pocztową na adresie <strong>{formData.email}</strong> i kliknij link, aby aktywować konto.
-            </p>
-            <p className="text-sm mt-2">
-              Po potwierdzeniu konta będziesz mógł się zalogować.
-            </p>
-          </AlertDescription>
-        </Alert>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => window.location.href = '/login'}
-        >
-          Przejdź do logowania
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>

@@ -5,7 +5,6 @@ import { SignupForm } from '../components/auth/SignupForm';
 // Get URL parameters
 const url = Astro.url;
 const redirectTo = url.searchParams.get('redirect_to') || '/app';
-const emailSent = url.searchParams.get('emailSent') === 'true';
 ---
 
 <BaseLayout title="Rejestracja - PrawnikGPT">
@@ -18,15 +17,7 @@ const emailSent = url.searchParams.get('emailSent') === 'true';
         Utwórz konto, aby rozpocząć korzystanie z PrawnikGPT
       </p>
       
-      {emailSent && (
-        <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p class="text-sm text-blue-800 text-center">
-            Link do potwierdzenia konta został wysłany na Twój adres email. Sprawdź skrzynkę pocztową i kliknij link, aby aktywować konto.
-          </p>
-        </div>
-      )}
-      
-      <SignupForm client:load redirectTo={redirectTo} showEmailSentMessage={emailSent} />
+      <SignupForm client:load redirectTo={redirectTo} />
       
       <p class="mt-6 text-center text-sm text-gray-600">
         Masz już konto?{' '}

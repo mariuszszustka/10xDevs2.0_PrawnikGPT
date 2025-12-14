@@ -17,10 +17,15 @@ PrawnikGPT is a Retrieval-Augmented Generation (RAG) based legal assistant desig
 - **Database**: Supabase (PostgreSQL with pgvector extension)
 - **LLM & Embeddings**: OLLAMA (running models like Mistral, Llama, etc.)
 - **Caching**: Redis (for caching RAG context)
-- **Frontend**: Astro (with TypeScript)
-- **Testing**: Pytest
-- **Code Quality**: Ruff, Prettier, ESLint
-- **DevOps**: Docker, Husky (pre-commit hooks)
+- **Frontend**: Astro 5 + React 19 (islands), TypeScript 5, Tailwind CSS 4, Shadcn/ui
+- **Testing**:
+  - Backend: Pytest, pytest-asyncio, httpx, pytest-cov
+  - Frontend: Vitest, @testing-library/react, MSW
+  - E2E: Playwright (optional)
+  - Performance: locust, k6, Lighthouse
+  - Security: bandit, npm audit
+- **Code Quality**: Ruff, Prettier, ESLint, mypy
+- **DevOps**: Docker, Husky (pre-commit hooks), GitHub Actions
 
 ## 📂 Project Structure
 
@@ -114,8 +119,116 @@ The application should now be available at `http://localhost:4321`.
 
 ## 🧪 Testing
 
-To run the backend tests, execute the following command from the `backend/` directory:
+### Quick Start
 
+For a quick introduction to running tests, see **[TESTING_QUICKSTART.md](./TESTING_QUICKSTART.md)**.
+
+For detailed setup and configuration, see **[TESTING_SETUP.md](./TESTING_SETUP.md)**.
+
+### Backend Tests (Python)
+
+The backend uses **pytest** as the primary testing framework with additional tools for async testing, mocking, and coverage measurement.
+
+**Run tests:**
 ```bash
-pytest
+cd backend
+pytest                          # Run all tests
+pytest --cov=backend            # Run with coverage report
+pytest -v                       # Verbose output
+pytest tests/test_rag_pipeline.py  # Run specific test file
+```
+
+**Testing tools:**
+- **pytest** (>=8.3.0) - Main testing framework
+- **pytest-asyncio** (>=0.24.0) - Testing async/await code
+- **httpx** (>=0.28.0) - TestClient for FastAPI endpoints
+- **pytest-mock** - Mocking framework
+- **pytest-cov** - Code coverage measurement
+- **unittest.mock** - Mocking OLLAMA API and external services
+
+**Coverage target:** ≥70% for backend code
+
+### Frontend Tests (TypeScript/React)
+
+The frontend uses **Vitest** for unit testing React components and utility functions.
+
+**Run tests:**
+```bash
+npm run test                    # Run all tests
+npm run test:coverage           # Run with coverage report
+npm run test:watch              # Watch mode for development
+```
+
+**Testing tools:**
+- **Vitest** - Modern testing framework (Vite-native)
+- **@testing-library/react** - Testing React components
+- **@testing-library/user-event** - Simulating user interactions
+- **MSW (Mock Service Worker)** - Mocking API calls
+- **@vitest/coverage-v8** - Code coverage measurement
+- **@axe-core/react** - Accessibility testing
+
+**Coverage target:** ≥50% for frontend code (MVP)
+
+### End-to-End Tests (Optional)
+
+E2E tests are not in MVP scope but can be added for comprehensive testing:
+
+**Recommended tools:**
+- **Playwright** - Modern E2E testing framework (recommended)
+- **Cypress** - Alternative E2E framework
+
+**Run E2E tests (when implemented):**
+```bash
+npm run test:e2e                # Playwright tests
+npm run test:e2e:ui             # Playwright UI mode
+```
+
+### Performance Testing
+
+**Tools:**
+- **locust** - Load testing (Python-based)
+- **k6** - Alternative load testing (JavaScript-based)
+- **Lighthouse** - Frontend performance and accessibility audits
+
+**Performance targets:**
+- Fast response: <15s (95th percentile)
+- Accurate response: <240s (timeout)
+- Similarity search: <200ms average
+- First Contentful Paint: <2s
+- Main JS bundle: <50KB (gzipped)
+
+### Security Testing
+
+**Tools:**
+- **bandit** - Python security linter
+- **npm audit** - npm dependency vulnerability scanner
+- **snyk** - Advanced security scanning (optional)
+
+**Run security checks:**
+```bash
+# Backend
+cd backend
+bandit -r . -ll                 # Check for common security issues
+
+# Frontend
+npm audit                       # Check for vulnerable dependencies
+npm audit fix                   # Auto-fix if possible
+```
+
+### Test Structure
+
+```
+backend/tests/
+├── test_health.py              # Health check endpoint tests
+├── test_query_endpoints.py     # Query API endpoint tests
+├── test_rating_endpoints.py    # Rating API endpoint tests
+├── test_rag_pipeline.py        # RAG pipeline unit tests
+├── test_llm_service.py         # LLM service tests
+├── test_vector_search.py       # Vector search tests
+└── integration/
+    ├── test_database_integration.py   # Supabase integration tests
+    └── test_ollama_integration.py     # OLLAMA integration tests
+
+src/
+└── (Vitest tests to be implemented)
 ```

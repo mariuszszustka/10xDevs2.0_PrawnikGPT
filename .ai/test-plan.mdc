@@ -1,0 +1,1053 @@
+---
+description: Plan testów dla aplikacji PrawnikGPT - MVP dla prawników z systemem RAG
+globs: 
+alwaysApply: false
+---
+# Plan Testów – PrawnikGPT MVP
+
+**Wersja:** 1.0  
+**Data utworzenia:** 2025-01-11  
+**Tech Stack:** Astro 5, React 19, FastAPI, Supabase, OLLAMA  
+**Dokumentacja:** [tech-stack.md](.ai/tech-stack.md), [api-plan.md](.ai/api-plan.md), [db-plan.md](.ai/db-plan.md)
+
+---
+
+## 1. Wprowadzenie i Cele Testowania
+
+### 1.1. Cel Dokumentu
+
+Niniejszy dokument definiuje kompleksowy plan testów dla aplikacji PrawnikGPT - systemu MVP umożliwiającego zadawanie pytań prawnych w języku naturalnym z wykorzystaniem RAG (Retrieval-Augmented Generation) i lokalnych modeli LLM.
+
+### 1.2. Cele Testowania
+
+- **Weryfikacja funkcjonalności:** Zapewnienie, że wszystkie funkcje MVP działają zgodnie z wymaganiami
+- **Jakość odpowiedzi RAG:** Weryfikacja poprawności wyszukiwania semantycznego i generowania odpowiedzi
+- **Wydajność:** Potwierdzenie, że szybkie odpowiedzi są generowane w <15s (95th percentile)
+- **Bezpieczeństwo:** Weryfikacja autoryzacji, walidacji danych i ochrony przed atakami
+- **Dostępność:** Zapewnienie zgodności z WCAG AA dla użytkowników z niepełnosprawnościami
+- **Stabilność:** Weryfikacja obsługi błędów i edge cases
+
+### 1.3. Zakres MVP
+
+**W zakresie testów:**
+- Autentykacja (rejestracja, logowanie, reset hasła) - bez weryfikacji email
+- Interfejs czatu z dwupoziomowymi odpowiedziami (fast/accurate)
+- Historia zapytań z paginacją
+- System ocen (thumbs up/down)
+- Onboarding (komunikat powitalny, przykładowe pytania)
+- 20k aktów prawnych (statyczny dataset)
+
+**Poza zakresem (nie testowane w MVP):**
+- Pełna baza ISAP (tylko 20k aktów)
+- Zaawansowane wyszukiwanie/filtry w historii
+- Udostępnianie zapytań między użytkownikami
+- Eksport do PDF/DOCX
+- Aplikacje mobilne
+- E2E testy (opcjonalnie)
+
+---
+
+## 2. Zakres Testów
+
+### 2.1. Moduły do Testowania
+
+#### 2.1.1. Backend (FastAPI)
+
+**Routers:**
+- `backend/routers/health.py` - Health check endpoint (`GET /health`)
+- `backend/routers/queries.py` - Zarządzanie zapytaniami:
+  - `POST /api/v1/queries` - Przesłanie nowego zapytania
+  - `GET /api/v1/queries` - Lista zapytań (paginacja)
+  - `GET /api/v1/queries/{query_id}` - Szczegóły zapytania
+  - `POST /api/v1/queries/{query_id}/accurate-response` - Żądanie dokładnej odpowiedzi
+  - `DELETE /api/v1/queries/{query_id}` - Usunięcie zapytania
+- `backend/routers/ratings.py` - System ocen:
+  - `POST /api/v1/ratings` - Dodanie/aktualizacja oceny
+  - `GET /api/v1/ratings/{rating_id}` - Szczegóły oceny
+- `backend/routers/legal_acts.py` - Metadane aktów prawnych:
+  - `GET /api/v1/legal-acts` - Lista aktów (paginacja)
+  - `GET /api/v1/legal-acts/{act_id}` - Szczegóły aktu
+- `backend/routers/onboarding.py` - Onboarding:
+  - `GET /api/v1/onboarding/example-questions` - Przykładowe pytania
+
+**Services:**
+- `backend/services/rag_pipeline.py` - Pipeline RAG (embedding → search → generation)
+- `backend/services/llm_service.py` - Integracja z OLLAMA (fast/accurate models)
+- `backend/services/ollama_service.py` - Klient OLLAMA API
+- `backend/services/vector_search.py` - Wyszukiwanie semantyczne (pgvector)
+- `backend/services/health_check.py` - Sprawdzanie statusu serwisów
+
+**Middleware:**
+- `backend/middleware/auth.py` - Autoryzacja JWT (Supabase)
+- `backend/middleware/rate_limit.py` - Rate limiting (10 queries/min per user)
+- `backend/middleware/error_handler.py` - Obsługa błędów
+
+**Database:**
+- `backend/db/queries.py` - Operacje na `query_history`
+- `backend/db/ratings.py` - Operacje na `ratings`
+- `backend/db/legal_acts.py` - Operacje na `legal_acts`, `legal_act_chunks`
+- `backend/db/supabase_client.py` - Klient Supabase
+
+**Models:**
+- `backend/models/query.py` - Schematy Pydantic dla zapytań
+- `backend/models/rating.py` - Schematy dla ocen
+- `backend/models/legal_act.py` - Schematy dla aktów
+- `backend/models/error.py` - Obsługa błędów API
+
+#### 2.1.2. Frontend (Astro + React)
+
+**Strony (Astro):**
+- `src/pages/index.astro` - Landing page (public)
+- `src/pages/login.astro` - Strona logowania (public)
+- `src/pages/register.astro` - Strona rejestracji (public)
+- `src/pages/signup.astro` - Strona rejestracji (alternatywna)
+- `src/pages/app/index.astro` - Chat view (chronione)
+- `src/pages/app/history.astro` - Historia zapytań (chronione)
+
+**API Routes (Astro):**
+- `src/pages/api/auth/login.ts` - Endpoint logowania
+- `src/pages/api/auth/register.ts` - Endpoint rejestracji
+- `src/pages/api/auth/signup.ts` - Endpoint rejestracji (alternatywny)
+- `src/pages/api/auth/logout.ts` - Endpoint wylogowania
+- `src/pages/api/auth/refresh.ts` - Odświeżanie sesji
+
+**Komponenty Auth (React Islands):**
+- `src/components/auth/LoginForm.tsx` - Formularz logowania
+- `src/components/auth/RegisterForm.tsx` - Formularz rejestracji
+- `src/components/auth/SignupForm.tsx` - Formularz rejestracji (alternatywny)
+- `src/components/auth/ForgotPasswordForm.tsx` - Reset hasła
+- `src/components/auth/ResetPasswordForm.tsx` - Nowe hasło
+- `src/components/auth/PasswordStrengthIndicator.tsx` - Wskaźnik siły hasła
+- `src/components/auth/LogoutButton.tsx` - Przycisk wylogowania
+
+**Komponenty Chat (React Islands):**
+- `src/components/chat/ChatInput.tsx` - Pole wprowadzania pytań
+- `src/components/chat/ChatMessagesContainer.tsx` - Kontener wiadomości z polling
+- `src/components/chat/QueryBubble.tsx` - Bańka z pytaniem użytkownika
+- `src/components/chat/ResponseCard.tsx` - Karta odpowiedzi (fast/accurate)
+- `src/components/chat/RatingButtons.tsx` - Przyciski oceny (thumbs up/down)
+- `src/components/chat/DetailedAnswerModal.tsx` - Modal z dokładną odpowiedzią
+- `src/components/chat/NoRelevantActsCard.tsx` - Komunikat o braku aktów
+- `src/components/chat/MarkdownContent.tsx` - Renderowanie Markdown
+- `src/components/chat/WelcomeMessage.astro` - Komunikat powitalny (Astro)
+- `src/components/chat/ExampleQuestions.astro` - Przykładowe pytania (Astro)
+
+**Komponenty History (React Islands):**
+- `src/components/history/HistoryList.tsx` - Lista zapytań z paginacją
+- `src/components/history/QueryCard.tsx` - Karta pojedynczego zapytania
+- `src/components/history/DeleteQueryButton.tsx` - Przycisk usuwania
+- `src/components/history/LoadMoreButton.tsx` - Przycisk ładowania więcej
+- `src/components/history/EmptyState.tsx` - Stan pusty
+
+**Komponenty Layout:**
+- `src/components/layout/Header.astro` - Nagłówek
+- `src/components/layout/Footer.astro` - Stopka
+- `src/components/layout/UserMenu.tsx` - Menu użytkownika (React island)
+
+**Komponenty UI (Shadcn/ui):**
+- `src/components/ui/button.tsx` - Przyciski
+- `src/components/ui/input.tsx` - Pola tekstowe
+- `src/components/ui/textarea.tsx` - Obszary tekstowe
+- `src/components/ui/card.tsx` - Karty
+- `src/components/ui/alert.tsx` - Alerty
+- `src/components/ui/dialog.tsx` - Dialogi
+- `src/components/ui/dropdown-menu.tsx` - Menu rozwijane
+- `src/components/ui/avatar.tsx` - Avatary
+- `src/components/ui/toaster.tsx` - Toast notifications
+
+**Layouts:**
+- `src/layouts/BaseLayout.astro` - Podstawowy layout
+- `src/layouts/AppLayout.astro` - Layout aplikacji (jeśli istnieje)
+
+**Utilities:**
+- `src/lib/supabase/server.ts` - Supabase server client
+- `src/lib/supabase/client.ts` - Supabase client (browser)
+- `src/lib/apiClient.ts` - Klient API (FastAPI)
+
+**Middleware:**
+- `src/middleware/index.ts` - Middleware autoryzacji (Astro)
+
+#### 2.1.3. Baza Danych (Supabase/PostgreSQL)
+
+**Tabele:**
+- `auth.users` - Użytkownicy (zarządzana przez Supabase Auth)
+- `query_history` - Historia zapytań użytkowników
+- `ratings` - Oceny odpowiedzi
+- `legal_acts` - Metadane aktów prawnych
+- `legal_act_chunks` - Fragmenty aktów z embeddingami (pgvector)
+- `legal_act_relations` - Relacje między aktami
+
+**Migrations:**
+- `supabase/migrations/20251118221102_create_enums.sql` - Typy ENUM
+- `supabase/migrations/20251118221103_create_legal_acts_table.sql` - Tabela aktów
+- `supabase/migrations/20251118221104_create_legal_act_chunks_table.sql` - Tabela chunków
+- `supabase/migrations/20251118221106_create_query_history_table.sql` - Tabela zapytań
+- `supabase/migrations/20251118221107_create_ratings_table.sql` - Tabela ocen
+
+**RLS Policies:**
+- Row-Level Security dla `query_history` (user_id = auth.uid())
+- Row-Level Security dla `ratings` (user_id = auth.uid())
+- Public read-only dla `legal_acts`, `legal_act_chunks`
+
+---
+
+## 3. Typy Testów
+
+### 3.1. Testy Jednostkowe (Unit Tests)
+
+**Backend (pytest):**
+- Testy funkcji w `backend/services/` (rag_pipeline, llm_service, vector_search)
+- Testy middleware (auth, rate_limit, error_handler)
+- Testy modeli Pydantic (walidacja danych)
+- Testy funkcji pomocniczych w `backend/db/`
+
+**Frontend (Vitest - do implementacji):**
+- Testy komponentów React (renderowanie, interakcje)
+- Testy hooków (useState, useCallback, useMemo)
+- Testy funkcji pomocniczych w `src/lib/`
+
+**Coverage target:**
+- Backend: >70%
+- Frontend: >50% (MVP)
+
+### 3.2. Testy Integracyjne (Integration Tests)
+
+**Backend:**
+- Testy endpointów API (`backend/tests/test_query_endpoints.py`, `test_rating_endpoints.py`)
+- Testy integracji z Supabase (`backend/tests/integration/test_database_integration.py`)
+- Testy integracji z OLLAMA (`backend/tests/integration/test_ollama_integration.py`)
+- Testy RAG pipeline end-to-end (`backend/tests/test_rag_pipeline.py`)
+
+**Frontend:**
+- Testy integracji komponentów z Supabase Auth
+- Testy integracji z FastAPI (mock API calls)
+- Testy przepływu użytkownika (rejestracja → logowanie → chat)
+
+### 3.3. Testy Wydajnościowe (Performance Tests)
+
+**Backend:**
+- Czas odpowiedzi fast response (<15s, 95th percentile)
+- Czas odpowiedzi accurate response (<240s timeout)
+- Czas wyszukiwania semantycznego (<200ms)
+- Testy obciążeniowe (10 queries/min per user, 30/min per IP)
+
+**Frontend:**
+- First Contentful Paint (<2s)
+- Bundle size (<50KB JS main bundle)
+- Czas ładowania komponentów React islands
+
+### 3.4. Testy Bezpieczeństwa (Security Tests)
+
+- Walidacja danych wejściowych (10-1000 znaków dla query_text)
+- SQL injection prevention (parameterized queries)
+- XSS prevention (React auto-escaping)
+- JWT validation (signature, expiration)
+- Rate limiting enforcement
+- CORS configuration
+- RLS policies verification
+
+### 3.5. Testy Dostępności (Accessibility Tests)
+
+- WCAG AA compliance
+- Keyboard navigation (Tab, Enter, Escape)
+- Screen reader support (ARIA labels)
+- Color contrast (4.5:1 dla tekstu)
+- Focus indicators
+- Semantic HTML (`<main>`, `<nav>`, `<button>`)
+
+### 3.6. Testy Regresyjne (Regression Tests)
+
+- Testy smoke test dla kluczowych funkcji po każdej zmianie
+- Testy sanity check przed release
+- Testy kompatybilności (przeglądarki: Chrome, Firefox, Safari)
+
+---
+
+## 4. Scenariusze Testowe
+
+### 4.1. Autentykacja
+
+#### 4.1.1. Rejestracja
+
+**Test Case TC-AUTH-001: Rejestracja nowego użytkownika**
+- **Komponent:** `src/components/auth/RegisterForm.tsx`, `src/pages/api/auth/register.ts`
+- **Kroki:**
+  1. Otwórz `/register`
+  2. Wprowadź poprawny email i hasło (min. 8 znaków)
+  3. Kliknij "Zarejestruj się"
+- **Oczekiwany rezultat:**
+  - Użytkownik zostaje zarejestrowany w Supabase Auth
+  - Automatyczne logowanie po rejestracji
+  - Przekierowanie do `/app`
+  - Sesja zapisana w HttpOnly cookies
+
+**Test Case TC-AUTH-002: Walidacja hasła**
+- **Komponent:** `src/components/auth/PasswordStrengthIndicator.tsx`
+- **Kroki:**
+  1. Wprowadź hasło < 8 znaków
+  2. Wprowadź hasło bez wielkiej litery
+  3. Wprowadź hasło bez cyfry
+- **Oczekiwany rezultat:**
+  - Wyświetlenie komunikatów walidacji
+  - Przycisk "Zarejestruj się" nieaktywny dla słabych haseł
+
+**Test Case TC-AUTH-003: Duplikacja email**
+- **Komponent:** `src/pages/api/auth/register.ts`
+- **Kroki:**
+  1. Zarejestruj użytkownika z emailem `test@example.com`
+  2. Spróbuj zarejestrować kolejnego użytkownika z tym samym emailem
+- **Oczekiwany rezultat:**
+  - Błąd: "Użytkownik z tym emailem już istnieje"
+  - Brak wycieku informacji o istniejących użytkownikach
+
+#### 4.1.2. Logowanie
+
+**Test Case TC-AUTH-004: Logowanie poprawnymi danymi**
+- **Komponent:** `src/components/auth/LoginForm.tsx`, `src/pages/api/auth/login.ts`
+- **Kroki:**
+  1. Otwórz `/login`
+  2. Wprowadź poprawny email i hasło
+  3. Kliknij "Zaloguj się"
+- **Oczekiwany rezultat:**
+  - Przekierowanie do `/app`
+  - Sesja zapisana w HttpOnly cookies
+  - UserMenu wyświetla email użytkownika
+
+**Test Case TC-AUTH-005: Logowanie niepoprawnymi danymi**
+- **Komponent:** `src/pages/api/auth/login.ts`
+- **Kroki:**
+  1. Wprowadź niepoprawny email lub hasło
+  2. Kliknij "Zaloguj się"
+- **Oczekiwany rezultat:**
+  - Błąd: "Nieprawidłowy email lub hasło" (generic message, no user enumeration)
+  - Brak przekierowania
+
+**Test Case TC-AUTH-006: Rate limiting logowania**
+- **Komponent:** `src/pages/api/auth/login.ts` (Supabase Auth)
+- **Kroki:**
+  1. Wykonaj 10 nieudanych prób logowania w ciągu minuty
+- **Oczekiwany rezultat:**
+  - Błąd: "Zbyt wiele prób logowania. Spróbuj ponownie za chwilę."
+  - Blokada na 15 minut
+
+#### 4.1.3. Reset Hasła
+
+**Test Case TC-AUTH-007: Żądanie resetu hasła**
+- **Komponent:** `src/components/auth/ForgotPasswordForm.tsx`
+- **Kroki:**
+  1. Otwórz `/forgot-password`
+  2. Wprowadź email
+  3. Kliknij "Wyślij link resetujący"
+- **Oczekiwany rezultat:**
+  - Komunikat: "Jeśli konto istnieje, wysłaliśmy link resetujący"
+  - Brak wycieku informacji o istnieniu konta
+
+### 4.2. Chat Interface
+
+#### 4.2.1. Przesyłanie Zapytania
+
+**Test Case TC-CHAT-001: Przesłanie poprawnego zapytania**
+- **Komponent:** `src/components/chat/ChatInput.tsx`, `POST /api/v1/queries`
+- **Kroki:**
+  1. Zaloguj się jako użytkownik
+  2. Wprowadź pytanie (10-1000 znaków): "Jakie są podstawowe prawa konsumenta?"
+  3. Kliknij "Wyślij"
+- **Oczekiwany rezultat:**
+  - Zapytanie wyświetlone w `ChatMessagesContainer`
+  - Status "Przetwarzanie..." wyświetlony
+  - Fast response otrzymana w <15s
+  - Odpowiedź wyświetlona w `ResponseCard`
+  - Źródła (sources) wyświetlone w `SourcesList`
+
+**Test Case TC-CHAT-002: Walidacja długości zapytania**
+- **Komponent:** `src/components/chat/ChatInput.tsx`
+- **Kroki:**
+  1. Wprowadź zapytanie < 10 znaków: "test"
+  2. Wprowadź zapytanie > 1000 znaków (duplikuj tekst)
+- **Oczekiwany rezultat:**
+  - Błąd walidacji: "Zapytanie musi mieć 10-1000 znaków"
+  - Przycisk "Wyślij" nieaktywny
+
+**Test Case TC-CHAT-003: Polling fast response**
+- **Komponent:** `src/components/chat/ChatMessagesContainer.tsx`
+- **Kroki:**
+  1. Prześlij zapytanie
+  2. Obserwuj polling (exponential backoff: 1s → 2s max)
+- **Oczekiwany rezultat:**
+  - Polling rozpoczyna się po 1s
+  - Interwał zwiększa się do 2s po 3 próbach
+  - Fast response otrzymana i wyświetlona
+
+**Test Case TC-CHAT-004: Rate limiting zapytań**
+- **Komponent:** `backend/middleware/rate_limit.py`
+- **Kroki:**
+  1. Prześlij 10 zapytań w ciągu minuty
+  2. Spróbuj przesłać 11. zapytanie
+- **Oczekiwany rezultat:**
+  - Błąd 429: "Zbyt wiele zapytań. Limit: 10/min"
+  - Header `X-RateLimit-Remaining: 0`
+
+#### 4.2.2. Dokładna Odpowiedź
+
+**Test Case TC-CHAT-005: Żądanie dokładnej odpowiedzi**
+- **Komponent:** `src/components/chat/DetailedAnswerModal.tsx`, `POST /api/v1/queries/{id}/accurate-response`
+- **Kroki:**
+  1. Prześlij zapytanie i otrzymaj fast response
+  2. Kliknij "Poproś o dokładniejszą odpowiedź"
+  3. Obserwuj modal z długim pollingiem (co 5s, timeout 240s)
+- **Oczekiwany rezultat:**
+  - Modal otwarty z statusem "Generowanie dokładnej odpowiedzi..."
+  - Polling co 5s
+  - Accurate response otrzymana w <240s
+  - Odpowiedź wyświetlona w modal
+  - Możliwość zamknięcia modala
+
+**Test Case TC-CHAT-006: Timeout dokładnej odpowiedzi**
+- **Komponent:** `src/components/chat/DetailedAnswerModal.tsx`
+- **Kroki:**
+  1. Prześlij zapytanie wymagające długiego przetwarzania
+  2. Czekaj >240s
+- **Oczekiwany rezultat:**
+  - Timeout po 240s
+  - Komunikat: "Przekroczono limit czasu. Spróbuj ponownie."
+
+#### 4.2.3. Brak Odpowiednich Aktów
+
+**Test Case TC-CHAT-007: Brak aktów w bazie**
+- **Komponent:** `src/components/chat/NoRelevantActsCard.tsx`
+- **Kroki:**
+  1. Prześlij zapytanie, które nie pasuje do żadnego aktu w bazie
+- **Oczekiwany rezultat:**
+  - Wyświetlenie `NoRelevantActsCard`
+  - Komunikat: "Nie znaleziono odpowiednich aktów prawnych w bazie"
+  - Sugestia: "Spróbuj sformułować pytanie inaczej"
+
+### 4.3. System Ocen
+
+**Test Case TC-RATING-001: Dodanie oceny (thumbs up)**
+- **Komponent:** `src/components/chat/RatingButtons.tsx`, `POST /api/v1/ratings`
+- **Kroki:**
+  1. Otrzymaj fast response
+  2. Kliknij "thumbs up"
+- **Oczekiwany rezultat:**
+  - Optimistic update (przycisk aktywny natychmiast)
+  - Ocena zapisana w bazie (`ratings` table)
+  - `response_type: 'fast'` zapisany poprawnie
+
+**Test Case TC-RATING-002: Zmiana oceny**
+- **Komponent:** `src/components/chat/RatingButtons.tsx`
+- **Kroki:**
+  1. Ocen odpowiedź jako "thumbs up"
+  2. Kliknij "thumbs down"
+- **Oczekiwany rezultat:**
+  - Ocena zaktualizowana w bazie (UPSERT)
+  - Tylko jedna ocena na response_type
+
+**Test Case TC-RATING-003: Ocena dokładnej odpowiedzi**
+- **Komponent:** `src/components/chat/RatingButtons.tsx`
+- **Kroki:**
+  1. Otrzymaj accurate response
+  2. Ocen odpowiedź
+- **Oczekiwany rezultat:**
+  - `response_type: 'accurate'` zapisany poprawnie
+  - Ocena niezależna od fast response
+
+### 4.4. Historia Zapytań
+
+**Test Case TC-HISTORY-001: Wyświetlenie historii**
+- **Komponent:** `src/components/history/HistoryList.tsx`, `GET /api/v1/queries`
+- **Kroki:**
+  1. Prześlij 5 zapytań
+  2. Otwórz `/app/history`
+- **Oczekiwany rezultat:**
+  - Lista 5 zapytań wyświetlona w `HistoryList`
+  - Zapytania posortowane chronologicznie (najnowsze pierwsze)
+  - Każde zapytanie w `QueryCard` z fast response
+
+**Test Case TC-HISTORY-002: Paginacja**
+- **Komponent:** `src/components/history/LoadMoreButton.tsx`
+- **Kroki:**
+  1. Prześlij 25 zapytań (limit per page: 20)
+  2. Otwórz `/app/history`
+  3. Kliknij "Załaduj więcej"
+- **Oczekiwany rezultat:**
+  - Pierwsze 20 zapytań wyświetlonych
+  - Po kliknięciu: kolejne 5 zapytań załadowanych
+  - Przycisk "Załaduj więcej" ukryty po załadowaniu wszystkich
+
+**Test Case TC-HISTORY-003: Usunięcie zapytania**
+- **Komponent:** `src/components/history/DeleteQueryButton.tsx`, `DELETE /api/v1/queries/{id}`
+- **Kroki:**
+  1. Otwórz historię
+  2. Kliknij "Usuń" na zapytaniu
+  3. Potwierdź usunięcie
+- **Oczekiwany rezultat:**
+  - Zapytanie usunięte z bazy (CASCADE: ratings również usunięte)
+  - Zapytanie zniknęło z listy
+  - Toast notification: "Zapytanie usunięte"
+
+**Test Case TC-HISTORY-004: Pusta historia**
+- **Komponent:** `src/components/history/EmptyState.tsx`
+- **Kroki:**
+  1. Zaloguj się jako nowy użytkownik (brak zapytań)
+  2. Otwórz `/app/history`
+- **Oczekiwany rezultat:**
+  - Wyświetlenie `EmptyState`
+  - Komunikat: "Nie masz jeszcze żadnych zapytań"
+  - Link do `/app` (chat)
+
+### 4.5. Onboarding
+
+**Test Case TC-ONBOARDING-001: Komunikat powitalny**
+- **Komponent:** `src/components/chat/WelcomeMessage.astro`
+- **Kroki:**
+  1. Zaloguj się jako nowy użytkownik
+  2. Otwórz `/app`
+- **Oczekiwany rezultat:**
+  - Wyświetlenie komunikatu powitalnego
+  - Opis funkcjonalności aplikacji
+
+**Test Case TC-ONBOARDING-002: Przykładowe pytania**
+- **Komponent:** `src/components/chat/ExampleQuestions.astro`, `GET /api/v1/onboarding/example-questions`
+- **Kroki:**
+  1. Otwórz `/app` jako nowy użytkownik
+  2. Kliknij na przykładowe pytanie
+- **Oczekiwany rezultat:**
+  - Lista 3-5 przykładowych pytań wyświetlona
+  - Po kliknięciu: pytanie wstawione do `ChatInput`
+  - Możliwość przesłania pytania
+
+### 4.6. Wydajność
+
+**Test Case TC-PERF-001: Czas odpowiedzi fast response**
+- **Endpoint:** `POST /api/v1/queries`
+- **Kroki:**
+  1. Prześlij 100 zapytań
+  2. Zmierz czas odpowiedzi (od przesłania do otrzymania fast_response)
+- **Oczekiwany rezultat:**
+  - 95th percentile < 15s
+  - Średni czas < 10s
+
+**Test Case TC-PERF-002: Czas wyszukiwania semantycznego**
+- **Service:** `backend/services/vector_search.py`
+- **Kroki:**
+  1. Wykonaj 100 zapytań similarity search
+  2. Zmierz czas wykonania zapytania pgvector
+- **Oczekiwany rezultat:**
+  - Średni czas < 200ms
+  - 95th percentile < 500ms
+
+**Test Case TC-PERF-003: Bundle size frontend**
+- **Narzędzie:** `npm run build`
+- **Kroki:**
+  1. Zbuduj aplikację produkcyjną
+  2. Sprawdź rozmiar głównego bundle JS
+- **Oczekiwany rezultat:**
+  - Main bundle < 50KB (gzipped)
+  - Total JS < 100KB (gzipped)
+
+### 4.7. Bezpieczeństwo
+
+**Test Case TC-SEC-001: SQL Injection**
+- **Endpoint:** `GET /api/v1/queries`
+- **Kroki:**
+  1. Prześlij zapytanie z SQL injection: `'; DROP TABLE query_history; --`
+- **Oczekiwany rezultat:**
+  - Zapytanie zignorowane lub zescaped
+  - Brak wykonania SQL injection
+  - Błąd walidacji (jeśli zawiera nieprawidłowe znaki)
+
+**Test Case TC-SEC-002: XSS Prevention**
+- **Komponent:** `src/components/chat/ResponseCard.tsx`
+- **Kroki:**
+  1. Prześlij zapytanie, które zwraca odpowiedź z `<script>alert('XSS')</script>`
+- **Oczekiwany rezultat:**
+  - Skrypt nie wykonany (React auto-escaping)
+  - Tekst wyświetlony jako zwykły tekst
+
+**Test Case TC-SEC-003: JWT Validation**
+- **Middleware:** `backend/middleware/auth.py`
+- **Kroki:**
+  1. Prześlij request bez JWT token
+  2. Prześlij request z nieprawidłowym JWT
+  3. Prześlij request z wygasłym JWT
+- **Oczekiwany rezultat:**
+  - Błąd 401: "Unauthorized"
+  - Brak dostępu do chronionych endpointów
+
+**Test Case TC-SEC-004: RLS Policies**
+- **Database:** `query_history` table
+- **Kroki:**
+  1. Zaloguj się jako User A
+  2. Prześlij zapytanie (ID: `query-123`)
+  3. Zaloguj się jako User B
+  4. Spróbuj pobrać `GET /api/v1/queries/query-123`
+- **Oczekiwany rezultat:**
+  - Błąd 404: "Query not found" (nie 403, aby nie ujawniać istnienia)
+  - User B nie widzi zapytań User A
+
+### 4.8. Dostępność
+
+**Test Case TC-A11Y-001: Keyboard Navigation**
+- **Komponent:** `src/components/chat/ChatInput.tsx`
+- **Kroki:**
+  1. Użyj Tab do nawigacji
+  2. Naciśnij Enter w `ChatInput` do przesłania
+  3. Użyj Escape do zamknięcia modala
+- **Oczekiwany rezultat:**
+  - Wszystkie interaktywne elementy dostępne przez klawiaturę
+  - Focus indicators widoczne
+  - Enter wysyła zapytanie
+  - Escape zamyka modal
+
+**Test Case TC-A11Y-002: Screen Reader Support**
+- **Komponent:** `src/components/chat/RatingButtons.tsx`
+- **Kroki:**
+  1. Uruchom screen reader (NVDA/JAWS)
+  2. Nawiguj po interfejsie
+- **Oczekiwany rezultat:**
+  - Wszystkie przyciski mają `aria-label`
+  - Komunikaty błędów ogłaszane przez screen reader
+  - Semantic HTML (`<button>`, `<main>`, `<nav>`)
+
+**Test Case TC-A11Y-003: Color Contrast**
+- **Narzędzie:** Lighthouse / axe DevTools
+- **Kroki:**
+  1. Uruchom audit dostępności
+- **Oczekiwany rezultat:**
+  - Wszystkie teksty mają contrast ratio ≥ 4.5:1
+  - Brak błędów WCAG AA
+
+---
+
+## 5. Środowisko Testowe
+
+### 5.1. Konfiguracja Środowiska
+
+**Backend:**
+- Python 3.11+
+- Virtual environment: `python -m venv venv`
+- Zależności: `pip install -r backend/requirements.txt`
+- Test database: Supabase local (`supabase start`) lub test instance
+- OLLAMA: Local (`ollama serve`) lub mock dla testów jednostkowych
+
+**Frontend:**
+- Node.js 20+
+- Package manager: npm
+- Zależności: `npm install`
+- Dev server: `npm run dev` (port 4321)
+
+**Baza Danych:**
+- Supabase local (Docker): `supabase start`
+- Test migrations: `supabase db reset`
+- Seed data: 20k aktów prawnych (opcjonalnie)
+
+**OLLAMA:**
+- Local installation: `ollama pull mistral:7b`, `ollama pull gpt-oss:120b`
+- Embeddings model: `ollama pull nomic-embed-text`
+
+### 5.2. Zmienne Środowiskowe
+
+**Backend (.env):**
+```bash
+SUPABASE_URL=http://localhost:8444
+SUPABASE_SERVICE_KEY=test-service-key
+SUPABASE_JWT_SECRET=test-jwt-secret
+OLLAMA_HOST=http://localhost:11434
+REDIS_URL=redis://localhost:6379/0
+LOG_LEVEL=DEBUG
+DEBUG=true
+```
+
+**Frontend (.env):**
+```bash
+PUBLIC_API_BASE_URL=http://localhost:8000
+PUBLIC_SUPABASE_URL=http://localhost:8444
+PUBLIC_SUPABASE_ANON_KEY=test-anon-key
+```
+
+### 5.3. Test Data
+
+**Użytkownicy testowi:**
+- `test@example.com` / `Test123!@#`
+- `admin@example.com` / `Admin123!@#`
+
+**Zapytania testowe:**
+- "Jakie są podstawowe prawa konsumenta w Polsce?"
+- "Kiedy można zwrócić towar zakupiony online?"
+- "Jakie są obowiązki pracodawcy wobec pracownika?"
+
+---
+
+## 6. Narzędzia do Testowania
+
+### 6.1. Backend
+
+**Framework testowy:**
+- `pytest` (>=8.3.0) - główny framework
+- `pytest-asyncio` (>=0.24.0) - testy async
+- `httpx` (>=0.28.0) - TestClient dla FastAPI
+
+**Mocking:**
+- `unittest.mock` - mockowanie OLLAMA API
+- `pytest-mock` - fixture dla mocków
+
+**Coverage:**
+- `pytest-cov` - pomiar coverage
+- Cel: >70% coverage
+
+**Linting:**
+- `ruff` (>=0.8.0) - linter Python
+- `mypy` - type checking (opcjonalnie)
+
+**Testy integracyjne:**
+- Supabase local instance
+- OLLAMA local instance (lub mock)
+
+### 6.2. Frontend
+
+**Framework testowy:**
+- `Vitest` - framework testowy (do implementacji)
+- `@testing-library/react` - testy komponentów React
+- `@testing-library/user-event` - symulacja interakcji użytkownika
+
+**Mocking:**
+- `MSW` (Mock Service Worker) - mockowanie API calls
+- `vi.mock` (Vitest) - mockowanie modułów
+
+**Coverage:**
+- `@vitest/coverage-v8` - pomiar coverage
+- Cel: >50% coverage (MVP)
+
+**Linting:**
+- `ESLint` (>=8) - linter TypeScript/JavaScript
+- `Prettier` (>=3.2.5) - formatter
+
+**Accessibility:**
+- `@axe-core/react` - testy dostępności
+- `Lighthouse` - audit dostępności (CI/CD)
+
+### 6.3. E2E (Opcjonalnie)
+
+**Narzędzia:**
+- `Playwright` - testy E2E (opcjonalnie dla MVP)
+- `Cypress` - alternatywa (opcjonalnie)
+
+**Uwaga:** E2E testy nie są w zakresie MVP, ale można je dodać w przyszłości.
+
+### 6.4. Wydajność
+
+**Narzędzia:**
+- `locust` - testy obciążeniowe (Python)
+- `k6` - alternatywa (JavaScript)
+- `Lighthouse` - audit wydajności frontend
+
+**Metryki:**
+- Response time (p95, p99)
+- Throughput (queries/second)
+- Error rate
+
+### 6.5. Bezpieczeństwo
+
+**Narzędzia:**
+- `bandit` - security linter Python
+- `npm audit` - audit zależności npm
+- `snyk` - security scanning (opcjonalnie)
+
+---
+
+## 7. Harmonogram Testów
+
+### 7.1. Faza 1: Testy Jednostkowe (Tydzień 1-2)
+
+**Backend:**
+- [ ] Testy `backend/services/rag_pipeline.py` (3 dni)
+- [ ] Testy `backend/services/llm_service.py` (2 dni)
+- [ ] Testy `backend/services/vector_search.py` (2 dni)
+- [ ] Testy `backend/middleware/auth.py` (1 dzień)
+- [ ] Testy `backend/middleware/rate_limit.py` (1 dzień)
+- [ ] Testy `backend/db/queries.py` (2 dni)
+
+**Frontend:**
+- [ ] Setup Vitest (1 dzień)
+- [ ] Testy `src/components/auth/LoginForm.tsx` (1 dzień)
+- [ ] Testy `src/components/auth/RegisterForm.tsx` (1 dzień)
+- [ ] Testy `src/components/chat/ChatInput.tsx` (1 dzień)
+- [ ] Testy `src/components/chat/ChatMessagesContainer.tsx` (2 dni)
+
+### 7.2. Faza 2: Testy Integracyjne (Tydzień 3-4)
+
+**Backend:**
+- [ ] Testy endpointów `POST /api/v1/queries` (2 dni)
+- [ ] Testy endpointów `GET /api/v1/queries` (1 dzień)
+- [ ] Testy endpointów `POST /api/v1/ratings` (1 dzień)
+- [ ] Testy integracji z Supabase (2 dni)
+- [ ] Testy integracji z OLLAMA (2 dni)
+
+**Frontend:**
+- [ ] Testy integracji Auth flow (2 dni)
+- [ ] Testy integracji Chat flow (2 dni)
+- [ ] Testy integracji History flow (1 dzień)
+
+### 7.3. Faza 3: Testy Wydajnościowe (Tydzień 5)
+
+- [ ] Testy czasu odpowiedzi fast response (1 dzień)
+- [ ] Testy czasu odpowiedzi accurate response (1 dzień)
+- [ ] Testy wyszukiwania semantycznego (1 dzień)
+- [ ] Testy obciążeniowe (rate limiting) (1 dzień)
+- [ ] Testy bundle size frontend (1 dzień)
+
+### 7.4. Faza 4: Testy Bezpieczeństwa i Dostępności (Tydzień 6)
+
+- [ ] Testy SQL injection, XSS (1 dzień)
+- [ ] Testy JWT validation (1 dzień)
+- [ ] Testy RLS policies (1 dzień)
+- [ ] Testy dostępności (WCAG AA) (2 dni)
+
+### 7.5. Faza 5: Testy Regresyjne i Smoke Tests (Tydzień 7)
+
+- [ ] Smoke tests dla kluczowych funkcji (1 dzień)
+- [ ] Testy regresyjne po bugfixach (2 dni)
+- [ ] Testy kompatybilności przeglądarek (1 dzień)
+- [ ] Finalne sanity check (1 dzień)
+
+---
+
+## 8. Kryteria Akceptacji Testów
+
+### 8.1. Coverage
+
+- **Backend:** ≥70% coverage (wymagane przed merge)
+- **Frontend:** ≥50% coverage (wymagane przed merge)
+- **Krytyczne ścieżki:** 100% coverage (auth, RAG pipeline, query submission)
+
+### 8.2. Wydajność
+
+- **Fast response:** 95th percentile < 15s (wymagane)
+- **Accurate response:** Timeout 240s (wymagane)
+- **Similarity search:** < 200ms średnio (wymagane)
+- **Page load:** First Contentful Paint < 2s (wymagane)
+- **Bundle size:** Main bundle < 50KB gzipped (wymagane)
+
+### 8.3. Bezpieczeństwo
+
+- **Zero SQL injection vulnerabilities** (wymagane)
+- **Zero XSS vulnerabilities** (wymagane)
+- **JWT validation na wszystkich chronionych endpointach** (wymagane)
+- **Rate limiting działa poprawnie** (wymagane)
+- **RLS policies weryfikowane** (wymagane)
+
+### 8.4. Dostępność
+
+- **WCAG AA compliance** (wymagane)
+- **Keyboard navigation działa** (wymagane)
+- **Screen reader support** (wymagane)
+- **Color contrast ≥ 4.5:1** (wymagane)
+
+### 8.5. Stabilność
+
+- **Zero critical bugs** (wymagane przed release)
+- **Zero high-priority bugs** (wymagane przed release)
+- **Edge cases obsłużone** (wymagane)
+- **Error handling działa poprawnie** (wymagane)
+
+---
+
+## 9. Role i Odpowiedzialności
+
+### 9.1. Developer (Backend/Frontend)
+
+- **Odpowiedzialność:** Pisanie testów jednostkowych i integracyjnych dla własnego kodu
+- **Zadania:**
+  - Tworzenie testów przed/po implementacji funkcji
+  - Utrzymanie coverage ≥70% (backend) / ≥50% (frontend)
+  - Naprawa testów po refaktoringu
+  - Code review testów innych developerów
+
+### 9.2. QA Engineer (jeśli dostępny)
+
+- **Odpowiedzialność:** Testy manualne, testy E2E, testy wydajnościowe
+- **Zadania:**
+  - Wykonywanie testów scenariuszowych
+  - Testy dostępności (WCAG AA)
+  - Testy kompatybilności przeglądarek
+  - Raportowanie błędów w systemie issue tracking
+
+### 9.3. DevOps Engineer (jeśli dostępny)
+
+- **Odpowiedzialność:** Konfiguracja CI/CD, testy automatyczne w pipeline
+- **Zadania:**
+  - Konfiguracja GitHub Actions dla testów
+  - Utrzymanie środowisk testowych
+  - Monitoring coverage i wydajności testów
+
+### 9.4. Product Owner
+
+- **Odpowiedzialność:** Weryfikacja kryteriów akceptacji, priorytetyzacja bugów
+- **Zadania:**
+  - Akceptacja testów scenariuszowych
+  - Decyzje o priorytecie bugów
+  - Zatwierdzenie release po przejściu testów
+
+---
+
+## 10. Procedury Raportowania Błędów
+
+### 10.1. Format Raportu Błędu
+
+**Wymagane pola:**
+- **Tytuł:** Krótki opis błędu (max 80 znaków)
+- **Priorytet:** Critical / High / Medium / Low
+- **Komponent:** Backend/Frontend + ścieżka pliku
+- **Kroki reprodukcji:** Krok po kroku, jak odtworzyć błąd
+- **Oczekiwany rezultat:** Co powinno się wydarzyć
+- **Rzeczywisty rezultat:** Co się wydarzyło
+- **Środowisko:** OS, przeglądarka, wersja aplikacji
+- **Logi:** Stack trace, error messages (jeśli dostępne)
+- **Screenshots:** Jeśli dotyczy UI
+
+### 10.2. Przykład Raportu
+
+```markdown
+**Tytuł:** Fast response nie jest wyświetlana po przesłaniu zapytania
+
+**Priorytet:** High
+
+**Komponent:** Frontend - `src/components/chat/ChatMessagesContainer.tsx`
+
+**Kroki reprodukcji:**
+1. Zaloguj się jako użytkownik
+2. Prześlij zapytanie: "Jakie są prawa konsumenta?"
+3. Obserwuj `ChatMessagesContainer`
+
+**Oczekiwany rezultat:**
+- Fast response wyświetlona w <15s
+- Odpowiedź widoczna w `ResponseCard`
+
+**Rzeczywisty rezultat:**
+- Status "Przetwarzanie..." wyświetlony w nieskończoność
+- Fast response nigdy nie jest wyświetlona
+
+**Środowisko:**
+- OS: Linux 6.1.0
+- Przeglądarka: Chrome 120
+- Wersja: v0.1.0
+
+**Logi:**
+```
+Error: Polling failed: NetworkError
+  at ChatMessagesContainer.tsx:45
+```
+
+**Screenshots:**
+[Załącz screenshot interfejsu]
+```
+
+### 10.3. Priorytetyzacja Bugów
+
+**Critical:**
+- Aplikacja nie działa (crash, biały ekran)
+- Brak możliwości logowania/rejestracji
+- Utrata danych użytkownika
+- Błędy bezpieczeństwa (SQL injection, XSS)
+
+**High:**
+- Główne funkcje nie działają (chat, historia)
+- Wydajność znacznie poniżej wymagań (<15s fast response)
+- Błędy dostępności uniemożliwiające użycie
+
+**Medium:**
+- Drobne błędy UI (styling, layout)
+- Edge cases nieobsłużone
+- Błędy w funkcjach pomocniczych
+
+**Low:**
+- Sugestie ulepszeń UI/UX
+- Drobne problemy z dostępnością (nie blokujące)
+- Optymalizacje wydajności (niekrytyczne)
+
+### 10.4. Workflow Naprawy Bugów
+
+1. **Raportowanie:** Developer/QA tworzy issue w GitHub
+2. **Triage:** Product Owner przypisuje priorytet
+3. **Przypisanie:** Bug przypisany do developera
+4. **Naprawa:** Developer naprawia błąd + dodaje testy
+5. **Weryfikacja:** QA/Developer weryfikuje naprawę
+6. **Zamknięcie:** Issue zamknięte po weryfikacji
+
+---
+
+## 11. Dodatkowe Uwagi
+
+### 11.1. Testy w CI/CD
+
+**GitHub Actions Workflow:**
+- Automatyczne uruchamianie testów po każdym pushu
+- Blokada merge jeśli testy nie przechodzą
+- Blokada merge jeśli coverage < wymagań
+- Automatyczne uruchamianie linterów (ESLint, Ruff)
+
+### 11.2. Testy Lokalne
+
+**Przed commit:**
+```bash
+# Backend
+cd backend
+pytest
+ruff check .
+pytest --cov=backend --cov-report=term-missing
+
+# Frontend
+npm run lint
+npm run type-check
+# npm run test (po implementacji Vitest)
+```
+
+### 11.3. Mockowanie Zewnętrznych Serwisów
+
+**OLLAMA:**
+- Mock w testach jednostkowych
+- Real instance w testach integracyjnych (opcjonalnie)
+
+**Supabase:**
+- Local instance (`supabase start`) dla testów integracyjnych
+- Mock w testach jednostkowych (jeśli możliwe)
+
+### 11.4. Testy Regresyjne
+
+- Uruchamianie pełnej suity testów przed każdym release
+- Smoke tests dla kluczowych funkcji po każdej zmianie
+- Testy kompatybilności przeglądarek przed release
+
+---
+
+## 12. Podsumowanie
+
+Plan testów dla PrawnikGPT MVP obejmuje:
+
+- **Testy jednostkowe:** Backend (pytest) i Frontend (Vitest - do implementacji)
+- **Testy integracyjne:** API endpoints, integracja z Supabase i OLLAMA
+- **Testy wydajnościowe:** Czas odpowiedzi, bundle size, similarity search
+- **Testy bezpieczeństwa:** SQL injection, XSS, JWT validation, RLS
+- **Testy dostępności:** WCAG AA, keyboard navigation, screen reader support
+
+**Coverage targets:**
+- Backend: ≥70%
+- Frontend: ≥50%
+
+**Wydajność:**
+- Fast response: <15s (95th percentile)
+- Accurate response: <240s (timeout)
+- Similarity search: <200ms średnio
+
+**Bezpieczeństwo:**
+- Zero SQL injection / XSS vulnerabilities
+- JWT validation na wszystkich chronionych endpointach
+- Rate limiting: 10 queries/min per user
+
+**Dostępność:**
+- WCAG AA compliance
+- Keyboard navigation
+- Screen reader support
+
+Plan testów jest żywym dokumentem i powinien być aktualizowany wraz z rozwojem projektu.

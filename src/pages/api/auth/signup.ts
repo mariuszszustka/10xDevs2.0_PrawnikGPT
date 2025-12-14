@@ -9,6 +9,7 @@
  * - Session management with HttpOnly cookies (PRD 9.2.2)
  * - Rate limiting (handled by Supabase Auth)
  * - Error handling with generic messages (no user enumeration)
+ * - Timeout handling (15 seconds for Supabase requests)
  * 
  * IMPORTANT: After registration, user receives an email verification link.
  * User must click the link to activate their account before logging in.
@@ -25,9 +26,14 @@
  *   "message": "Link do potwierdzenia konta został wysłany na Twój adres email"
  * }
  * 
- * Response (400):
+ * Response (400 JSON):
  * {
  *   "error": "Nie można utworzyć konta"
+ * }
+ * 
+ * Response (503 JSON):
+ * {
+ *   "error": "Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę."
  * }
  */
 
@@ -73,9 +79,29 @@ function mapSupabaseError(error: { message: string } | null): string {
 }
 
 export const POST: APIRoute = async ({ request, cookies, url }) => {
+  // Timeout configuration (15 seconds for Supabase requests)
+  const TIMEOUT_MS = 15000;
+
   try {
-    // Parse request body
-    const body = await request.json();
+    // Parse request body with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    let body;
+    try {
+      body = await request.json();
+      clearTimeout(timeoutId);
+    } catch (parseError) {
+      clearTimeout(timeoutId);
+      return new Response(
+        JSON.stringify({ error: 'Nieprawidłowy format żądania' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     const { email, password } = body;
 
     // Validate input
@@ -100,15 +126,38 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
     const origin = request.headers.get('origin') || `${url.protocol}//${url.host}`;
     const emailRedirectTo = `${origin}/login?emailConfirmed=true`;
 
-    // Sign up new user with email verification enabled
-    // Supabase will automatically send a confirmation email
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        emailRedirectTo, // URL to redirect after email confirmation
-      },
-    });
+    // Sign up new user with email verification enabled (with timeout)
+    const signUpController = new AbortController();
+    const signUpTimeoutId = setTimeout(() => signUpController.abort(), TIMEOUT_MS);
+
+    let data, error;
+    try {
+      const result = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo, // URL to redirect after email confirmation
+        },
+      });
+      clearTimeout(signUpTimeoutId);
+      data = result.data;
+      error = result.error;
+    } catch (signUpError: any) {
+      clearTimeout(signUpTimeoutId);
+      // Handle timeout or network errors
+      if (signUpError.name === 'AbortError' || signUpError.message?.includes('timeout')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.',
+          }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      throw signUpError;
+    }
 
     if (error) {
       // Map error to user-friendly message (no enumeration)
@@ -132,9 +181,23 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  } catch (error) {
-    // Handle JSON parsing errors or other unexpected errors
+  } catch (error: any) {
+    // Handle unexpected errors
     console.error('Signup API error:', error);
+    
+    // Check if it's a timeout error
+    if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+      return new Response(
+        JSON.stringify({
+          error: 'Wystąpił błąd komunikacji z serwerem. Spróbuj ponownie za chwilę.',
+        }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         error: 'Nie można utworzyć konta. Spróbuj ponownie.',

@@ -1,0 +1,368 @@
+---
+description: Prompt do generowania planu testów dla PrawnikGPT MVP
+globs: 
+alwaysApply: false
+---
+Jesteś doświadczonym inżynierem QA, którego zadaniem jest stworzenie kompleksowego planu testów dla projektu PrawnikGPT - aplikacji MVP dla prawników i aplikantów, umożliwiającej zadawanie pytań w języku naturalnym o polskie akty prawne z wykorzystaniem RAG (Retrieval-Augmented Generation) i lokalnych modeli LLM.
+
+Przeanalizuj poniższe informacje o projekcie:
+
+<kod_projektu>
+
+## Struktura Projektu
+
+### Backend (FastAPI + Python)
+
+**Routers (API Endpoints):**
+- `backend/routers/health.py` - Health check: `GET /health`
+- `backend/routers/queries.py` - Zarządzanie zapytaniami:
+  - `POST /api/v1/queries` - Przesłanie nowego zapytania (RAG pipeline)
+  - `GET /api/v1/queries` - Lista zapytań z paginacją
+  - `GET /api/v1/queries/{query_id}` - Szczegóły zapytania (polling)
+  - `POST /api/v1/queries/{query_id}/accurate-response` - Żądanie dokładnej odpowiedzi
+  - `DELETE /api/v1/queries/{query_id}` - Usunięcie zapytania
+- `backend/routers/ratings.py` - System ocen:
+  - `POST /api/v1/ratings` - Dodanie/aktualizacja oceny (UPSERT)
+  - `GET /api/v1/ratings/{rating_id}` - Szczegóły oceny
+- `backend/routers/legal_acts.py` - Metadane aktów prawnych (publiczne):
+  - `GET /api/v1/legal-acts` - Lista aktów z paginacją
+  - `GET /api/v1/legal-acts/{act_id}` - Szczegóły aktu
+  - `GET /api/v1/legal-acts/{act_id}/relations` - Relacje między aktami
+- `backend/routers/onboarding.py` - Onboarding:
+  - `GET /api/v1/onboarding/example-questions` - Przykładowe pytania (publiczne)
+
+**Services (Business Logic):**
+- `backend/services/rag_pipeline.py` - ⭐ CORE: Pipeline RAG (embedding → vector search → LLM generation)
+- `backend/services/llm_service.py` - Integracja z OLLAMA (fast model: mistral:7b, accurate: gpt-oss:120b)
+- `backend/services/ollama_service.py` - Klient OLLAMA API
+- `backend/services/vector_search.py` - Wyszukiwanie semantyczne (pgvector cosine similarity)
+- `backend/services/health_check.py` - Sprawdzanie statusu serwisów (Supabase, OLLAMA)
+
+**Middleware:**
+- `backend/middleware/auth.py` - Autoryzacja JWT (Supabase Auth, `get_current_user`)
+- `backend/middleware/rate_limit.py` - Rate limiting (10 queries/min per user, 30/min per IP)
+- `backend/middleware/error_handler.py` - Globalna obsługa błędów API
+
+**Database Layer:**
+- `backend/db/queries.py` - Operacje na tabeli `query_history`
+- `backend/db/ratings.py` - Operacje na tabeli `ratings`
+- `backend/db/legal_acts.py` - Operacje na `legal_acts`, `legal_act_chunks`
+- `backend/db/supabase_client.py` - Klient Supabase (service role + user JWT)
+
+**Models (Pydantic Schemas):**
+- `backend/models/query.py` - QuerySubmitRequest, QuerySubmitResponse, QueryDetailResponse, QueryListResponse
+- `backend/models/rating.py` - RatingCreateRequest, RatingResponse
+- `backend/models/legal_act.py` - LegalActResponse, LegalActListResponse
+- `backend/models/error.py` - ApiErrorCode, create_error_response
+
+**Tests:**
+- `backend/tests/test_health.py` - Testy health check
+- `backend/tests/test_query_endpoints.py` - Testy endpointów zapytań
+- `backend/tests/test_rating_endpoints.py` - Testy endpointów ocen
+- `backend/tests/test_rag_pipeline.py` - Testy RAG pipeline
+- `backend/tests/test_llm_service.py` - Testy LLM service
+- `backend/tests/test_vector_search.py` - Testy wyszukiwania semantycznego
+- `backend/tests/integration/test_database_integration.py` - Testy integracji z Supabase
+- `backend/tests/integration/test_ollama_integration.py` - Testy integracji z OLLAMA
+
+### Frontend (Astro 5 + React 19 Islands)
+
+**Strony (Astro Pages):**
+- `src/pages/index.astro` - Landing page (public, SSG)
+- `src/pages/login.astro` - Strona logowania (public, SSR)
+- `src/pages/register.astro` - Strona rejestracji (public, SSR)
+- `src/pages/signup.astro` - Strona rejestracji alternatywna (public, SSR)
+- `src/pages/app/index.astro` - Chat view (chronione, SSR) ⭐ GŁÓWNY WIDOK
+- `src/pages/app/history.astro` - Historia zapytań (chronione, SSR)
+
+**API Routes (Astro Endpoints):**
+- `src/pages/api/auth/login.ts` - POST /api/auth/login (Supabase Auth)
+- `src/pages/api/auth/register.ts` - POST /api/auth/register (Supabase Auth)
+- `src/pages/api/auth/signup.ts` - POST /api/auth/signup (alternatywny)
+- `src/pages/api/auth/logout.ts` - POST /api/auth/logout
+- `src/pages/api/auth/refresh.ts` - POST /api/auth/refresh
+
+**Komponenty Auth (React Islands):**
+- `src/components/auth/LoginForm.tsx` - Formularz logowania (email + password)
+- `src/components/auth/RegisterForm.tsx` - Formularz rejestracji (email + password + confirm)
+- `src/components/auth/SignupForm.tsx` - Formularz rejestracji alternatywny
+- `src/components/auth/ForgotPasswordForm.tsx` - Reset hasła (żądanie linku)
+- `src/components/auth/ResetPasswordForm.tsx` - Reset hasła (nowe hasło)
+- `src/components/auth/PasswordStrengthIndicator.tsx` - Wskaźnik siły hasła
+- `src/components/auth/LogoutButton.tsx` - Przycisk wylogowania
+
+**Komponenty Chat (React Islands):**
+- `src/components/chat/ChatInput.tsx` - Pole wprowadzania pytań (walidacja 10-1000 znaków)
+- `src/components/chat/ChatMessagesContainer.tsx` - Kontener wiadomości z polling (exponential backoff 1s→2s)
+- `src/components/chat/QueryBubble.tsx` - Bańka z pytaniem użytkownika
+- `src/components/chat/ResponseCard.tsx` - Karta odpowiedzi (fast/accurate) z Markdown
+- `src/components/chat/RatingButtons.tsx` - Przyciski oceny (thumbs up/down) z optimistic updates
+- `src/components/chat/DetailedAnswerModal.tsx` - Modal z dokładną odpowiedzią (long polling co 5s, timeout 240s)
+- `src/components/chat/NoRelevantActsCard.tsx` - Komunikat o braku aktów w bazie
+- `src/components/chat/MarkdownContent.tsx` - Renderowanie Markdown w odpowiedziach
+- `src/components/chat/WelcomeMessage.astro` - Komunikat powitalny (Astro, statyczny)
+- `src/components/chat/ExampleQuestions.astro` - Przykładowe pytania (Astro, statyczny)
+
+**Komponenty History (React Islands):**
+- `src/components/history/HistoryList.tsx` - Lista zapytań z paginacją (20 per page)
+- `src/components/history/QueryCard.tsx` - Karta pojedynczego zapytania
+- `src/components/history/DeleteQueryButton.tsx` - Przycisk usuwania z potwierdzeniem
+- `src/components/history/LoadMoreButton.tsx` - Przycisk ładowania więcej (infinite scroll)
+- `src/components/history/EmptyState.tsx` - Stan pusty (brak zapytań)
+
+**Komponenty Layout:**
+- `src/components/layout/Header.astro` - Nagłówek (logo, nawigacja)
+- `src/components/layout/Footer.astro` - Stopka
+- `src/components/layout/UserMenu.tsx` - Menu użytkownika (React island, dropdown)
+
+**Komponenty UI (Shadcn/ui):**
+- `src/components/ui/button.tsx`, `input.tsx`, `textarea.tsx`, `card.tsx`, `alert.tsx`, `dialog.tsx`, `dropdown-menu.tsx`, `avatar.tsx`, `toaster.tsx` - Komponenty UI
+
+**Layouts:**
+- `src/layouts/BaseLayout.astro` - Podstawowy layout (HTML, meta tags)
+- `src/layouts/AppLayout.astro` - Layout aplikacji (jeśli istnieje)
+
+**Utilities:**
+- `src/lib/supabase/server.ts` - Supabase server client (SSR)
+- `src/lib/supabase/client.ts` - Supabase client (browser)
+- `src/lib/apiClient.ts` - Klient API FastAPI (fetch wrapper)
+
+**Middleware:**
+- `src/middleware/index.ts` - Middleware autoryzacji (sprawdzanie sesji, redirect do /login)
+
+### Baza Danych (Supabase/PostgreSQL + pgvector)
+
+**Tabele:**
+- `auth.users` - Użytkownicy (zarządzana przez Supabase Auth, UUID PK)
+- `query_history` - Historia zapytań:
+  - Kolumny: `id` (UUID), `user_id` (FK), `query_text` (10-1000 chars), `fast_response_content`, `accurate_response_content`, `sources` (JSONB), `fast_model_name`, `accurate_model_name`, `created_at`
+  - RLS: `user_id = auth.uid()`
+- `ratings` - Oceny odpowiedzi:
+  - Kolumny: `id` (UUID), `user_id` (FK), `query_id` (FK), `response_type` (ENUM: 'fast', 'accurate'), `rating_value` (ENUM: 'up', 'down')
+  - RLS: `user_id = auth.uid()`
+  - UPSERT: możliwość zmiany oceny
+- `legal_acts` - Metadane aktów prawnych (20k aktów):
+  - Kolumny: `id` (UUID), `title`, `publisher`, `year`, `position`, `isap_id`, `status` (ENUM)
+  - Public read-only
+- `legal_act_chunks` - Fragmenty aktów z embeddingami:
+  - Kolumny: `id` (UUID), `legal_act_id` (FK), `content` (TEXT), `embedding` (VECTOR(768)), `chunk_index`
+  - Public read-only
+  - Indeksy: pgvector (IVFFlat/HNSW) dla similarity search
+- `legal_act_relations` - Relacje między aktami:
+  - Kolumny: `source_act_id`, `target_act_id`, `relation_type` (ENUM: 'modifies', 'repeals', etc.)
+
+**Migrations:**
+- `supabase/migrations/20251118221102_create_enums.sql` - Typy ENUM
+- `supabase/migrations/20251118221103_create_legal_acts_table.sql`
+- `supabase/migrations/20251118221104_create_legal_act_chunks_table.sql`
+- `supabase/migrations/20251118221106_create_query_history_table.sql`
+- `supabase/migrations/20251118221107_create_ratings_table.sql`
+
+**RLS Policies:**
+- `query_history`: SELECT, INSERT, DELETE tylko dla `user_id = auth.uid()`
+- `ratings`: SELECT, INSERT, UPDATE tylko dla `user_id = auth.uid()`
+- `legal_acts`, `legal_act_chunks`: SELECT dla wszystkich (public read-only)
+
+### Kluczowe Funkcjonalności MVP
+
+1. **Autentykacja (bez weryfikacji email):**
+   - Rejestracja: email + password (min 8 znaków)
+   - Logowanie: email + password
+   - Reset hasła: forgot password flow
+   - Sesje: HttpOnly cookies (Supabase SSR)
+
+2. **Chat Interface (RAG Pipeline):**
+   - Przesyłanie zapytania: walidacja 10-1000 znaków
+   - Fast response: <15s (95th percentile), model mistral:7b
+   - Accurate response: <240s timeout, model gpt-oss:120b
+   - Polling: exponential backoff (1s → 2s max) dla fast, long polling (co 5s) dla accurate
+   - Źródła: lista aktów prawnych użytych w odpowiedzi (JSONB sources)
+
+3. **System Ocen:**
+   - Thumbs up/down dla fast i accurate response
+   - Optimistic updates w UI
+   - UPSERT w bazie (możliwość zmiany oceny)
+
+4. **Historia Zapytań:**
+   - Lista z paginacją (20 per page)
+   - Sortowanie: najnowsze pierwsze
+   - Usuwanie: CASCADE (ratings również usunięte)
+
+5. **Onboarding:**
+   - Komunikat powitalny dla nowych użytkowników
+   - Przykładowe pytania (3-5 przykładów)
+
+6. **Rate Limiting:**
+   - 10 queries/min per user
+   - 30 queries/min per IP
+   - Headers: `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+
+### Wydajność (Performance Targets)
+
+- Fast response: <15s (95th percentile)
+- Accurate response: <240s (timeout)
+- Similarity search: <200ms (database query)
+- Page load: First Contentful Paint <2s
+- Bundle size: <50KB JS (main bundle, gzipped)
+
+### Bezpieczeństwo
+
+- Walidacja danych: 10-1000 chars dla query_text
+- SQL injection: parameterized queries (Supabase SDK)
+- XSS: React auto-escaping
+- JWT validation: na wszystkich chronionych endpointach
+- Rate limiting: enforcement w middleware
+- RLS: Row-Level Security w Supabase
+
+### Dostępność (WCAG AA)
+
+- Semantic HTML: `<main>`, `<nav>`, `<button>`
+- ARIA labels: dla icon buttons
+- Keyboard navigation: Tab, Enter, Escape
+- Color contrast: 4.5:1 dla tekstu
+- Focus indicators: na interaktywnych elementach
+- Screen reader support: NVDA/JAWS
+
+</kod_projektu>
+
+<stos_technologiczny>
+[tech-stack.md](mdc:.ai/tech-stack.md)
+
+**Frontend:**
+- Astro 5 (SSG/SSR) + React 19 (islands)
+- TypeScript 5
+- Tailwind CSS 4
+- Shadcn/ui (komponenty React)
+- Supabase Auth (SSR, HttpOnly cookies)
+
+**Backend:**
+- FastAPI (Python 3.11+)
+- Pydantic (walidacja)
+- Supabase SDK (PostgreSQL + pgvector)
+- OLLAMA (local LLM hosting: mistral:7b, gpt-oss:120b, nomic-embed-text)
+
+**Baza Danych:**
+- Supabase (PostgreSQL 15+ + pgvector extension)
+- Row-Level Security (RLS)
+- Embeddings: 768-dim vectors (nomic-embed-text)
+
+**Testy:**
+- Backend: pytest, pytest-asyncio, httpx (TestClient)
+- Frontend: Vitest (do implementacji), @testing-library/react
+- Coverage targets: Backend ≥70%, Frontend ≥50% (MVP)
+</stos_technologiczny>
+
+<dokumentacja_projektu>
+- [API Plan](.ai/api-plan.md) - Szczegółowa specyfikacja endpointów
+- [Database Plan](.ai/db-plan.md) - Schemat bazy danych
+- [UI Plan](.ai/ui-plan.md) - Architektura interfejsu użytkownika
+- [View Implementation Index](.ai/view-implementation-index.md) - Plany implementacji widoków
+</dokumentacja_projektu>
+
+Twoim zadaniem jest wygenerowanie szczegółowego planu testów, który będzie dostosowany do specyfiki projektu PrawnikGPT, uwzględniając wykorzystywane technologie, strukturę kodu oraz kluczowe elementy repozytorium. Plan testów powinien być napisany w języku polskim.
+
+Przed stworzeniem planu testów, przeprowadź dogłębną analizę projektu wewnątrz bloku <analiza_projektu> w swoim bloku myślowym. W analizie uwzględnij:
+
+1. Kluczowe komponenty projektu wynikające z analizy kodu:
+   - Backend: RAG pipeline (`backend/services/rag_pipeline.py`) jako najważniejszy komponent
+   - Frontend: Chat interface (`src/components/chat/`) jako główny interaktywny widok
+   - Autentykacja: Supabase Auth z SSR (HttpOnly cookies)
+   - Baza danych: pgvector similarity search jako kluczowa funkcjonalność RAG
+
+2. Specyfikę stosu technologicznego i jego wpływ na strategię testowania:
+   - Astro + React islands: testy komponentów React (Vitest), testy statycznych stron Astro (opcjonalnie)
+   - FastAPI: testy endpointów z TestClient (httpx), testy async z pytest-asyncio
+   - OLLAMA: mockowanie w testach jednostkowych, real instance w testach integracyjnych
+   - Supabase: local instance (`supabase start`) dla testów integracyjnych
+   - pgvector: testy similarity search z real embeddings
+
+3. Priorytety testowe bazujące na strukturze repozytorium:
+   - **Najwyższy priorytet:** RAG pipeline (`backend/services/rag_pipeline.py`), Submit Query endpoint (`POST /api/v1/queries`), Chat interface (`src/components/chat/ChatMessagesContainer.tsx`)
+   - **Wysoki priorytet:** Autentykacja (login/register), Rate limiting, RLS policies
+   - **Średni priorytet:** Historia zapytań, System ocen, Onboarding
+   - **Niski priorytet:** Landing page, UI components (Shadcn/ui)
+
+4. Potencjalne obszary ryzyka wymagające szczególnej uwagi w testach:
+   - **RAG Pipeline:** Czas odpowiedzi fast response (<15s), jakość wyszukiwania semantycznego, obsługa braku aktów (NoRelevantActsError)
+   - **Polling:** Exponential backoff, long polling dla accurate response (timeout 240s)
+   - **Rate Limiting:** Enforcement (10 queries/min), feedback w UI
+   - **RLS Policies:** Izolacja danych użytkowników, testy cross-user access
+   - **OLLAMA Integration:** Timeout handling, error recovery, model availability
+   - **Wydajność:** Bundle size frontend (<50KB), similarity search (<200ms)
+
+Po zakończeniu analizy, stwórz plan testów wewnątrz bloku <plan_testów>. Plan powinien zawierać:
+
+1. **Wprowadzenie i cele testowania:**
+   - Cel dokumentu, cele testowania, zakres MVP (co testujemy, czego nie testujemy)
+
+2. **Zakres testów:**
+   - Moduły do testowania z konkretnymi ścieżkami plików:
+     - Backend: routers, services, middleware, db, models
+     - Frontend: pages, components, API routes, layouts
+     - Baza danych: tabele, migrations, RLS policies
+
+3. **Typy testów do przeprowadzenia:**
+   - Testy jednostkowe (pytest dla backend, Vitest dla frontend)
+   - Testy integracyjne (API endpoints, Supabase, OLLAMA)
+   - Testy wydajnościowe (czas odpowiedzi, bundle size, similarity search)
+   - Testy bezpieczeństwa (SQL injection, XSS, JWT, RLS)
+   - Testy dostępności (WCAG AA, keyboard navigation, screen reader)
+   - Testy regresyjne (smoke tests, sanity checks)
+
+4. **Scenariusze testowe dla kluczowych funkcjonalności:**
+   - **Autentykacja:** Rejestracja, logowanie, reset hasła, walidacja hasła, rate limiting logowania
+   - **Chat Interface:** Przesyłanie zapytania, polling fast response, żądanie accurate response, timeout, brak aktów
+   - **System Ocen:** Dodanie oceny, zmiana oceny, ocena accurate response
+   - **Historia Zapytań:** Wyświetlenie, paginacja, usuwanie, pusta historia
+   - **Onboarding:** Komunikat powitalny, przykładowe pytania
+   - **Wydajność:** Czas odpowiedzi fast/accurate, similarity search, bundle size
+   - **Bezpieczeństwo:** SQL injection, XSS, JWT validation, RLS policies
+   - **Dostępność:** Keyboard navigation, screen reader, color contrast
+
+5. **Środowisko testowe:**
+   - Konfiguracja: Python 3.11+, Node.js 20+, Supabase local, OLLAMA local
+   - Zmienne środowiskowe (.env dla backend i frontend)
+   - Test data: użytkownicy testowi, zapytania testowe
+
+6. **Narzędzia do testowania:**
+   - Backend: pytest, pytest-asyncio, httpx, pytest-cov, ruff
+   - Frontend: Vitest, @testing-library/react, MSW, ESLint, Prettier
+   - Wydajność: Lighthouse, locust/k6
+   - Bezpieczeństwo: bandit, npm audit
+   - Dostępność: @axe-core/react, Lighthouse
+
+7. **Harmonogram testów:**
+   - Faza 1: Testy jednostkowe (Tydzień 1-2)
+   - Faza 2: Testy integracyjne (Tydzień 3-4)
+   - Faza 3: Testy wydajnościowe (Tydzień 5)
+   - Faza 4: Testy bezpieczeństwa i dostępności (Tydzień 6)
+   - Faza 5: Testy regresyjne i smoke tests (Tydzień 7)
+
+8. **Kryteria akceptacji testów:**
+   - Coverage: Backend ≥70%, Frontend ≥50%
+   - Wydajność: Fast response <15s (95th percentile), Accurate response <240s, Similarity search <200ms
+   - Bezpieczeństwo: Zero SQL injection/XSS vulnerabilities, JWT validation, RLS policies
+   - Dostępność: WCAG AA compliance, keyboard navigation, screen reader support
+
+9. **Role i odpowiedzialności w procesie testowania:**
+   - Developer: testy jednostkowe i integracyjne dla własnego kodu
+   - QA Engineer: testy manualne, E2E, dostępność (jeśli dostępny)
+   - DevOps: CI/CD, testy automatyczne w pipeline (jeśli dostępny)
+   - Product Owner: weryfikacja kryteriów akceptacji
+
+10. **Procedury raportowania błędów:**
+    - Format raportu (tytuł, priorytet, komponent, kroki reprodukcji, oczekiwany/rzeczywisty rezultat)
+    - Priorytetyzacja (Critical/High/Medium/Low)
+    - Workflow naprawy bugów
+
+Pamiętaj, aby plan testów był:
+- Dokładnie dostosowany do kontekstu projektu PrawnikGPT
+- Uwzględniał specyfikę wykorzystywanych technologii (Astro + React islands, FastAPI, Supabase, OLLAMA)
+- Priorytetyzował kluczowe elementy repozytorium (RAG pipeline, Chat interface, Autentykacja)
+- Zawierał konkretne ścieżki plików i komponenty do testowania
+- Był napisany w języku polskim
+- Prezentował wysoką jakość i profesjonalizm
+
+Rozpocznij od analizy, a następnie przejdź do tworzenia planu testów. Twój końcowy wynik powinien składać się tylko z planu testów i nie powinien powielać ani streszczać żadnej pracy wykonanej w bloku analizy projektu.
+
+Przedstaw ten plan w formacie Markdown z numeracją sekcji i podsekcji.

@@ -25,3 +25,11 @@ pnpm-debug.log*
 
 # Supabase temporary files
 supabase/.temp/
+
+# Test results and coverage
+coverage/
+.vitest/
+playwright-report/
+test-results/
+screenshots/
+*.log
