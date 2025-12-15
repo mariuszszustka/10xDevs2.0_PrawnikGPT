@@ -140,6 +140,7 @@ export function UserMenu({ userEmail, userId }: UserMenuProps) {
           aria-label={`Menu użytkownika: ${userEmail}`}
           aria-haspopup="menu"
           aria-expanded={isOpen}
+          data-testid="user-menu-button"
         >
           <Avatar className="h-10 w-10">
             <AvatarFallback className="bg-primary text-primary-foreground">
@@ -174,6 +175,7 @@ export function UserMenu({ userEmail, userId }: UserMenuProps) {
           className="cursor-pointer text-destructive focus:text-destructive"
           aria-label={isLoggingOut ? 'Wylogowywanie...' : 'Wyloguj się'}
           aria-busy={isLoggingOut}
+          data-testid="logout-button"
         >
           {isLoggingOut ? (
             <>

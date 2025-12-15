@@ -16,6 +16,7 @@ const currentPath = Astro.url.pathname;
       ? "glass-surface shadow-md"
       : "glass-surface shadow-lg",
   ]}
+  data-testid="main-header"
 >
   <nav class="container mx-auto px-4" aria-label="Główna nawigacja">
     <div class="flex items-center justify-between h-16">
@@ -23,6 +24,7 @@ const currentPath = Astro.url.pathname;
       <a
         href="/"
         class="flex items-center gap-3 text-foreground hover:text-primary transition-colors duration-fast group"
+        data-testid="logo-link"
       >
         <div
           class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow"
@@ -37,7 +39,7 @@ const currentPath = Astro.url.pathname;
       <!-- Navigation Links -->
       <div class="flex items-center gap-2">
         <!-- Desktop Navigation -->
-        <div class="hidden md:flex items-center gap-2 mr-4">
+        <div class="hidden md:flex items-center gap-2 mr-4" data-testid="desktop-nav">
           <a
             href="/app"
             class:list={[
@@ -46,6 +48,7 @@ const currentPath = Astro.url.pathname;
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
             ]}
+            data-testid="app-link"
           >
             Aplikacja
           </a>
@@ -57,17 +60,19 @@ const currentPath = Astro.url.pathname;
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
             ]}
+            data-testid="pricing-link"
           >
             Cennik
           </a>
         </div>
 
         <!-- Auth Buttons -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2" data-testid="auth-buttons">
           <a
             href="/login"
             class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border-2 border-primary bg-background text-primary hover:bg-primary hover:text-primary-foreground active:bg-primary-active rounded-lg shadow-sm hover:shadow-md duration-normal ease-standard h-[var(--button-height-md)] px-[var(--button-padding-x-md)] text-body"
             aria-label="Zaloguj się do istniejącego konta"
+            data-testid="login-link"
           >
             Zaloguj się
           </a>
@@ -75,6 +80,7 @@ const currentPath = Astro.url.pathname;
             href="/register"
             class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active rounded-lg shadow-md hover:shadow-lg active:shadow-sm duration-normal ease-standard h-[var(--button-height-md)] px-[var(--button-padding-x-md)] text-body"
             aria-label="Wypróbuj PrawnikGPT za darmo - przejdź do rejestracji"
+            data-testid="register-link"
           >
             Wypróbuj
           </a>

@@ -162,3 +162,5 @@ if_historia_pusta --> ChatActive: Historia istnieje
 - `.ai/mermaid-diagram-ui.mdc` - Diagram architektury UI
 - `.ai/prd.md` - Dokument wymagań produktu
 - `.ai/auth-spec.md` - Specyfikacja techniczna autentykacji
+
+

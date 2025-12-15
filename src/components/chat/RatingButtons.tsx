@@ -58,7 +58,12 @@ export function RatingButtons({
   const isAnyActive = isUpActive || isDownActive;
 
   return (
-    <div className="flex items-center gap-2">
+    <div
+      className="flex items-center gap-2"
+      data-testid="rating-buttons-wrapper"
+      data-rating-value={rating || 'none'}
+      data-is-submitting={isSubmitting}
+    >
       <Button
         type="button"
         variant={isUpActive ? 'default' : 'outline'}
@@ -70,6 +75,7 @@ export function RatingButtons({
           'gap-2',
           isUpActive && 'bg-primary text-primary-foreground'
         )}
+        data-testid="thumbs-up-button"
       >
         <ThumbsUp className={cn('h-4 w-4', isUpActive && 'fill-current')} />
         <span className="sr-only sm:not-sr-only">Pozytywna</span>
@@ -86,6 +92,7 @@ export function RatingButtons({
           'gap-2',
           isDownActive && 'bg-primary text-primary-foreground'
         )}
+        data-testid="thumbs-down-button"
       >
         <ThumbsDown className={cn('h-4 w-4', isDownActive && 'fill-current')} />
         <span className="sr-only sm:not-sr-only">Negatywna</span>

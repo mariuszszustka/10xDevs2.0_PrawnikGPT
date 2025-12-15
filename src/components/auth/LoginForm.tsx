@@ -231,10 +231,14 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
   }, []);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate data-testid="login-form">
       {/* General error message */}
       {(errors.general || showExpiredMessage) && (
-        <Alert variant="destructive" role="alert">
+        <Alert
+          variant="destructive"
+          role="alert"
+          data-testid={showExpiredMessage && !errors.general ? "session-expired-alert" : "error-message"}
+        >
           <AlertDescription>
             {showExpiredMessage && !errors.general
               ? 'Twoja sesja wygasła. Zaloguj się ponownie.'
@@ -262,6 +266,7 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
           className={errors.email ? 'border-red-500' : ''}
           placeholder="twoj@email.pl"
           autoComplete="email"
+          data-testid="email-input"
         />
         {errors.email && (
           <span
@@ -294,6 +299,7 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
             className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
             placeholder="••••••••"
             autoComplete="current-password"
+            data-testid="password-input"
           />
           <Button
             type="button"
@@ -304,6 +310,7 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
             className="absolute right-0 top-0 h-full px-3"
             aria-label={showPassword ? 'Ukryj hasło' : 'Pokaż hasło'}
             tabIndex={0}
+            data-testid="password-toggle-button"
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -330,6 +337,7 @@ export function LoginForm({ redirectTo = '/app', showExpiredMessage = false }: L
         disabled={isLoading}
         className="w-full"
         aria-label={isLoading ? 'Logowanie w toku...' : 'Zaloguj się'}
+        data-testid="submit-button"
       >
         {isLoading ? (
           <>

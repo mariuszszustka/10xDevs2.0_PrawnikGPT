@@ -1,0 +1,22 @@
+{
+  "validUser": {
+    "email": "test@example.com",
+    "password": "password123",
+    "description": "Valid test user for successful login scenarios"
+  },
+  "invalidUser": {
+    "email": "wrong@example.com",
+    "password": "wrongpassword",
+    "description": "Invalid user for failed login scenarios"
+  },
+  "adminUser": {
+    "email": "admin@example.com",
+    "password": "admin123",
+    "description": "Admin user with elevated permissions (if applicable)"
+  },
+  "secondaryUser": {
+    "email": "user2@example.com",
+    "password": "password456",
+    "description": "Secondary user for multi-user scenarios"
+  }
+}

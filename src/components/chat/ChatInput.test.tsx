@@ -46,19 +46,18 @@ describe('ChatInput Component', () => {
       used: 0,
       limit: 10,
       canSubmit: true,
-      resetAt: Date.now() + 60000,
+      resetAt: new Date(Date.now() + 60000),
     });
 
     mockUseActiveQueries.mockReturnValue({
       activeCount: 0,
       canAddQuery: true,
-      maxQueries: 3,
     });
 
     // Default API success
     mockApiPost.mockResolvedValue({
       data: { query_id: 'test-query-123' },
-      rateLimit: { used: 1, limit: 10, resetAt: Date.now() + 60000 },
+      rateLimit: { used: 1, limit: 10, resetAt: new Date(Date.now() + 60000) },
     });
   });
 
@@ -129,7 +128,7 @@ describe('ChatInput Component', () => {
       const user = userEvent.setup();
       render(<ChatInput onSubmit={mockOnSubmit} />);
 
-      const exactl1000Chars = 'a'.repeat(1000);
+      const exactly1000Chars = 'a'.repeat(1000);
 
       // Act
       await user.type(screen.getByRole('textbox'), exactly1000Chars);
@@ -336,7 +335,9 @@ describe('ChatInput Component', () => {
 
     it('should show "Wysyłanie..." while submitting', async () => {
       // Arrange
-      const mockOnSubmit = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      const mockOnSubmit = vi.fn<[string], Promise<string>>(() =>
+        new Promise((resolve) => setTimeout(() => resolve('test-query-id'), 100))
+      );
       const user = userEvent.setup();
       render(<ChatInput onSubmit={mockOnSubmit} />);
 
@@ -350,7 +351,9 @@ describe('ChatInput Component', () => {
 
     it('should disable submit button while submitting', async () => {
       // Arrange
-      const mockOnSubmit = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      const mockOnSubmit = vi.fn<[string], Promise<string>>(() =>
+        new Promise((resolve) => setTimeout(() => resolve('test-query-id'), 100))
+      );
       const user = userEvent.setup();
       render(<ChatInput onSubmit={mockOnSubmit} />);
 

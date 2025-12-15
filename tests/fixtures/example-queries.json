@@ -1,0 +1,79 @@
+{
+  "validQueries": [
+    {
+      "query": "Jakie są obowiązki pracodawcy wobec pracownika?",
+      "category": "Prawo pracy",
+      "expectedLength": 50,
+      "description": "Question about employer obligations"
+    },
+    {
+      "query": "Czy można rozwiązać umowę o pracę bez wypowiedzenia?",
+      "category": "Prawo pracy",
+      "expectedLength": 56,
+      "description": "Question about terminating employment contract"
+    },
+    {
+      "query": "Jakie są zasady dziedziczenia ustawowego w Polsce?",
+      "category": "Prawo cywilne",
+      "expectedLength": 54,
+      "description": "Question about statutory inheritance"
+    },
+    {
+      "query": "Czy umowa zawarta pod wpływem groźby jest ważna?",
+      "category": "Prawo cywilne",
+      "expectedLength": 51,
+      "description": "Question about contract validity under duress"
+    },
+    {
+      "query": "Jakie są warunki przyznania zasiłku dla bezrobotnych?",
+      "category": "Prawo administracyjne",
+      "expectedLength": 57,
+      "description": "Question about unemployment benefits"
+    },
+    {
+      "query": "Czy można odwołać się od decyzji administracyjnej?",
+      "category": "Prawo administracyjne",
+      "expectedLength": 54,
+      "description": "Question about administrative appeal"
+    },
+    {
+      "query": "Jakie są konsekwencje naruszenia dóbr osobistych?",
+      "category": "Prawo cywilne",
+      "expectedLength": 52,
+      "description": "Question about personal rights violation"
+    },
+    {
+      "query": "Czy pracodawca może zwolnić pracownika w trakcie choroby?",
+      "category": "Prawo pracy",
+      "expectedLength": 62,
+      "description": "Question about dismissal during illness"
+    }
+  ],
+  "shortQuery": {
+    "query": "Test",
+    "length": 4,
+    "description": "Query below minimum length (10 chars)"
+  },
+  "minQuery": {
+    "query": "AAAAAAAAAA",
+    "length": 10,
+    "description": "Query with exactly minimum length (10 chars)"
+  },
+  "maxQuery": {
+    "query": "A".repeat(1000),
+    "length": 1000,
+    "description": "Query with exactly maximum length (1000 chars)"
+  },
+  "longQuery": {
+    "query": "A".repeat(1001),
+    "length": 1001,
+    "description": "Query exceeding maximum length (1001 chars)"
+  },
+  "edgeCases": {
+    "empty": "",
+    "whitespace": "          ",
+    "specialChars": "!@#$%^&*()_+-=[]{}|;':\",./<>?",
+    "unicode": "Jakie są prawa 👨‍⚖️ pracownika? 🏢",
+    "longSentence": "Czy pracodawca ma obowiązek zapewnić pracownikowi bezpieczne i higieniczne warunki pracy zgodnie z przepisami kodeksu pracy i regulaminami BHP obowiązującymi w danym zakładzie pracy?"
+  }
+}

@@ -549,7 +549,7 @@ describe('LoginForm', () => {
         ok: false,
         status: 503,
         json: async () => { throw new Error('JSON parsing failed'); },
-      } as Response);
+      } as unknown as Response);
 
       render(<LoginForm />);
 
@@ -862,7 +862,7 @@ describe('LoginForm', () => {
         ok: false,
         status: 500,
         json: async () => { throw new Error('Invalid JSON'); },
-      } as Response);
+      } as unknown as Response);
 
       render(<LoginForm />);
 

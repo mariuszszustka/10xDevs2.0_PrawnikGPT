@@ -175,7 +175,7 @@ export function ChatInput({ onSubmit, disabled: externalDisabled, exampleQuestio
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-4 bg-background border-t">
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-3" data-testid="chat-input-form">
         <div className="relative">
           <Textarea
             ref={textareaRef}
@@ -188,6 +188,7 @@ export function ChatInput({ onSubmit, disabled: externalDisabled, exampleQuestio
             rows={1}
             aria-label="Pole wprowadzania pytania"
             aria-describedby="character-count rate-limit-info"
+            data-testid="chat-input"
           />
           
           {/* Character count badge (top-right corner) */}
@@ -196,6 +197,7 @@ export function ChatInput({ onSubmit, disabled: externalDisabled, exampleQuestio
               variant={isValid ? 'secondary' : 'destructive'}
               className="text-xs"
               id="character-count"
+              data-testid="character-counter"
             >
               {characterCount}/{MAX_LENGTH}
             </Badge>
@@ -208,6 +210,7 @@ export function ChatInput({ onSubmit, disabled: externalDisabled, exampleQuestio
             {/* Rate limit indicator */}
             <div
               id="rate-limit-info"
+              data-testid="rate-limit-info"
               className={cn(
                 'flex items-center gap-2',
                 rateLimitUsed >= rateLimitLimit && 'text-destructive'
@@ -224,7 +227,7 @@ export function ChatInput({ onSubmit, disabled: externalDisabled, exampleQuestio
 
             {/* Active queries indicator */}
             {activeCount > 0 && (
-              <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="flex items-center gap-2 text-muted-foreground" data-testid="active-queries-info">
                 <span>Aktywne zapytania:</span>
                 <Badge variant="outline" className="text-xs">
                   {activeCount}/3
@@ -238,6 +241,7 @@ export function ChatInput({ onSubmit, disabled: externalDisabled, exampleQuestio
             type="submit"
             disabled={!canSubmit}
             aria-label="Wyślij pytanie"
+            data-testid="send-button"
           >
             {isSubmitting ? 'Wysyłanie...' : 'Wyślij'}
           </Button>
@@ -248,6 +252,7 @@ export function ChatInput({ onSubmit, disabled: externalDisabled, exampleQuestio
           <div
             role="alert"
             className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3"
+            data-testid="error-message"
           >
             {error}
           </div>
